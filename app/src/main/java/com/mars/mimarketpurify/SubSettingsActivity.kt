@@ -88,7 +88,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addSwitchRow(group = group, title = "详情页附加净化",
             summary = "详情页拼装推荐、底部多按钮推广栏、浏览器下载弹窗广告",
             checked = readLocal(Settings.KEY_DETAIL_EXTRAS, true), tag = Settings.KEY_DETAIL_EXTRAS
-        ) { on -> writeRemote(Settings.KEY_DETAIL_EXTRAS, on) }
+        ) { on -> writeRemote(Settings.KEY_DETAIL_EXTRAS, on) 
         }
         content.addView(group)
         addFooter("屏蔽后若页面空白，多为该页组件被整体过滤，关掉对应开关即可恢复。")

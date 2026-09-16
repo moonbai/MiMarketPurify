@@ -190,9 +190,10 @@ class AboutActivity : Activity() {
 
     private fun buildFeatureCards() {
         val features = listOf(
-            "广告移除" to "开屏、推荐、信息流、搜索、升级/下载页、详情、榜单、顶栏推广位",
-            "界面精简" to "安全检测、领水果、我的页面、详情页精选、底栏",
-            "功能增强" to "下载超级岛"
+            "广告净化" to "开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口",
+            "界面精简" to "「我的」页推荐/清理/安全检测/个人信息、详情页精选、底栏角标、升级记录、搜索也在看",
+            "我的页增强" to "升级卡片展开、果园背景清除",
+            "功能增强" to "下载超级岛、非正版APP显示、被隐藏更新显示、升级弹窗拦截"
         )
 
         features.forEachIndexed { index, (title, desc) ->
@@ -210,7 +211,6 @@ class AboutActivity : Activity() {
                 })
             })
 
-            // 统一设置LayoutParams，index>0才添加上边距
             card.layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -224,9 +224,15 @@ class AboutActivity : Activity() {
     }
 
     private fun buildReferenceProjects() {
+        data class RefProject(
+            val repoName: String,
+            val url: String,
+            val label: String
+        )
+
         val references = listOf(
-            "callng/NewFuckMarketAds" to "https://github.com/callng/NewFuckMarketAds",
-            "lisrain/NewFuckMarketAds_Fork" to "https://github.com/lisrain/NewFuckMarketAds_Fork"
+            RefProject("callng/NewFuckMarketAds", "https://github.com/callng/NewFuckMarketAds", "GPL-3.0"),
+            RefProject("lisrain/NewFuckMarketAds_Fork", "https://github.com/lisrain/NewFuckMarketAds_Fork", "GPL-3.0")
         )
 
         val card = card()
@@ -236,7 +242,6 @@ class AboutActivity : Activity() {
         }
 
         references.forEachIndexed { index, item ->
-            val (repoName, url) = item
             val itemRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -246,7 +251,7 @@ class AboutActivity : Activity() {
                 setBackgroundResource(R.drawable.bg_card_ripple)
                 setOnClickListener {
                     runCatching {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url)))
                     }.onFailure {
                         Toast.makeText(
                             this@AboutActivity,
@@ -265,13 +270,13 @@ class AboutActivity : Activity() {
                     )
                 }
                 textLayout.addView(TextView(this@AboutActivity).apply {
-                    text = repoName
+                    text = item.repoName
                     textSize = Ui.ROW_SUMMARY
                     setTypeface(null, Typeface.BOLD)
                     setTextColor(Ui.TEXT_PRIMARY)
                 })
                 textLayout.addView(TextView(this@AboutActivity).apply {
-                    text = "参考项目"
+                    text = item.label          // ← 自定义值
                     textSize = Ui.MICRO
                     setTextColor(Ui.TEXT_SECONDARY)
                     setPadding(0, dp(3), 0, 0)
