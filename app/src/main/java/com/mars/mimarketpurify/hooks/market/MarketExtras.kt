@@ -59,7 +59,7 @@ object EntranceAds : BaseHook() {
 /** 「我的」页底部推广应用列表（数据层直接返回 0 组） */
 object MineAdGroup : BaseHook() {
 
-    override val prefKey: String = Settings.KEY_MINE_AD_GROUP
+    override val prefKey: String = Settings.KEY_MINE_RECOMMEND  // 原来是 KEY_MINE_AD_GROUP
 
     override val name: String
         get() = "屏蔽「我的」页推广组"

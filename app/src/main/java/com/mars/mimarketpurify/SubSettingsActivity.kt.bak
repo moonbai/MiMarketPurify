@@ -92,6 +92,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "隐藏搜索框左侧云控下发的活动小图标 / 动图",
             checked = readLocal(Settings.KEY_ENTRANCE, true), tag = Settings.KEY_ENTRANCE
         ) { on -> writeRemote(Settings.KEY_ENTRANCE, on) }
+        addSwitchRow(group = group, title = "「我的」页推广组",
+            summary = "在数据层让底部推广应用列表直接返回空",
+            checked = readLocal(Settings.KEY_MINE_AD_GROUP, true), tag = Settings.KEY_MINE_AD_GROUP
+        ) { on -> writeRemote(Settings.KEY_MINE_AD_GROUP, on) }
         addSwitchRow(group = group, title = "详情页附加净化",
             summary = "详情页拼装推荐、底部多按钮推广栏、浏览器下载弹窗广告",
             checked = readLocal(Settings.KEY_DETAIL_EXTRAS, true), tag = Settings.KEY_DETAIL_EXTRAS
@@ -108,12 +112,9 @@ class SubSettingsActivity : SettingsBaseActivity() {
     private fun buildMine() {
         addSectionHeader("「我的」页精简", "清理「我的」页中不需要的板块与推荐")
         val group = groupCard()
-        addSwitchRow(
-            group = group,
-            title = "应用推荐与推广",
-            summary = "隐藏页面顶部推荐卡片与底部推广列表",
-            checked = readLocal(Settings.KEY_MINE_RECOMMEND, true),
-            tag = Settings.KEY_MINE_RECOMMEND
+        addSwitchRow(group = group, title = "应用推荐",
+            summary = "隐藏页面顶部的应用推荐广告位",
+            checked = readLocal(Settings.KEY_MINE_RECOMMEND, true), tag = Settings.KEY_MINE_RECOMMEND
         ) { on -> writeRemote(Settings.KEY_MINE_RECOMMEND, on) }
         addSwitchRow(group = group, title = "应用管理入口",
             summary = "隐藏页面中间的官方应用管理功能入口 tab",
