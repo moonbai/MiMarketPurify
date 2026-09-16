@@ -174,7 +174,22 @@ class SubSettingsActivity : SettingsBaseActivity() {
         content.addView(group)
         addFooter("升级记录与搜索结果按标题文案匹配，改版后可能失效，届时请反馈。")
     }
-
+        /** 模块功能页 */
+    private fun buildModule() {
+        addSectionHeader("模块功能", "仅影响本模块的显示方式与调试选项")
+        val group = groupCard()
+        hideIconSwitch = addSwitchRow(group = group, title = "隐藏桌面图标",
+            summary = "仅移除桌面抽屉中的图标，仍可从 LSPosed 模块列表进入主页",
+            checked = isLauncherIconHidden(), tag = "hide_launcher_icon", gated = false, remote = false
+        ) { hide -> applyHideIcon(hide) }
+        addSwitchRow(group = group, title = "榜单调试提示",
+            summary = "开启后进入榜单会输出未识别的视图树（logcat 前缀 [rank-tree]），用于反馈漏网的广告；用完请关掉",
+            checked = readLocal(Settings.KEY_RANK_DEBUG, false), tag = Settings.KEY_RANK_DEBUG, gated = false
+        ) { on -> writeRemote(Settings.KEY_RANK_DEBUG, on) }
+        content.addView(group)
+        addFooter("隐藏图标后需从 LSPosed 等框架的模块列表打开主页。")
+    }
+    
     private fun addFooter(text: String) {
         content.addView(TextView(this).apply {
             this.text = text; textSize = Ui.MICRO; setTextColor(Ui.TEXT_TERTIARY)

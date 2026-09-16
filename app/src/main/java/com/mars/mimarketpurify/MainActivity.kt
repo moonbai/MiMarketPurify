@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.CompoundButton
 import io.github.libxposed.service.XposedService
 
 /**
