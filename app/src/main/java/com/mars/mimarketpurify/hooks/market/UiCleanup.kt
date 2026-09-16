@@ -84,7 +84,8 @@ object UiCleanup : BaseHook() {
                     if (arg == View.VISIBLE && Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
                         val id = view.id
                         if (id > 0 && id in getCleanupIdSet(view)) {
-                            return@hooked proceed()
+                            // 商店想设回 VISIBLE，直接拦截，不执行原始方法
+                            return@hooked
                         }
                     }
                     proceed()
@@ -96,10 +97,7 @@ object UiCleanup : BaseHook() {
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
 
-        // 仅在用户启用「果园皮肤修正」时才 hook，否则不动升级卡片
-        if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
-            hookOrchardSkin()
-        }
+        hookOrchardSkin()
     }
 
     private fun hookOrchardSkin() {
@@ -190,30 +188,17 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    /**
-     * 判断是否为「我的」页需要隐藏的目标。
-     *
-     * 每个开关只管自己的 ID 列表，互不影响：
-     * - 推荐广告卡片 → KEY_MINE_RECOMMEND
-     * - 官方标签栏   → KEY_MINE_OFFICIAL_TAB
-     * - 清理与卸载   → KEY_MINE_CLEANUP
-     * - 顶部个人信息 → KEY_MINE_SUMMARY
-     */
     private fun isMineTarget(v: View): Boolean {
         val id = v.id
         if (id == View.NO_ID || id <= 0) return false
-
-        val recommendOn = Settings.isEnabled(Settings.KEY_MINE_RECOMMEND, true)
-        val tabOn = Settings.isEnabled(Settings.KEY_MINE_OFFICIAL_TAB, true)
-        val cleanupOn = Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
-        val summaryOn = Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)
-
-        if (recommendOn && id in idSet(v, "recommend", mineRecommendIds)) return true
-        if (tabOn && id in idSet(v, "tab", mineTabIds)) return true
-        if (cleanupOn && id in getCleanupIdSet(v)) return true
-        if (summaryOn && id in idSet(v, "summary", mineSummaryIds)) return true
-
-        return false
+        return (Settings.isEnabled(Settings.KEY_MINE_RECOMMEND, true) &&
+                id in idSet(v, "recommend", mineRecommendIds)) ||
+                (Settings.isEnabled(Settings.KEY_MINE_OFFICIAL_TAB, true) &&
+                        id in idSet(v, "tab", mineTabIds)) ||
+                (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true) &&
+                        id in getCleanupIdSet(v)) ||
+                (Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false) &&
+                        id in idSet(v, "summary", mineSummaryIds))
     }
 
     private fun isFeaturedTarget(v: View): Boolean {
