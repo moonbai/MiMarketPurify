@@ -97,7 +97,10 @@ object UiCleanup : BaseHook() {
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
 
-        hookOrchardSkin()
+        // 仅在用户启用「果园皮肤修正」时才 hook，否则不动升级卡片
+        if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
+            hookOrchardSkin()
+        }
     }
 
     private fun hookOrchardSkin() {

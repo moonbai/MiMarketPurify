@@ -191,6 +191,23 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_MINE_SUMMARY, false),
             tag = Settings.KEY_MINE_SUMMARY
         ) { on -> writeRemote(Settings.KEY_MINE_SUMMARY, on) }
+        addSwitchRow(
+            group = group,
+            title = "果园皮肤修正",
+            summary = "清除升级卡片的果园背景与内边距，使布局更紧凑",
+            checked = readLocal(Settings.KEY_ORCHARD_SKIN, false),
+            tag = Settings.KEY_ORCHARD_SKIN,
+            default = false
+        ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
+        
+        addSwitchRow(
+            group = group,
+            title = "升级卡片展开",
+            summary = "升级卡片默认展开显示更多应用更新",
+            checked = readLocal(Settings.KEY_CARD_EXPAND, false),
+            tag = Settings.KEY_CARD_EXPAND,
+            default = false
+        ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }        
         content.addView(group)
         addFooter("改动一般在下次进入「我的」页时生效。")
     }

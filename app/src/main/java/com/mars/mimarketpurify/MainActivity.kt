@@ -45,9 +45,12 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_MINE_RECOMMEND,
         Settings.KEY_MINE_OFFICIAL_TAB,
         Settings.KEY_MINE_CLEANUP,
-        Settings.KEY_MINE_SUMMARY
+        Settings.KEY_MINE_SUMMARY,
+        Settings.KEY_ORCHARD_SKIN,
+        Settings.KEY_CARD_EXPAND
+
     )
-    
+
     /** 二级页「其他界面净化」里的开关 */
     private val miscKeys = listOf(
         Settings.KEY_SECURITY,
