@@ -34,10 +34,18 @@ class MainActivity : SettingsBaseActivity() {
     private lateinit var statusTitle: TextView
     private lateinit var statusBody: TextView
 
-    /** 二级页「广告移除」里的 7 个开关，用于在主页入口行显示启用数量 */
+    /** 二级页「广告移除」里的 10 个开关，用于在主页入口行显示启用数量 */
     private val adKeys = listOf(
-        Settings.KEY_SPLASH, Settings.KEY_MAIN_TAB, Settings.KEY_HOME_FEED, Settings.KEY_SEARCH,
-        Settings.KEY_UPDATE_DL, Settings.KEY_DETAIL, Settings.KEY_RANK
+        Settings.KEY_SPLASH, 
+        Settings.KEY_MAIN_TAB, 
+        Settings.KEY_HOME_FEED, 
+        Settings.KEY_SEARCH,
+        Settings.KEY_UPDATE_DL, 
+        Settings.KEY_DETAIL, 
+        Settings.KEY_RANK,
+        Settings.KEY_FRUIT,
+        Settings.KEY_ENTRANCE,
+        Settings.KEY_DETAIL_EXTRAS
     )
 
     /** 二级页「「我的」页」里的开关，用于在主页入口行显示启用数量 */
@@ -47,25 +55,18 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_MINE_CLEANUP,
         Settings.KEY_MINE_SUMMARY,
         Settings.KEY_ORCHARD_SKIN,
-        Settings.KEY_CARD_EXPAND
+        Settings.KEY_CARD_EXPAND,
+        Settings.KEY_CARD_EXPAND,
+        Settings.KEY_ORCHARD_SKIN
     )
+
+
 
     /** 二级页「其他界面净化」里的开关 */
     private val miscKeys = listOf(
-        Settings.KEY_SECURITY,
-        Settings.KEY_FRUIT,
         Settings.KEY_DETAIL_FEATURED,
         Settings.KEY_UPDATE_HISTORY,
         Settings.KEY_SEARCH_ALSO_VIEW
-    )
-
-    /** 二级页「额外净化」里的开关（移植自 XiaomiHelper） */
-    private val extraKeys = listOf(
-        Settings.KEY_TAB_BADGE,
-        Settings.KEY_ENTRANCE,
-        Settings.KEY_MINE_AD_GROUP,
-        Settings.KEY_DETAIL_EXTRAS,
-        Settings.KEY_UPDATE_DIALOG
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {

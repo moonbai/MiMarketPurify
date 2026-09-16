@@ -30,13 +30,13 @@ class SubSettingsActivity : SettingsBaseActivity() {
     private var hideIconSwitch: CompoundButton? = null
 
     private val adFeatures = listOf(
-        Feature(Settings.KEY_SPLASH, "移除开屏广告", "屏蔽应用商店启动时的开屏广告"),
-        Feature(Settings.KEY_MAIN_TAB, "禁止前台广告/推荐", "屏蔽主页切换时的推荐与广告弹窗"),
-        Feature(Settings.KEY_HOME_FEED, "隐藏信息流广告", "隐藏主页底部视频/应用推荐与热词栏"),
-        Feature(Settings.KEY_SEARCH, "移除搜索推荐", "搜索建议、搜索页、搜索结果的软件推荐"),
-        Feature(Settings.KEY_UPDATE_DL, "移除升级/下载推荐", "应用升级页与下载页的软件推荐"),
-        Feature(Settings.KEY_DETAIL, "移除详情页广告", "应用详情页的广告、评论与推荐位"),
-        Feature(Settings.KEY_RANK, "移除榜单广告", "榜单界面的广告 / 推广卡片")
+        Feature(Settings.KEY_SPLASH, "开屏广告", "屏蔽应用商店启动时的开屏广告"),
+        Feature(Settings.KEY_MAIN_TAB, "前台广告/推荐", "屏蔽主页切换时的推荐与广告弹窗"),
+        Feature(Settings.KEY_HOME_FEED, "信息流广告", "隐藏主页底部视频/应用推荐与热词栏"),
+        Feature(Settings.KEY_SEARCH, "搜索推荐", "搜索建议、搜索页、搜索结果的软件推荐"),
+        Feature(Settings.KEY_UPDATE_DL, "升级/下载推荐", "应用升级页与下载页的软件推荐"),
+        Feature(Settings.KEY_DETAIL, "详情页广告", "应用详情页的广告、评论与推荐位"),
+        Feature(Settings.KEY_RANK, "榜单广告", "榜单界面的广告 / 推广卡片")
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,15 +77,15 @@ class SubSettingsActivity : SettingsBaseActivity() {
                 checked = readLocal(f.key, true), tag = f.key
             ) { on -> writeRemote(f.key, on) }
             }
-        addSwitchRow(group = group, title = "屏蔽领水果入口",
-            summary = "隐藏福利活动 gif 动图入口（entrance_gif）",
+        addSwitchRow(group = group, title = "领水果入口",
+            summary = "隐藏福利活动 gif 动图入口",
             checked = readLocal(Settings.KEY_FRUIT, true), tag = Settings.KEY_FRUIT
         ) { on -> writeRemote(Settings.KEY_FRUIT, on) }
-        addSwitchRow(group = group, title = "屏蔽首页活动入口",
+        addSwitchRow(group = group, title = "首页活动入口",
             summary = "隐藏搜索框左侧云控下发的活动小图标 / 动图",
             checked = readLocal(Settings.KEY_ENTRANCE, true), tag = Settings.KEY_ENTRANCE
         ) { on -> writeRemote(Settings.KEY_ENTRANCE, on) }
-        addSwitchRow(group = group, title = "详情页附加净化",
+        addSwitchRow(group = group, title = "详情页广告",
             summary = "详情页拼装推荐、底部多按钮推广栏、浏览器下载弹窗广告",
             checked = readLocal(Settings.KEY_DETAIL_EXTRAS, true), tag = Settings.KEY_DETAIL_EXTRAS
         ) { on -> writeRemote(Settings.KEY_DETAIL_EXTRAS, on) 
@@ -120,7 +120,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "隐藏手机清理与应用卸载入口",
             checked = readLocal(Settings.KEY_MINE_CLEANUP, true), tag = Settings.KEY_MINE_CLEANUP
         ) { on -> writeRemote(Settings.KEY_MINE_CLEANUP, on) }
-        addSwitchRow(group = group, title = "隐藏顶部个人信息区",
+        addSwitchRow(group = group, title = "个人信息区",
             summary = "隐藏头像、昵称、消息、收藏",
             checked = readLocal(Settings.KEY_MINE_SUMMARY, true), tag = Settings.KEY_MINE_SUMMARY
         ) { on -> writeRemote(Settings.KEY_MINE_SUMMARY, on) }
@@ -136,7 +136,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "升级卡片默认展开显示更多应用更新",
             checked = readLocal(Settings.KEY_CARD_EXPAND, true), tag = Settings.KEY_CARD_EXPAND, default = false
         ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
-        addSwitchRow(group = group, title = "隐藏底栏角标",
+        addSwitchRow(group = group, title = "底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
             checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
         ) { on -> writeRemote(Settings.KEY_TAB_BADGE, on) }
@@ -159,7 +159,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
     private fun buildMisc() {
         addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
         val group = groupCard()
-        addSwitchRow(group = group, title = "隐藏详情页「精选」",
+        addSwitchRow(group = group, title = "详情页「精选」",
             summary = "按文案匹配，仅在应用详情页生效",
             checked = readLocal(Settings.KEY_DETAIL_FEATURED, true), tag = Settings.KEY_DETAIL_FEATURED
         ) { on -> writeRemote(Settings.KEY_DETAIL_FEATURED, on) }

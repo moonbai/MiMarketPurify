@@ -207,7 +207,7 @@ class AboutActivity : Activity() {
                     textSize = Ui.ROW_SUMMARY
                     setTextColor(Ui.TEXT_SECONDARY)
                     setLineSpacing(0f, 1.4f)
-                    setPadding(0, dp(4), 0, 0)
+                    setPadding(0, dp(2), 0, 0)
                 })
             })
 
