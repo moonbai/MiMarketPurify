@@ -1,6 +1,8 @@
 package com.mars.mimarketpurify.hooks.market
 
 import android.app.Activity
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
@@ -13,23 +15,18 @@ import com.mars.mimarketpurify.init.BaseHook
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
-/**
- * 按**资源 id / 可见文本**屏蔽指定的界面元素。
- *
- * Fix 2026-09-16：
- * - 手机清理：dumpViewIds 诊断 + 移除失效 id
- */
 object UiCleanup : BaseHook() {
 
     override val prefKey: String? = null
     override val name: String = "界面元素屏蔽"
+
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     private val mineRecommendIds = listOf("mine_ad_container")
     private val mineTabIds = listOf("mine_middle_menu_container")
 
     private val mineCleanupIds = listOf(
         "phone_clear_forbid_layout",
-        "phone_clear_layout",
         "mine_uninstall_app_layout"
     )
 
@@ -47,6 +44,21 @@ object UiCleanup : BaseHook() {
 
     private val featuredTexts = setOf("精选")
 
+    private var cleanupIdCache: Set<Int>? = null
+
+    private fun getCleanupIdSet(v: View): Set<Int> {
+        cleanupIdCache?.let { return it }
+        val set = mineCleanupIds.mapNotNull { n ->
+            val id = runCatching {
+                v.resources.getIdentifier(n, "id", "com.xiaomi.market")
+            }.getOrNull()
+            if (id != null && id > 0) id else null
+        }.toSet()
+        cleanupIdCache = set
+        HookEnv.base.log(Log.WARN, TAG, "$name: cleanupIdSet 缓存 ${set.size}/${mineCleanupIds.size}")
+        return set
+    }
+
     private val resolved = Collections.synchronizedMap(mutableMapOf<String, Set<Int>>())
 
     private val orchardMethods = listOf(
@@ -60,18 +72,26 @@ object UiCleanup : BaseHook() {
     )
 
     override fun init() {
+        // Hook View.setVisibility，拦截 cleanup 目标被商店重新显示
         runCatching {
             ClassUtil.loadClass("android.view.View")
                 .methodFinder()
-                .filterByName("onAttachedToWindow")
+                .filterByName("setVisibility")
                 .first()
                 .hooked {
-                    val result = proceed()
-                    (thisObject as? View)?.let { inspect(it) }
-                    result
+                    val view = thisObject as? View ?: return@hooked proceed()
+                    val arg = args[0] as? Int ?: return@hooked proceed()
+                    if (arg == View.VISIBLE && Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
+                        val id = view.id
+                        if (id > 0 && id in getCleanupIdSet(view)) {
+                            // 商店想设回 VISIBLE，跳过不执行
+                            return@hooked proceed()
+                        }
+                    }
+                    proceed()
                 }
         }.onFailure {
-            HookEnv.base.log(Log.ERROR, TAG, "$name: View.onAttachedToWindow 挂钩失败", it)
+            HookEnv.base.log(Log.ERROR, TAG, "$name: setVisibility 挂钩失败", it)
         }
 
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
@@ -114,50 +134,29 @@ object UiCleanup : BaseHook() {
                         val result = proceed()
                         val decor = (thisObject as? Activity)?.window?.decorView ?: return@hooked result
 
-                        // 诊断：打印所有包含清理/卸载关键词的真实 id
-                        dumpViewIds(decor, 0)
-
+                        // 第一轮：立即扫描
                         scanTree(decor, 0)
-                        if(Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)){
-                            deepFindAndHide(decor, idSet(decor,"summary",mineSummaryIds))
-                        }
+
+                        // 第二轮：延迟 300ms 重扫
+                        mainHandler.postDelayed({
+                            runCatching { scanTree(decor, 0) }
+                        }, 300L)
+
+                        // 第三轮：延迟 800ms 兜底
+                        mainHandler.postDelayed({
+                            runCatching {
+                                scanTree(decor, 0)
+                                if(Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)){
+                                    deepFindAndHide(decor, idSet(decor,"summary",mineSummaryIds))
+                                }
+                            }
+                        }, 800L)
+
                         result
                     }
                 }
         }.onFailure {
             HookEnv.base.log(Log.VERBOSE, TAG, "$name: 无 $className，跳过补扫", null)
-        }
-    }
-
-    /**
-     * 诊断：遍历整棵 View 树，把包含指定关键词的 View id 名打出来
-     * logcat 过滤: 🔍 ViewTree
-     */
-    private fun dumpViewIds(v: View, depth: Int) {
-        if (depth > 12) return
-        val id = v.id
-        if (id > 0) {
-            val name = runCatching {
-                v.resources.getResourceEntryName(id)
-            }.getOrDefault("?")
-            if (name.contains("clear", true) ||
-                name.contains("clean", true) ||
-                name.contains("uninstall", true) ||
-                name.contains("phone", true) ||
-                name.contains("forbid", true) ||
-                name.contains("remove", true) ||
-                name.contains("delete", true) ||
-                name.contains("recycle", true)
-            ) {
-                HookEnv.base.log(
-                    Log.WARN, TAG,
-                    "🔍 ViewTree: $name (id=$id) vis=${v.visibility} class=${v.javaClass.simpleName}"
-                )
-            }
-        }
-        if (v !is ViewGroup) return
-        for (i in 0 until v.childCount) {
-            dumpViewIds(v.getChildAt(i) ?: continue, depth + 1)
         }
     }
 
@@ -169,31 +168,16 @@ object UiCleanup : BaseHook() {
         for (i in 0 until count) {
             scanTree(v.getChildAt(i) ?: continue, depth + 1)
         }
-        if(Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)){
-            runCatching {
-                val selfIdSet = idSet(v,"cleanup",mineCleanupIds)
-                if(v.id in selfIdSet && v is ViewGroup){
-                    var anyVisible = false
-                    for(i in 0 until v.childCount){
-                        val child = v.getChildAt(i)
-                        if(child.visibility == View.VISIBLE) anyVisible = true
-                    }
-                    if(!anyVisible){
-                        hide(v)
-                    }
-                }
-            }
-        }
     }
 
-    private fun deepFindAndHide(root: View, targetIds: Set<Int>, depth: Int = 0){
-        if(depth >12) return
-        if(root.id in targetIds){
+    private fun deepFindAndHide(root: View, targetIds: Set<Int>, depth: Int = 0) {
+        if (depth > 12) return
+        if (root.id in targetIds) {
             hide(root)
         }
-        if(root !is ViewGroup) return
-        for(i in 0 until root.childCount){
-            deepFindAndHide(root.getChildAt(i) ?: continue, targetIds, depth+1)
+        if (root !is ViewGroup) return
+        for (i in 0 until root.childCount) {
+            deepFindAndHide(root.getChildAt(i) ?: continue, targetIds, depth + 1)
         }
     }
 
@@ -212,7 +196,7 @@ object UiCleanup : BaseHook() {
                 (Settings.isEnabled(Settings.KEY_MINE_OFFICIAL_TAB, true) &&
                         id in idSet(v, "tab", mineTabIds)) ||
                 (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true) &&
-                        id in idSet(v, "cleanup", mineCleanupIds)) ||
+                        id in getCleanupIdSet(v)) ||
                 (Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false) &&
                         id in idSet(v, "summary", mineSummaryIds))
     }
@@ -229,9 +213,6 @@ object UiCleanup : BaseHook() {
         resolved[key]?.let { return it }
         val set = resolve(v, names)
         resolved[key] = set
-        HookEnv.base.log(
-            Log.WARN, TAG, "$name: $key 解析到 ${set.size}/${names.size} 个 id", null
-        )
         return set
     }
 
@@ -240,19 +221,12 @@ object UiCleanup : BaseHook() {
             val id = runCatching {
                 v.resources.getIdentifier(n, "id", "com.xiaomi.market")
             }.getOrNull()
-            if (id != null && id > 0) {
-                id
-            } else {
-                HookEnv.base.log(Log.WARN, TAG, "$name: ❌ $n 未找到 id=0")
-                null
-            }
+            if (id != null && id > 0) id else null
         }.toSet()
 
     private fun hide(v: View) {
         runCatching {
             v.visibility = View.GONE
-        }.onFailure {
-            HookEnv.base.log(Log.VERBOSE, TAG, "$name: 隐藏失败 ${it.message}", null)
         }
     }
 }
