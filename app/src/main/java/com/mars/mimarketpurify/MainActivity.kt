@@ -17,12 +17,12 @@ import io.github.libxposed.service.XposedService
  * 滚动才能看全，而其中大半属于「我的」页 / 底部标签栏这类局部设置，平时很少动。
  *
  * 布局要点：
- *  - 根布局为纵向 [LinearLayout]：固定顶栏（标题 / 副标题）+ 下方 ScrollView，
- *    因此标题始终可见，滚动只发生在内容区；
- *  - 功能开关按分组放进 [groupCard()] 容器，组内不画分隔线、只用少量留白分行，
- *    而不是每行一张独立卡片——这是 HyperOS 设置的标准形态；
- *  - 每行的「标题 + 摘要 + 开关」整体可点击，点击整行即翻转开关；
- *  - 所有配色、字号、间距、触摸目标尺寸统一取自 [Ui]。
+ * - 根布局为纵向 [LinearLayout]：固定顶栏（标题 / 副标题）+ 下方 ScrollView，
+ * 因此标题始终可见，滚动只发生在内容区；
+ * - 功能开关按分组放进 [groupCard()] 容器，组内不画分隔线、只用少量留白分行，
+ * 而不是每行一张独立卡片——这是 HyperOS 设置的标准形态；
+ * - 每行的「标题 + 摘要 + 开关」整体可点击，点击整行即翻转开关；
+ * - 所有配色、字号、间距、触摸目标尺寸统一取自 [Ui]。
  *
  * 「隐藏桌面图标」不再禁用本 Activity，而是禁用桌面入口 alias，
  * 保证 LSPosed 等框架始终可以打开主页（详见 manifest 注释）。
@@ -40,7 +40,7 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_UPDATE_DL, Settings.KEY_DETAIL, Settings.KEY_RANK
     )
 
-    /** 二级页「「我的」页」里的四个开关，用于在主页入口行显示启用数量 */
+    /** 二级页「「我的」页」里的开关，用于在主页入口行显示启用数量 */
     private val mineKeys = listOf(
         Settings.KEY_MINE_RECOMMEND,
         Settings.KEY_MINE_OFFICIAL_TAB,
@@ -48,7 +48,6 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_MINE_SUMMARY,
         Settings.KEY_ORCHARD_SKIN,
         Settings.KEY_CARD_EXPAND
-
     )
 
     /** 二级页「其他界面净化」里的开关 */
@@ -96,10 +95,9 @@ class MainActivity : SettingsBaseActivity() {
     private fun buildHeader(header: LinearLayout) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL // 整行垂直居中，左侧文字块与右侧按钮整体居中
+            gravity = Gravity.CENTER_VERTICAL
         }
 
-        // 左侧：标题+副标题 封装成垂直LinearLayout，实现两行文字作为整体和右侧按钮居中对齐
         val leftTextBlock = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -127,7 +125,6 @@ class MainActivity : SettingsBaseActivity() {
             textSize = Ui.CAPTION
             setTypeface(null, Typeface.BOLD)
             setTextColor(Ui.ACCENT)
-            // 自带 ripple 的胶囊背景：反馈被裁剪在圆角内，不会溢出成矩形
             setBackgroundResource(R.drawable.bg_pill_accent)
             setPadding(dp(14), dp(7), dp(14), dp(7))
             minimumHeight = dp(40)
@@ -143,7 +140,7 @@ class MainActivity : SettingsBaseActivity() {
         header.addView(headerDivider())
     }
 
-    /** 内容区顶部的激活状态卡：把“开关能不能用”讲清楚，而不是把它们调暗 */
+    /** 内容区顶部的激活状态卡 */
     private fun buildStatusCard() {
         statusCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -171,19 +168,13 @@ class MainActivity : SettingsBaseActivity() {
         content.addView(statusCard)
     }
 
-    /**
-     * 用一张**状态卡**说明模块当前是否可用，取代此前把所有开关调暗 45% 的做法。
-     *
-     * 调暗虽然能表达“暂不生效”，但代价是开关本身几乎看不清。
-     * 现在开关始终保持正常对比度，原因改由这张卡片讲清楚。
-     */
     private fun applyStatusCard(service: XposedService?) {
         if (service == null) {
             statusTitle.text = "模块未激活"
             statusTitle.setTextColor(Ui.STATE_INACTIVE)
             statusBody.text =
                 "以下开关暂时改不动远程偏好：请在 LSPosed / 框架中启用本模块，" +
-                    "并在作用域里勾选「应用商店」，然后重启应用商店。"
+                "并在作用域里勾选「应用商店」，然后重启应用商店。"
             statusCard.background = softBackground(Ui.STATE_INACTIVE_SOFT)
             return
         }
@@ -198,7 +189,6 @@ class MainActivity : SettingsBaseActivity() {
         statusCard.background = softBackground(Ui.STATE_ACTIVE_SOFT)
     }
 
-    /** 状态卡的淡色圆角背景 */
     private fun softBackground(color: Int): GradientDrawable =
         GradientDrawable().apply {
             setColor(color)
@@ -209,7 +199,6 @@ class MainActivity : SettingsBaseActivity() {
 
     private fun buildMasterSwitch() {
         val group = groupCard()
-        // 新增：状态卡与总开关卡片之间增加上边距
         group.layoutParams = (group.layoutParams as LinearLayout.LayoutParams).apply {
             topMargin = dp(12)
         }
@@ -229,13 +218,6 @@ class MainActivity : SettingsBaseActivity() {
 
     /**
      * 主页只放**分类入口**，具体开关全部收进二级页。
-     *
-     * 按功能划分为四大块：广告净化、界面精简、高级功能、模块功能。
-     * - 广告净化：纯粹的各类广告、推荐内容移除
-     * - 界面精简：首页、底栏、我的页、零散页面的布局与冗余项清理
-     * - 高级功能：深度运营内容净化 + 常驻的功能增强开关
-     * - 模块功能：本模块自身的设置项
-     * 【仅调整主页分组、标题、顺序、section；所有Key、二级页、计数逻辑无改动】
      */
     private fun buildCategories() {
         addSectionHeader("净化设置", "广告与界面冗余内容清理")
@@ -246,21 +228,21 @@ class MainActivity : SettingsBaseActivity() {
             summary = "开屏、首页信息流、榜单、搜索、下载升级、应用详情广告",
             value = { countText(adKeys) }
         ) { openPage(SubSettingsActivity.PAGE_ADS) }
-    
+
         addNavRow(
             group = uiGroup,
             title = "首页与标签栏",
             summary = "管理底部标签、清理首页云控推广位",
             value = { tabsText() }
         ) { openPage(SubSettingsActivity.PAGE_TABS) }
-    
+
         addNavRow(
             group = uiGroup,
             title = "「我的」页精简",
             summary = "我的页应用推荐、官方入口、清理板块",
             value = { countText(mineKeys) }
         ) { openPage(SubSettingsActivity.PAGE_MINE) }
-    
+
         addNavRow(
             group = uiGroup,
             title = "其他界面精简",
@@ -268,7 +250,7 @@ class MainActivity : SettingsBaseActivity() {
             value = { countText(miscKeys) }
         ) { openPage(SubSettingsActivity.PAGE_MISC) }
         content.addView(uiGroup)
-    
+
         addSectionHeader("高级功能", "深度净化与功能增强")
         val advancedGroup = groupCard()
         addNavRow(
@@ -277,7 +259,7 @@ class MainActivity : SettingsBaseActivity() {
             summary = "运营弹窗、活动入口、角标、详情页附加推广",
             value = { countText(extraKeys) }
         ) { openPage(SubSettingsActivity.PAGE_EXTRA) }
-    
+
         addSwitchRow(
             group = advancedGroup,
             title = "启用下载超级岛",
@@ -294,7 +276,7 @@ class MainActivity : SettingsBaseActivity() {
         ) { on -> writeRemote(Settings.KEY_MISC, on) }
         content.addView(advancedGroup)
     }
-    
+
     /** 模块自身：独立成「模块功能」区块 */
     private fun buildModuleRow() {
         addSectionHeader("模块功能", "仅影响本模块的显示与调试")
@@ -307,7 +289,7 @@ class MainActivity : SettingsBaseActivity() {
             value = { moduleText() }
         ) { openPage(SubSettingsActivity.PAGE_MODULE) }
         content.addView(group)
-    
+
         content.addView(TextView(this).apply {
             text = "开关即时生效，无需重启；若个别 ROM 缓存了远程偏好，重启一次应用商店即可。"
             textSize = Ui.MICRO
@@ -315,7 +297,7 @@ class MainActivity : SettingsBaseActivity() {
             setPadding(dp(4), dp(2), dp(4), dp(16))
         })
     }
-    
+
     // ==================== 入口行摘要 ====================
 
     /** 「已启用 2/3」：一眼看出二级页里开了几项 */
@@ -340,9 +322,7 @@ class MainActivity : SettingsBaseActivity() {
     // ==================== 刷新 ====================
 
     override fun onRefresh() {
-        // 标题即状态灯：已激活转绿，未激活 / 连接中保持品牌橙红
         titleView.setTextColor(if (service == null) Ui.STATE_INACTIVE else Ui.STATE_ACTIVE)
         applyStatusCard(service)
     }
-
 }

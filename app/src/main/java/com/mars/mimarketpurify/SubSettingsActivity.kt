@@ -159,7 +159,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addFooter("这些开关会同时作用于「移除升级/下载推荐」等既有功能，关掉后对应位置恢复原样。")
     }
 
-    /** 「我的」页精简：三个开关同属一个页面，天然适合收在一屏里 */
+    /** 「我的」页精简：开关同属一个页面，收在一屏 */
     private fun buildMine() {
         addSectionHeader("「我的」页精简", "清理「我的」页中不需要的板块与推荐")
         val group = groupCard()
@@ -199,7 +199,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
             tag = Settings.KEY_ORCHARD_SKIN,
             default = false
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
-        
         addSwitchRow(
             group = group,
             title = "升级卡片展开",
@@ -207,7 +206,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_CARD_EXPAND, false),
             tag = Settings.KEY_CARD_EXPAND,
             default = false
-        ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }        
+        ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
         content.addView(group)
         addFooter("改动一般在下次进入「我的」页时生效。")
     }
