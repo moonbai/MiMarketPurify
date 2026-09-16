@@ -381,7 +381,7 @@ object RankAds : BaseHook() {
 
             // ★ 新增：序号为"-"的 item 直接判为广告，不走后续启发式
             val number = findByIdName(item, RANK_NUMBER)
-            val numberText = number?.text?.toString()?.trim() ?: ""
+            val numberText = (number as? TextView)?.text?.toString()?.trim() ?: ""
             if (numberText == "-" || numberText == "–" || numberText == "—") {
                 suspects += item
                 HookEnv.base.log(Log.WARN, TAG, "$name: 序号为'-'，标记为广告", null)
