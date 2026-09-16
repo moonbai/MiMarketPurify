@@ -3,7 +3,6 @@ package com.mars.mimarketpurify
 import android.util.Log
 import com.mars.mimarketpurify.TAG
 import io.github.libxposed.api.XposedModule
-import kotlin.concurrent.Volatile
 
 object Settings {
 
@@ -63,14 +62,26 @@ object Settings {
         return runCatching {
             (HookEnv.base as XposedModule).getRemotePreferences(PREFS_GROUP)
         }.onFailure { e ->
-            HookEnv.base.log(Log.WARN, TAG, "无法读取远程偏好（开关将使用默认值）: ${e.message}", null)
+            HookEnv.base.log(Log.WARN, TAG, "无法读取远程偏好: ${e.message}", null)
         }.getOrNull()
     }
 
     fun isMasterEnabled(): Boolean = isEnabled(KEY_MASTER, true)
 
     fun isEnabled(key: String, def: Boolean = true): Boolean {
-        return getPrefs()?.getBoolean(key, def) ?: def
+        val prefs = getPrefs()
+        if (prefs == null) {
+            HookEnv.base.log(Log.WARN, TAG,
+                "Settings.isEnabled($key): prefs 为 null，使用默认值 $def")
+            return def
+        }
+        val value = prefs.getBoolean(key, def)
+        // 对 mine 页面相关开关输出日志，方便排查
+        if (key.startsWith("mine_")) {
+            HookEnv.base.log(Log.INFO, TAG,
+                "Settings.isEnabled($key) = $value (default=$def)")
+        }
+        return value
     }
 
     fun getKeptTabs(): Set<String> {

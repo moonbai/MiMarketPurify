@@ -43,8 +43,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         super.onCreate(savedInstanceState)
         page = intent?.getStringExtra(EXTRA_PAGE) ?: PAGE_MINE
         val header = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Ui.BG)
+            orientation = LinearLayout.VERTICAL; setBackgroundColor(Ui.BG)
         }
         setupRoot(header)
         buildSubTopBar(header, titleOf(page))
@@ -109,7 +108,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addFooter("这些开关会同时作用于「移除升级/下载推荐」等既有功能，关掉后对应位置恢复原样。")
     }
 
-    /** 「我的」页精简：7个开关 */
+    /** 「我的」页精简 */
     private fun buildMine() {
         addSectionHeader("「我的」页精简", "清理「我的」页中不需要的板块与推荐")
         val group = groupCard()
@@ -122,7 +121,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_MINE_OFFICIAL_TAB, true), tag = Settings.KEY_MINE_OFFICIAL_TAB
         ) { on -> writeRemote(Settings.KEY_MINE_OFFICIAL_TAB, on) }
         addSwitchRow(group = group, title = "清理与卸载",
-            summary = "隐藏手机清理与应用卸载入口；屏蔽后会把同排的「应用升级」卡片撑满整行",
+            summary = "隐藏手机清理与应用卸载入口",
             checked = readLocal(Settings.KEY_MINE_CLEANUP, true), tag = Settings.KEY_MINE_CLEANUP
         ) { on -> writeRemote(Settings.KEY_MINE_CLEANUP, on) }
         addSwitchRow(group = group, title = "隐藏顶部个人信息区",
@@ -157,7 +156,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addFooter("隐藏标签后需重启一次应用商店才会重建底栏。")
     }
 
-    /** 其他界面精简（安全检测已移到 buildMine，这里不再重复） */
     private fun buildMisc() {
         addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
         val group = groupCard()
@@ -202,8 +200,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
             setPadding(dp(4), dp(2), dp(4), dp(16))
         })
     }
-
-    // ==================== 多选块 ====================
 
     private fun buildTabSelectBlock(group: LinearLayout) {
         val block = LinearLayout(this).apply {
