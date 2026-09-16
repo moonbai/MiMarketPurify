@@ -295,15 +295,6 @@ class AboutActivity : Activity() {
 
             listLayout.addView(itemRow)
 
-            if (index < references.lastIndex) {
-                listLayout.addView(View(this).apply {
-                    setBackgroundColor(Ui.DIVIDER)
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(1).coerceAtLeast(1)
-                    ).also { it.marginStart = dp(12) }
-                })
-            }
         }
 
         card.addView(listLayout)
