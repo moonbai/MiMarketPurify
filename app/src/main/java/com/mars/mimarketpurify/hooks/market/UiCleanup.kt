@@ -25,10 +25,13 @@ object UiCleanup : BaseHook() {
     // ═══════════════ 五组开关 ID ═══════════════
     private val mineRecommendIds = listOf("mine_ad_container")
     private val mineTabIds = listOf("mine_middle_menu_container")
+
+    // 手机清理卡片容器（不是 phone_clear_forbid_layout，那个是禁用态子 View）
     private val mineCleanupIds = listOf(
-        "phone_clear_forbid_layout",
+        "clear_garbage_layout",
         "mine_uninstall_app_layout"
     )
+
     private val mineSummaryIds = listOf(
         "mine_avatar", "mine_nickname", "mine_message", "mine_message_layout",
         "mine_favorites", "mine_favorites_count", "mine_favorites_layout",
@@ -42,9 +45,7 @@ object UiCleanup : BaseHook() {
 
     // ═══════════════ init ═══════════════
     override fun init() {
-        // ── setVisibility 拦截：挡住商店恢复 VISIBLE ──
-        // args 是 UnmodifiableList 无法直接修改；
-        // 用 post{} 在当前帧结束后重新 hide，确保 View 不会被恢复。
+        // ── setVisibility 拦截 ──
         if (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
             runCatching {
                 ClassUtil.loadClass("android.view.View")
@@ -54,7 +55,6 @@ object UiCleanup : BaseHook() {
                     .hooked {
                         val view = thisObject as? View ?: return@hooked proceed()
                         val result = proceed()
-                        // proceed 后检查：如果 View 又变回 VISIBLE，下一帧重新 hide
                         if (view.visibility == View.VISIBLE) {
                             val id = view.id
                             if (id > 0 && id in getCleanupIdSet(view)) {
@@ -68,7 +68,7 @@ object UiCleanup : BaseHook() {
             }
         }
 
-        // ── onAttachedToWindow：View 进 window 时立即检查 ──
+        // ── onAttachedToWindow ──
         runCatching {
             ClassUtil.loadClass("android.view.View")
                 .methodFinder()
@@ -138,7 +138,6 @@ object UiCleanup : BaseHook() {
                         val decor = (thisObject as? Activity)
                             ?.window?.decorView ?: return@hooked result
 
-                        // 扫描：只隐藏目标 View 本身，不向上追溯父容器
                         scanTree(decor, 0)
                         mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 300L)
                         mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 800L)
@@ -242,6 +241,7 @@ object UiCleanup : BaseHook() {
         runCatching {
             v.visibility = View.GONE
             v.layoutParams?.let { lp ->
+                lp.width = 0
                 lp.height = 0
                 v.layoutParams = lp
             }
