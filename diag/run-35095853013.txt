@@ -1,0 +1,693 @@
+=== CI diagnostics ===
+generated at : 2026-09-16T12:27:15Z
+workflow run : 35095853013 attempt 1
+head sha     : 4115d44dc26b090b7bef1763f35d97ffacf7dc70
+build outcome: failure
+
+=== toolchain versions ===
+openjdk version "21.0.12.1" 2026-08-18 LTS
+OpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)
+-- gradlew --version --
+
+------------------------------------------------------------
+Gradle 9.4.0
+------------------------------------------------------------
+
+Build time:    2026-03-04 10:36:00 UTC
+Revision:      b631911858264c0b6e4d6603d677ff5218766cee
+
+Kotlin:        2.3.0
+Groovy:        4.0.29
+Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
+Launcher JVM:  21.0.12.1 (Eclipse Adoptium 21.0.12.1+1-LTS)
+Daemon JVM:    Compatible with Java 21, any vendor, nativeImageCapable=false (from gradle/gradle-daemon-jvm.properties)
+OS:            Linux 6.17.0-1022-azure amd64
+
+
+=== produced apk / aab ===
+
+=== app/build/outputs tree ===
+app/build/outputs
+app/build/outputs/logs
+app/build/outputs/logs/manifest-merger-debug-report.txt
+
+=== kotlin compile error lines (e:) ===
+37:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:9 Syntax error: Expecting member declaration.
+38:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:16 Syntax error: Expecting member declaration.
+39:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:17 Syntax error: Expecting member declaration.
+40:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:24 Syntax error: Expecting member declaration.
+41:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:25 Syntax error: Expecting member declaration.
+42:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:30 Syntax error: Expecting member declaration.
+43:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:9 Syntax error: Expecting member declaration.
+44:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:18 Syntax error: Expecting member declaration.
+45:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:19 Syntax error: Expecting member declaration.
+46:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:20 Syntax error: Expecting member declaration.
+47:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:52 Syntax error: Expecting member declaration.
+48:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:53 Syntax error: Expecting member declaration.
+49:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:98:9 Unresolved reference 'addSectionHeader'.
+50:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:99:21 Unresolved reference 'groupCard'.
+51:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:100:9 Unresolved reference 'content'.
+52:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:106:9 Unresolved reference 'addSectionHeader'.
+53:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:107:21 Unresolved reference 'groupCard'.
+54:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:108:9 Unresolved reference 'addSwitchRow'.
+55:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:112:23 Unresolved reference 'readLocal'.
+56:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:114:13 Cannot infer type for this parameter. Specify it explicitly.
+57:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:114:19 Unresolved reference 'writeRemote'.
+58:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:115:9 Unresolved reference 'addSwitchRow'.
+59:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:117:23 Unresolved reference 'readLocal'.
+60:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:118:13 Cannot infer type for this parameter. Specify it explicitly.
+61:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:118:19 Unresolved reference 'writeRemote'.
+62:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:119:9 Unresolved reference 'addSwitchRow'.
+63:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:121:23 Unresolved reference 'readLocal'.
+64:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:122:13 Cannot infer type for this parameter. Specify it explicitly.
+65:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:122:19 Unresolved reference 'writeRemote'.
+66:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:123:9 Unresolved reference 'addSwitchRow'.
+67:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:125:23 Unresolved reference 'readLocal'.
+68:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:126:13 Cannot infer type for this parameter. Specify it explicitly.
+69:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:126:19 Unresolved reference 'writeRemote'.
+70:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:127:9 Unresolved reference 'addSwitchRow'.
+71:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:129:23 Unresolved reference 'readLocal'.
+72:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:130:13 Cannot infer type for this parameter. Specify it explicitly.
+73:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:130:19 Unresolved reference 'writeRemote'.
+74:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:131:9 Unresolved reference 'addSwitchRow'.
+75:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:133:23 Unresolved reference 'readLocal'.
+76:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:134:13 Cannot infer type for this parameter. Specify it explicitly.
+77:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:134:19 Unresolved reference 'writeRemote'.
+78:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:135:9 Unresolved reference 'addSwitchRow'.
+79:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:137:23 Unresolved reference 'readLocal'.
+80:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:138:13 Cannot infer type for this parameter. Specify it explicitly.
+81:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:138:19 Unresolved reference 'writeRemote'.
+82:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:139:9 Unresolved reference 'addSwitchRow'.
+83:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:141:23 Unresolved reference 'readLocal'.
+84:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:142:13 Cannot infer type for this parameter. Specify it explicitly.
+85:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:142:19 Unresolved reference 'writeRemote'.
+86:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:143:9 Unresolved reference 'content'.
+87:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:148:9 Unresolved reference 'addSectionHeader'.
+88:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:149:21 Unresolved reference 'groupCard'.
+89:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:150:9 Unresolved reference 'addSwitchRow'.
+90:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:152:23 Unresolved reference 'readLocal'.
+91:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:153:13 Cannot infer type for this parameter. Specify it explicitly.
+92:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:153:19 Unresolved reference 'writeRemote'.
+93:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:155:9 Unresolved reference 'content'.
+94:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:160:9 Unresolved reference 'addSectionHeader'.
+95:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:161:21 Unresolved reference 'groupCard'.
+96:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:162:9 Unresolved reference 'addSwitchRow'.
+97:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:164:23 Unresolved reference 'readLocal'.
+98:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:165:13 Cannot infer type for this parameter. Specify it explicitly.
+99:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:165:19 Unresolved reference 'writeRemote'.
+100:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:166:9 Unresolved reference 'addSwitchRow'.
+101:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:168:23 Unresolved reference 'readLocal'.
+102:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:169:13 Cannot infer type for this parameter. Specify it explicitly.
+103:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:169:19 Unresolved reference 'writeRemote'.
+104:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:170:9 Unresolved reference 'addSwitchRow'.
+105:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:172:23 Unresolved reference 'readLocal'.
+106:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:173:13 Cannot infer type for this parameter. Specify it explicitly.
+107:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:173:19 Unresolved reference 'writeRemote'.
+108:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:174:9 Unresolved reference 'content'.
+109:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:179:9 Unresolved reference 'addSectionHeader'.
+110:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:180:21 Unresolved reference 'groupCard'.
+111:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:181:9 Unresolved reference 'hideIconSwitch'.
+112:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:181:26 Unresolved reference 'addSwitchRow'.
+113:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:183:23 Unresolved reference 'isLauncherIconHidden'.
+114:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:184:13 Cannot infer type for this parameter. Specify it explicitly.
+115:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:184:21 Unresolved reference 'applyHideIcon'.
+116:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:185:9 Unresolved reference 'addSwitchRow'.
+117:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:187:23 Unresolved reference 'readLocal'.
+118:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:189:13 Cannot infer type for this parameter. Specify it explicitly.
+119:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:189:19 Unresolved reference 'writeRemote'.
+120:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:190:9 Unresolved reference 'content'.
+121:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:194:9 Unresolved reference 'content'.
+122:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:194:34 'this' is not defined in this context.
+123:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:196:24 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+125:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:196:31 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+127:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:196:38 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+129:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:196:45 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+131:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:201:34 'this' is not defined in this context.
+132:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:205:37 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+134:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:205:62 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+136:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:206:24 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+138:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:208:32 'this' is not defined in this context.
+139:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:211:24 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+141:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:211:42 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+143:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:211:49 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+145:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:211:67 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+147:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:214:31 'this' is not defined in this context.
+148:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:216:45 Unresolved reference 'readLocalTabs'.
+149:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:217:28 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+151:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:217:46 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+153:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:217:53 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+155:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:217:60 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+157:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:218:43 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+159:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:218:67 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+161:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:222:13 Unresolved reference 'tabChecks'.
+162:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:224:31 Unresolved reference 'tabSelectBlock'.
+163:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:228:20 Unresolved reference 'tabChecks'.
+164:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:228:39 Unresolved reference 'it'.
+165:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:228:60 Unresolved reference 'it'.
+166:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:229:9 Unresolved reference 'writeRemoteString'.
+167:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:232:5 Modifier 'override' is not applicable to 'top level function'.
+168:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:233:9 Unresolved reference 'hideIconSwitch'.
+169:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:233:37 Unresolved reference 'isLauncherIconHidden'.
+170:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:234:20 Unresolved reference 'readLocalTabs'.
+171:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:235:9 Unresolved reference 'tabChecks'.
+172:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:235:29 Cannot infer type for this parameter. Specify it explicitly.
+173:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:235:46 Unresolved reference 'tag'.
+
+=== gradle 'What went wrong' block ===
+
+=== gradle '* Exception is:' block ===
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:135)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:288)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:133)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:121)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.DefaultNodeExecutor.executeLocalTaskNode(DefaultNodeExecutor.java:55)
+	at org.gradle.execution.plan.DefaultNodeExecutor.execute(DefaultNodeExecutor.java:34)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:355)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:343)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:146)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:131)
+	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$11(DefaultBuildLifecycleController.java:323)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:304)
+	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$9(StateTransitionController.java:215)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:45)
+	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:215)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:314)
+	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:275)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:273)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:265)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:128)
+	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:182)
+
+=== gradle 'Build failed' / 'FAILURE' block ===
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:135)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:288)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:133)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:121)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.DefaultNodeExecutor.executeLocalTaskNode(DefaultNodeExecutor.java:55)
+	at org.gradle.execution.plan.DefaultNodeExecutor.execute(DefaultNodeExecutor.java:34)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:355)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:343)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:146)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:131)
+	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$11(DefaultBuildLifecycleController.java:323)
+
+=== gradle-build.log tail (1000) ===
+Starting a Gradle Daemon (subsequent builds will be faster)
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDebugBuildConfig
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:processDebugNavigationResources
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:javaPreCompileDebug
+> Task :app:mergeDebugAssets
+> Task :app:compressDebugAssets
+> Task :app:desugarDebugFileDependencies
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:parseDebugLocalResources
+> Task :app:compileDebugNavigationResources
+> Task :app:generateDebugRFile
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:mergeDebugJniLibFolders
+> Task :app:processDebugManifestForPackage
+> Task :app:checkDebugDuplicateClasses
+> Task :app:mergeLibDexDebug
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:processDebugResources
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:mergeExtDexDebug
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:9 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:16 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:17 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:24 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:25 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:93:30 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:9 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:18 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:19 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:20 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:52 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:94:53 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:98:9 Unresolved reference 'addSectionHeader'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:99:21 Unresolved reference 'groupCard'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:100:9 Unresolved reference 'content'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:106:9 Unresolved reference 'addSectionHeader'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:107:21 Unresolved reference 'groupCard'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:108:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:112:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:114:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:114:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:115:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:117:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:118:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:118:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:119:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:121:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:122:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:122:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:123:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:125:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:126:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:126:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:127:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:129:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:130:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:130:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:131:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:133:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:134:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:134:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:135:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:137:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:138:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:138:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:139:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:141:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:142:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:142:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:143:9 Unresolved reference 'content'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:148:9 Unresolved reference 'addSectionHeader'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:149:21 Unresolved reference 'groupCard'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:150:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:152:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:153:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:153:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:155:9 Unresolved reference 'content'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:160:9 Unresolved reference 'addSectionHeader'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:161:21 Unresolved reference 'groupCard'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:162:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:164:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:165:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:165:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:166:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:168:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:169:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:169:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:170:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:172:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:173:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:173:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:174:9 Unresolved reference 'content'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:179:9 Unresolved reference 'addSectionHeader'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:180:21 Unresolved reference 'groupCard'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:181:9 Unresolved reference 'hideIconSwitch'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:181:26 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:183:23 Unresolved reference 'isLauncherIconHidden'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:184:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:184:21 Unresolved reference 'applyHideIcon'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:185:9 Unresolved reference 'addSwitchRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:187:23 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:189:13 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:189:19 Unresolved reference 'writeRemote'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:190:9 Unresolved reference 'content'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:194:9 Unresolved reference 'content'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:194:34 'this' is not defined in this context.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:196:24 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:196:31 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:196:38 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:196:45 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:201:34 'this' is not defined in this context.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:205:37 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:205:62 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:206:24 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:208:32 'this' is not defined in this context.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:211:24 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:211:42 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:211:49 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:211:67 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:214:31 'this' is not defined in this context.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:216:45 Unresolved reference 'readLocalTabs'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:217:28 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:217:46 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:217:53 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:217:60 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:218:43 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:218:67 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun Context.dp(v: Int): Int
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:222:13 Unresolved reference 'tabChecks'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:224:31 Unresolved reference 'tabSelectBlock'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:228:20 Unresolved reference 'tabChecks'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:228:39 Unresolved reference 'it'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:228:60 Unresolved reference 'it'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:229:9 Unresolved reference 'writeRemoteString'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:232:5 Modifier 'override' is not applicable to 'top level function'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:233:9 Unresolved reference 'hideIconSwitch'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:233:37 Unresolved reference 'isLauncherIconHidden'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:234:20 Unresolved reference 'readLocalTabs'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:235:9 Unresolved reference 'tabChecks'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:235:29 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:235:46 Unresolved reference 'tag'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:235:54 Unresolved reference 'isChecked'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:238:5 Modifier 'override' is not applicable to 'top level function'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:239:9 No supertypes are accessible in this context.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:240:22 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:241:24 Unresolved reference 'readLocal'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:242:9 Unresolved reference 'tabSelectBlock'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:243:9 Unresolved reference 'tabChecks'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:243:29 Unresolved reference 'it'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/SubSettingsActivity.kt:247:1 Syntax error: Expecting a top level declaration.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789561616299.json
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:135)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:288)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:133)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:121)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.DefaultNodeExecutor.executeLocalTaskNode(DefaultNodeExecutor.java:55)
+	at org.gradle.execution.plan.DefaultNodeExecutor.execute(DefaultNodeExecutor.java:34)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:355)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:343)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:146)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:131)
+	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$11(DefaultBuildLifecycleController.java:323)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:304)
+	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$9(StateTransitionController.java:215)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:45)
+	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:215)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:314)
+	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:275)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:273)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:265)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:128)
+	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:182)
+	at org.gradle.composite.internal.DefaultBuildController.access$000(DefaultBuildController.java:50)
+	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.lambda$run$0(DefaultBuildController.java:199)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.run(DefaultBuildController.java:199)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:289)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+	at org.gradle.internal.Factories$1.create(Factories.java:30)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withoutLocks$2(DefaultWorkerLeaseService.java:350)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:348)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:332)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:337)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:267)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:244)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:227)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:210)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:176)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:167)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:47)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:137)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:134)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:134)
+	at org.gradle.internal.execution.steps.ExecuteStep$Mutable.execute(ExecuteStep.java:80)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:51)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:29)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.executeMutable(RemovePreviousOutputsStep.java:67)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.executeMutable(RemovePreviousOutputsStep.java:39)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:42)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:24)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.executeMutable(ResolveInputChangesStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.executeMutable(ResolveInputChangesStep.java:28)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:76)
+	at org.gradle.internal.Either$Right.fold(Either.java:176)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:74)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:49)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.executeMutable(StoreExecutionStateStep.java:46)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.executeMutable(StoreExecutionStateStep.java:35)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveMutableCachingStateStep.executeDelegate(ResolveMutableCachingStateStep.java:70)
+	at org.gradle.internal.execution.steps.ResolveMutableCachingStateStep.executeDelegate(ResolveMutableCachingStateStep.java:32)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:69)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:37)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.executeMutable(ResolveChangesStep.java:63)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.executeMutable(ResolveChangesStep.java:34)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.ValidateStep$Mutable.executeDelegate(ValidateStep.java:79)
+	at org.gradle.internal.execution.steps.ValidateStep$Mutable.executeDelegate(ValidateStep.java:65)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:99)
+	at org.gradle.internal.execution.steps.ValidateStep$Mutable.execute(ValidateStep.java:65)
+	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.executeMutable(CaptureMutableStateBeforeExecutionStep.java:86)
+	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.execute(CaptureMutableStateBeforeExecutionStep.java:65)
+	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.execute(CaptureMutableStateBeforeExecutionStep.java:45)
+	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeWithNonEmptySources(SkipEmptyMutableWorkStep.java:210)
+	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeMutable(SkipEmptyMutableWorkStep.java:90)
+	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeMutable(SkipEmptyMutableWorkStep.java:53)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.executeMutable(LoadPreviousExecutionStateStep.java:36)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.executeMutable(LoadPreviousExecutionStateStep.java:23)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.executeMutable(HandleStaleOutputsStep.java:77)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.executeMutable(HandleStaleOutputsStep.java:43)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$executeMutable$0(AssignMutableWorkspaceStep.java:34)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:305)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.executeMutable(AssignMutableWorkspaceStep.java:30)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.executeMutable(AssignMutableWorkspaceStep.java:21)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:56)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:38)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:68)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:132)
+	... 61 more
+Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:119)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:74)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:68)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:64)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:61)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:102)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:61)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:58)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:176)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:30)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:275)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:273)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:265)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:128)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:133)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	... 2 more
+
+
+BUILD FAILED in 24s
+28 actionable tasks: 28 executed
