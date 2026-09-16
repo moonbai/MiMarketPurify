@@ -116,8 +116,8 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "隐藏页面顶部的应用推荐广告位",
             checked = readLocal(Settings.KEY_MINE_RECOMMEND, true), tag = Settings.KEY_MINE_RECOMMEND
         ) { on -> writeRemote(Settings.KEY_MINE_RECOMMEND, on) }
-        addSwitchRow(group = group, title = "官方入口",
-            summary = "隐藏页面中间的官方功能入口 tab",
+        addSwitchRow(group = group, title = "应用管理入口",
+            summary = "隐藏页面中间的官方应用管理功能入口 tab",
             checked = readLocal(Settings.KEY_MINE_OFFICIAL_TAB, true), tag = Settings.KEY_MINE_OFFICIAL_TAB
         ) { on -> writeRemote(Settings.KEY_MINE_OFFICIAL_TAB, on) }
         addSwitchRow(group = group, title = "清理与卸载",
@@ -125,15 +125,15 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_MINE_CLEANUP, true), tag = Settings.KEY_MINE_CLEANUP
         ) { on -> writeRemote(Settings.KEY_MINE_CLEANUP, on) }
         addSwitchRow(group = group, title = "隐藏顶部个人信息区",
-            summary = "隐藏头像、昵称、消息、收藏（mine_summary_root）",
+            summary = "隐藏头像、昵称、消息、收藏",
             checked = readLocal(Settings.KEY_MINE_SUMMARY, false), tag = Settings.KEY_MINE_SUMMARY
         ) { on -> writeRemote(Settings.KEY_MINE_SUMMARY, on) }
         addSwitchRow(group = group, title = "安全检测",
-            summary = "隐藏安全检测卡片",
+            summary = "隐藏应用安全检测卡片",
             checked = readLocal(Settings.KEY_MINE_SECURITY, true), tag = Settings.KEY_MINE_SECURITY
         ) { on -> writeRemote(Settings.KEY_MINE_SECURITY, on) }
-        addSwitchRow(group = group, title = "果园皮肤修正",
-            summary = "清除升级卡片的果园背景，使布局更紧凑（仅在清理与卸载关闭时生效）",
+        addSwitchRow(group = group, title = "更新卡片背景",
+            summary = "清除升级卡片的果园背景",
             checked = readLocal(Settings.KEY_ORCHARD_SKIN, false), tag = Settings.KEY_ORCHARD_SKIN, default = false
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
         addSwitchRow(group = group, title = "升级卡片展开",

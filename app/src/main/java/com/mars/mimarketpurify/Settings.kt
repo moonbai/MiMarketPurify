@@ -3,6 +3,7 @@ package com.mars.mimarketpurify
 import android.util.Log
 import com.mars.mimarketpurify.TAG
 import io.github.libxposed.api.XposedModule
+import org.xmlpull.v1.XmlPullParser
 
 object Settings {
 
@@ -58,34 +59,90 @@ object Settings {
 
     // ═══════════════ 读取 ═══════════════
 
-    private fun getPrefs(): android.content.SharedPreferences? {
+    /** 目标 app SP 文件路径 */
+    private val spFile by lazy {
+        java.io.File(HookEnv.base.applicationInfo.dataDir,
+            "shared_prefs/com.xiaomi.market_preferences.xml")
+    }
+
+    /**
+     * 直接从目标 app 的 SP XML 文件中读取值。
+     * service 为 null 时 SubSettingsActivity.writeRemote 静默失败，
+     * 但 LSPosed 框架可能已经同步过，文件里有值。
+     */
+    private fun readFromTargetSp(key: String): String? {
+        return runCatching {
+            if (!spFile.exists()) return@runCatching null
+            val parser = android.util.Xml.newPullParser()
+            parser.setInput(spFile.inputStream(), "UTF-8")
+            var type = parser.eventType
+            while (type != XmlPullParser.END_DOCUMENT) {
+                if (type == XmlPullParser.START_TAG) {
+                    val name = parser.getAttributeValue(null, "name")
+                    if (name == key) {
+                        return when (parser.name) {
+                            "boolean" -> parser.getAttributeValue(null, "value")
+                            "string" -> parser.nextText()
+                            else -> null
+                        }
+                    }
+                }
+                type = parser.next()
+            }
+            null
+        }.onFailure {
+            HookEnv.base.log(Log.WARN, TAG, "读取目标 app SP 失败: ${it.message}", null)
+        }.getOrNull()
+    }
+
+    /**
+     * 两层读取：
+     * 1. LSPosed 远程偏好（标准路径）
+     * 2. 目标 app SP XML 文件（service 为 null 时兜底）
+     */
+    private fun getRemotePrefs(): android.content.SharedPreferences? {
         return runCatching {
             (HookEnv.base as XposedModule).getRemotePreferences(PREFS_GROUP)
         }.onFailure { e ->
-            HookEnv.base.log(Log.WARN, TAG, "无法读取远程偏好: ${e.message}", null)
+            HookEnv.base.log(Log.WARN, TAG, "远程偏好不可用: ${e.message}", null)
         }.getOrNull()
     }
 
     fun isMasterEnabled(): Boolean = isEnabled(KEY_MASTER, true)
 
     fun isEnabled(key: String, def: Boolean = true): Boolean {
-        val prefs = getPrefs()
-        if (prefs == null) {
-            HookEnv.base.log(Log.WARN, TAG,
-                "Settings.isEnabled($key): prefs 为 null，使用默认值 $def")
-            return def
+        // 优先：远程偏好
+        val remote = getRemotePrefs()
+        if (remote != null) {
+            val value = remote.getBoolean(key, def)
+            if (key.startsWith("mine_")) {
+                HookEnv.base.log(Log.INFO, TAG,
+                    "Settings.isEnabled($key)=$value (default=$def, source=remote)")
+            }
+            return value
         }
-        val value = prefs.getBoolean(key, def)
-        // 对 mine 页面相关开关输出日志，方便排查
-        if (key.startsWith("mine_")) {
-            HookEnv.base.log(Log.INFO, TAG,
-                "Settings.isEnabled($key) = $value (default=$def)")
+
+        // 兜底：直接读目标 app SP 文件
+        val raw = readFromTargetSp(key)
+        if (raw != null) {
+            val value = raw == "true"
+            if (key.startsWith("mine_")) {
+                HookEnv.base.log(Log.INFO, TAG,
+                    "Settings.isEnabled($key)=$value (default=$def, source=target_sp)")
+            }
+            return value
         }
-        return value
+
+        // 全部失败
+        HookEnv.base.log(Log.WARN, TAG,
+            "Settings.isEnabled($key): 远程+目标SP都不可用，默认 false")
+        return false
     }
 
     fun getKeptTabs(): Set<String> {
-        val raw = getPrefs()?.getString(KEY_TAB_KEEP, DEFAULT_TAB_KEEP) ?: DEFAULT_TAB_KEEP
+        val raw = getRemotePrefs()?.getString(KEY_TAB_KEEP, DEFAULT_TAB_KEEP)
+            ?: readFromTargetSp(KEY_TAB_KEEP)
+            ?: DEFAULT_TAB_KEEP
         return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
     }
 }

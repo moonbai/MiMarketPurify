@@ -25,10 +25,7 @@ object UiCleanup : BaseHook() {
     // ═══════════════ 五组开关 ID ═══════════════
     private val mineRecommendIds = listOf("mine_ad_container")
     private val mineTabIds = listOf("mine_middle_menu_container")
-    private val mineCleanupIds = listOf(
-        "phone_clear_layout",
-        "mine_uninstall_app_layout"
-    )
+    private val mineCleanupIds = listOf("phone_clear_layout", "mine_uninstall_app_layout")
     private val mineSummaryIds = listOf(
         "mine_avatar", "mine_nickname", "mine_message", "mine_message_layout",
         "mine_favorites", "mine_favorites_count", "mine_favorites_layout",
@@ -80,6 +77,11 @@ object UiCleanup : BaseHook() {
             HookEnv.base.log(Log.ERROR, TAG, "$name: onAttachedToWindow 挂钩失败", it)
         }
 
+        // ── 升级卡片展开 ──
+        if (Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)) {
+            hookCardExpand()
+        }
+
         // ── onResume 补扫 ──
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
@@ -89,6 +91,44 @@ object UiCleanup : BaseHook() {
             && !Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
             hookOrchardSkin()
         }
+    }
+
+    // ═══════════════ 升级卡片展开 ═══════════════
+    private fun hookCardExpand() {
+        runCatching {
+            val cls = ClassUtil.loadClass(
+                "com.xiaomi.market.business_ui.main.mine.view.MineUpdateView")
+            cls.methodFinder()
+                .filterByName("onFinishInflate")
+                .forEach { m ->
+                    m.hooked {
+                        val result = proceed()
+                        // onFinishInflate 后，找到折叠按钮并模拟展开
+                        (thisObject as? View)?.let { view ->
+                            view.post {
+                                runCatching {
+                                    // 查找 expand_collapse_header 区域内的展开按钮
+                                    val header = findViewByResName(view, "expand_collapse_header")
+                                    val arrow = findViewByResName(view, "expand_arrow")
+                                    // 如果有展开按钮，点击它
+                                    (arrow ?: header)?.performClick()
+                                }
+                            }
+                        }
+                        result
+                    }
+                }
+        }.onFailure {
+            HookEnv.base.log(Log.VERBOSE, TAG, "$name: 无 MineUpdateView，跳过升级卡片展开", null)
+        }
+    }
+
+    private fun findViewByResName(root: View, resName: String): View? {
+        val targetId = runCatching {
+            root.resources.getIdentifier(resName, "id", "com.xiaomi.market")
+        }.getOrNull() ?: return null
+        if (targetId <= 0) return null
+        return findViewById(root, targetId)
     }
 
     // ═══════════════ 果园皮肤 ═══════════════
@@ -140,21 +180,17 @@ object UiCleanup : BaseHook() {
                         val securityOn = Settings.isEnabled(Settings.KEY_MINE_SECURITY, true)
 
                         HookEnv.base.log(Log.INFO, TAG,
-                            "$name: onResume switches: " +
-                            "cleanup=$cleanupOn recommend=$recommendOn " +
+                            "$name: onResume: cleanup=$cleanupOn recommend=$recommendOn " +
                             "tab=$tabOn summary=$summaryOn security=$securityOn")
 
-                        // 所有开关都关了 → 跳过全部扫描
                         if (!cleanupOn && !recommendOn && !tabOn && !summaryOn && !securityOn) {
                             return@hooked result
                         }
 
-                        // 扫描（isMineTarget 内部逐个检查开关）
                         scanTree(decor, 0)
                         mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 300L)
                         mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 800L)
 
-                        // 精确定位（仅 cleanup 开关开启时）
                         if (cleanupOn) {
                             mainHandler.postDelayed({
                                 runCatching {
@@ -168,7 +204,6 @@ object UiCleanup : BaseHook() {
                                     }
                                 }
                             }, 1500L)
-
                             mainHandler.postDelayed({
                                 runCatching {
                                     getCleanupIdSet(decor).forEach { targetId ->
