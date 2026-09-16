@@ -76,6 +76,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             addSwitchRow(group = group, title = f.title, summary = f.summary,
                 checked = readLocal(f.key, true), tag = f.key
             ) { on -> writeRemote(f.key, on) }
+            }
         addSwitchRow(group = group, title = "屏蔽领水果入口",
             summary = "隐藏福利活动 gif 动图入口（entrance_gif）",
             checked = readLocal(Settings.KEY_FRUIT, true), tag = Settings.KEY_FRUIT
