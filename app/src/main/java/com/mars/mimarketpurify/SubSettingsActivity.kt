@@ -9,15 +9,6 @@ import android.widget.CompoundButton
 import android.widget.LinearLayout
 import android.widget.TextView
 
-/**
- * 二级设置页。主页只留高频开关，把「同一页面的一组开关」和「带子选项的功能」
- * 收进这里，避免主页变成一条需要反复滚动的长列表。
- *
- * 具体显示哪一组由 Intent 的 [EXTRA_PAGE] 决定（见 [Companion] 中的 PAGE_*）。
- * 之所以用「一个 Activity + 四种页面」而不是四个 Activity：这四页的结构
- * 完全一致（返回键顶栏 + 一组卡片式开关），差异只在数据，写四遍只会让
- * 样式悄悄分叉。
- */
 class SubSettingsActivity : SettingsBaseActivity() {
 
     companion object {
@@ -34,7 +25,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
     }
 
     private var page: String = PAGE_MINE
-
     private val tabChecks = mutableListOf<CheckBox>()
     private var tabSelectBlock: View? = null
     private var hideIconSwitch: CompoundButton? = null
@@ -52,14 +42,12 @@ class SubSettingsActivity : SettingsBaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         page = intent?.getStringExtra(EXTRA_PAGE) ?: PAGE_MINE
-
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Ui.BG)
         }
         setupRoot(header)
         buildSubTopBar(header, titleOf(page))
-
         when (page) {
             PAGE_ADS -> buildAds()
             PAGE_MINE -> buildMine()
@@ -86,12 +74,8 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addSectionHeader("广告净化", "拦截商店各处的广告与软件推荐")
         val group = groupCard()
         adFeatures.forEach { f ->
-            addSwitchRow(
-                group = group,
-                title = f.title,
-                summary = f.summary,
-                checked = readLocal(f.key, true),
-                tag = f.key
+            addSwitchRow(group = group, title = f.title, summary = f.summary,
+                checked = readLocal(f.key, true), tag = f.key
             ) { on -> writeRemote(f.key, on) }
         }
         content.addView(group)
@@ -101,109 +85,61 @@ class SubSettingsActivity : SettingsBaseActivity() {
     private fun buildExtra() {
         addSectionHeader("高级净化", "深度运营内容、活动入口、弹窗与角标清理")
         val group = groupCard()
-        addSwitchRow(
-            group = group,
-            title = "隐藏底栏角标",
+        addSwitchRow(group = group, title = "隐藏底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
-            checked = readLocal(Settings.KEY_TAB_BADGE, true),
-            tag = Settings.KEY_TAB_BADGE
+            checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
         ) { on -> writeRemote(Settings.KEY_TAB_BADGE, on) }
-        addSwitchRow(
-            group = group,
-            title = "屏蔽首页活动入口",
+        addSwitchRow(group = group, title = "屏蔽首页活动入口",
             summary = "隐藏搜索框左侧云控下发的活动小图标 / 动图",
-            checked = readLocal(Settings.KEY_ENTRANCE, true),
-            tag = Settings.KEY_ENTRANCE
+            checked = readLocal(Settings.KEY_ENTRANCE, true), tag = Settings.KEY_ENTRANCE
         ) { on -> writeRemote(Settings.KEY_ENTRANCE, on) }
-        addSwitchRow(
-            group = group,
-            title = "「我的」页推广组",
+        addSwitchRow(group = group, title = "「我的」页推广组",
             summary = "在数据层让底部推广应用列表直接返回空",
-            checked = readLocal(Settings.KEY_MINE_AD_GROUP, true),
-            tag = Settings.KEY_MINE_AD_GROUP
+            checked = readLocal(Settings.KEY_MINE_AD_GROUP, true), tag = Settings.KEY_MINE_AD_GROUP
         ) { on -> writeRemote(Settings.KEY_MINE_AD_GROUP, on) }
-        addSwitchRow(
-            group = group,
-            title = "详情页附加净化",
+        addSwitchRow(group = group, title = "详情页附加净化",
             summary = "详情页拼装推荐、底部多按钮推广栏、浏览器下载弹窗广告",
-            checked = readLocal(Settings.KEY_DETAIL_EXTRAS, true),
-            tag = Settings.KEY_DETAIL_EXTRAS
+            checked = readLocal(Settings.KEY_DETAIL_EXTRAS, true), tag = Settings.KEY_DETAIL_EXTRAS
         ) { on -> writeRemote(Settings.KEY_DETAIL_EXTRAS, on) }
-        addSwitchRow(
-            group = group,
-            title = "阻止升级提醒弹窗",
+        addSwitchRow(group = group, title = "阻止升级提醒弹窗",
             summary = "不再弹出应用商店的升级提醒对话框",
-            checked = readLocal(Settings.KEY_UPDATE_DIALOG, true),
-            tag = Settings.KEY_UPDATE_DIALOG
+            checked = readLocal(Settings.KEY_UPDATE_DIALOG, true), tag = Settings.KEY_UPDATE_DIALOG
         ) { on -> writeRemote(Settings.KEY_UPDATE_DIALOG, on) }
         content.addView(group)
         addFooter("这些开关会同时作用于「移除升级/下载推荐」等既有功能，关掉后对应位置恢复原样。")
     }
 
-    /**
-     * 「我的」页精简：五个独立开关 + 两个样式开关
-     *   ├─ 应用推荐     KEY_MINE_RECOMMEND       默认隐藏
-     *   ├─ 官方入口     KEY_MINE_OFFICIAL_TAB    默认隐藏
-     *   ├─ 清理与卸载   KEY_MINE_CLEANUP         默认隐藏
-     *   ├─ 个人信息区   KEY_MINE_SUMMARY         默认显示（需手动开启）
-     *   ├─ 安全检测     KEY_MINE_SECURITY        默认隐藏  ← 新增
-     *   ├─ 果园皮肤修正 KEY_ORCHARD_SKIN         默认关闭（样式调整）
-     *   └─ 升级卡片展开 KEY_CARD_EXPAND          默认关闭（样式调整）
-     */
+    /** 「我的」页精简：7个开关 */
     private fun buildMine() {
         addSectionHeader("「我的」页精简", "清理「我的」页中不需要的板块与推荐")
         val group = groupCard()
-        addSwitchRow(
-            group = group,
-            title = "应用推荐",
+        addSwitchRow(group = group, title = "应用推荐",
             summary = "隐藏页面顶部的应用推荐广告位",
-            checked = readLocal(Settings.KEY_MINE_RECOMMEND, true),
-            tag = Settings.KEY_MINE_RECOMMEND
+            checked = readLocal(Settings.KEY_MINE_RECOMMEND, true), tag = Settings.KEY_MINE_RECOMMEND
         ) { on -> writeRemote(Settings.KEY_MINE_RECOMMEND, on) }
-        addSwitchRow(
-            group = group,
-            title = "官方入口",
+        addSwitchRow(group = group, title = "官方入口",
             summary = "隐藏页面中间的官方功能入口 tab",
-            checked = readLocal(Settings.KEY_MINE_OFFICIAL_TAB, true),
-            tag = Settings.KEY_MINE_OFFICIAL_TAB
+            checked = readLocal(Settings.KEY_MINE_OFFICIAL_TAB, true), tag = Settings.KEY_MINE_OFFICIAL_TAB
         ) { on -> writeRemote(Settings.KEY_MINE_OFFICIAL_TAB, on) }
-        addSwitchRow(
-            group = group,
-            title = "清理与卸载",
+        addSwitchRow(group = group, title = "清理与卸载",
             summary = "隐藏手机清理与应用卸载入口；屏蔽后会把同排的「应用升级」卡片撑满整行",
-            checked = readLocal(Settings.KEY_MINE_CLEANUP, true),
-            tag = Settings.KEY_MINE_CLEANUP
+            checked = readLocal(Settings.KEY_MINE_CLEANUP, true), tag = Settings.KEY_MINE_CLEANUP
         ) { on -> writeRemote(Settings.KEY_MINE_CLEANUP, on) }
-        addSwitchRow(
-            group = group,
-            title = "隐藏顶部个人信息区",
+        addSwitchRow(group = group, title = "隐藏顶部个人信息区",
             summary = "隐藏头像、昵称、消息、收藏（mine_summary_root）",
-            checked = readLocal(Settings.KEY_MINE_SUMMARY, false),
-            tag = Settings.KEY_MINE_SUMMARY
+            checked = readLocal(Settings.KEY_MINE_SUMMARY, false), tag = Settings.KEY_MINE_SUMMARY
         ) { on -> writeRemote(Settings.KEY_MINE_SUMMARY, on) }
-        // ── 新增：安全检测独立开关 ──
-        addSwitchRow(
-            group = group,
-            title = "安全检测",
+        addSwitchRow(group = group, title = "安全检测",
             summary = "隐藏安全检测卡片",
-            checked = readLocal(Settings.KEY_MINE_SECURITY, true),
-            tag = Settings.KEY_MINE_SECURITY
+            checked = readLocal(Settings.KEY_MINE_SECURITY, true), tag = Settings.KEY_MINE_SECURITY
         ) { on -> writeRemote(Settings.KEY_MINE_SECURITY, on) }
-        addSwitchRow(
-            group = group,
-            title = "果园皮肤修正",
-            summary = "清除升级卡片的果园背景与内边距，使布局更紧凑",
-            checked = readLocal(Settings.KEY_ORCHARD_SKIN, false),
-            tag = Settings.KEY_ORCHARD_SKIN,
-            default = false
+        addSwitchRow(group = group, title = "果园皮肤修正",
+            summary = "清除升级卡片的果园背景，使布局更紧凑（仅在清理与卸载关闭时生效）",
+            checked = readLocal(Settings.KEY_ORCHARD_SKIN, false), tag = Settings.KEY_ORCHARD_SKIN, default = false
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
-        addSwitchRow(
-            group = group,
-            title = "升级卡片展开",
+        addSwitchRow(group = group, title = "升级卡片展开",
             summary = "升级卡片默认展开显示更多应用更新",
-            checked = readLocal(Settings.KEY_CARD_EXPAND, false),
-            tag = Settings.KEY_CARD_EXPAND,
-            default = false
+            checked = readLocal(Settings.KEY_CARD_EXPAND, false), tag = Settings.KEY_CARD_EXPAND, default = false
         ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
         content.addView(group)
         addFooter("改动一般在下次进入「我的」页时生效。")
@@ -212,58 +148,34 @@ class SubSettingsActivity : SettingsBaseActivity() {
     private fun buildTabs() {
         addSectionHeader("底部标签栏", "隐藏不需要的底部标签，同时清理首页顶栏云控推广位")
         val group = groupCard()
-        addSwitchRow(
-            group = group,
-            title = "启用筛选",
+        addSwitchRow(group = group, title = "启用筛选",
             summary = "关闭后底部标签与顶栏推广位均保持原样",
-            checked = readLocal(Settings.KEY_TAB_FILTER, true),
-            tag = Settings.KEY_TAB_FILTER
-        ) { on ->
-            writeRemote(Settings.KEY_TAB_FILTER, on)
-            updateGateState()
-        }
+            checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
+        ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
         buildTabSelectBlock(group)
         content.addView(group)
         addFooter("隐藏标签后需重启一次应用商店才会重建底栏。")
     }
 
+    /** 其他界面精简（安全检测已移到 buildMine，这里不再重复） */
     private fun buildMisc() {
         addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
         val group = groupCard()
-        addSwitchRow(
-            group = group,
-            title = "隐藏应用安全检测",
-            summary = "隐藏「我的」页中的应用安全检测视图",
-            checked = readLocal(Settings.KEY_SECURITY, true),
-            tag = Settings.KEY_SECURITY
-        ) { on -> writeRemote(Settings.KEY_SECURITY, on) }
-        addSwitchRow(
-            group = group,
-            title = "屏蔽领水果入口",
+        addSwitchRow(group = group, title = "屏蔽领水果入口",
             summary = "隐藏福利活动 gif 动图入口（entrance_gif）",
-            checked = readLocal(Settings.KEY_FRUIT, true),
-            tag = Settings.KEY_FRUIT
+            checked = readLocal(Settings.KEY_FRUIT, true), tag = Settings.KEY_FRUIT
         ) { on -> writeRemote(Settings.KEY_FRUIT, on) }
-        addSwitchRow(
-            group = group,
-            title = "隐藏详情页「精选」",
+        addSwitchRow(group = group, title = "隐藏详情页「精选」",
             summary = "按文案匹配，仅在应用详情页生效",
-            checked = readLocal(Settings.KEY_DETAIL_FEATURED, true),
-            tag = Settings.KEY_DETAIL_FEATURED
+            checked = readLocal(Settings.KEY_DETAIL_FEATURED, true), tag = Settings.KEY_DETAIL_FEATURED
         ) { on -> writeRemote(Settings.KEY_DETAIL_FEATURED, on) }
-        addSwitchRow(
-            group = group,
-            title = "升级记录页推荐",
+        addSwitchRow(group = group, title = "升级记录页推荐",
             summary = "隐藏「升级记录」底部的精选推荐、热门下载、大家还安装了",
-            checked = readLocal(Settings.KEY_UPDATE_HISTORY, true),
-            tag = Settings.KEY_UPDATE_HISTORY
+            checked = readLocal(Settings.KEY_UPDATE_HISTORY, true), tag = Settings.KEY_UPDATE_HISTORY
         ) { on -> writeRemote(Settings.KEY_UPDATE_HISTORY, on) }
-        addSwitchRow(
-            group = group,
-            title = "搜索页「也在看」",
+        addSwitchRow(group = group, title = "搜索页「也在看」",
             summary = "隐藏搜索结果底部的「搜索 xxx 的人也在看」",
-            checked = readLocal(Settings.KEY_SEARCH_ALSO_VIEW, true),
-            tag = Settings.KEY_SEARCH_ALSO_VIEW
+            checked = readLocal(Settings.KEY_SEARCH_ALSO_VIEW, true), tag = Settings.KEY_SEARCH_ALSO_VIEW
         ) { on -> writeRemote(Settings.KEY_SEARCH_ALSO_VIEW, on) }
         content.addView(group)
         addFooter("升级记录与搜索结果按标题文案匹配，改版后可能失效，届时请反馈。")
@@ -272,32 +184,21 @@ class SubSettingsActivity : SettingsBaseActivity() {
     private fun buildModule() {
         addSectionHeader("模块功能", "仅影响本模块的显示方式与调试选项")
         val group = groupCard()
-        hideIconSwitch = addSwitchRow(
-            group = group,
-            title = "隐藏桌面图标",
+        hideIconSwitch = addSwitchRow(group = group, title = "隐藏桌面图标",
             summary = "仅移除桌面抽屉中的图标，仍可从 LSPosed 模块列表进入主页",
-            checked = isLauncherIconHidden(),
-            tag = "hide_launcher_icon",
-            gated = false,
-            remote = false
+            checked = isLauncherIconHidden(), tag = "hide_launcher_icon", gated = false, remote = false
         ) { hide -> applyHideIcon(hide) }
-        addSwitchRow(
-            group = group,
-            title = "榜单调试提示",
+        addSwitchRow(group = group, title = "榜单调试提示",
             summary = "开启后进入榜单会输出未识别的视图树（logcat 前缀 [rank-tree]），用于反馈漏网的广告；用完请关掉",
-            checked = readLocal(Settings.KEY_RANK_DEBUG, false),
-            tag = Settings.KEY_RANK_DEBUG,
-            default = false,
-            gated = false
+            checked = readLocal(Settings.KEY_RANK_DEBUG, false), tag = Settings.KEY_RANK_DEBUG,
+            default = false, gated = false
         ) { on -> writeRemote(Settings.KEY_RANK_DEBUG, on) }
         content.addView(group)
     }
 
     private fun addFooter(text: String) {
         content.addView(TextView(this).apply {
-            this.text = text
-            textSize = Ui.MICRO
-            setTextColor(Ui.TEXT_TERTIARY)
+            this.text = text; textSize = Ui.MICRO; setTextColor(Ui.TEXT_TERTIARY)
             setPadding(dp(4), dp(2), dp(4), dp(16))
         })
     }
@@ -308,39 +209,27 @@ class SubSettingsActivity : SettingsBaseActivity() {
         val block = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also {
-                it.topMargin = dp(2)
-                it.bottomMargin = dp(8)
-            }
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.topMargin = dp(2); it.bottomMargin = dp(8) }
             setPadding(dp(12), 0, 0, 0)
         }
         block.addView(TextView(this).apply {
             text = "保留哪些标签（取消勾选 = 隐藏该标签）"
-            textSize = Ui.ROW_SUMMARY
-            setTextColor(Ui.TEXT_SECONDARY)
+            textSize = Ui.ROW_SUMMARY; setTextColor(Ui.TEXT_SECONDARY)
             setPadding(dp(Ui.ROW_PAD_H), dp(4), dp(Ui.ROW_PAD_H), dp(2))
         })
-
         Settings.TAB_ITEMS.forEach { (tag, label) ->
             val cb = CheckBox(this).apply {
-                text = label
-                textSize = Ui.ROW_TITLE
-                setTextColor(Ui.TEXT_PRIMARY)
-                this.tag = tag
-                isChecked = readLocalTabs().contains(tag)
+                text = label; textSize = Ui.ROW_TITLE; setTextColor(Ui.TEXT_PRIMARY)
+                this.tag = tag; isChecked = readLocalTabs().contains(tag)
                 setPadding(dp(Ui.ROW_PAD_H), dp(4), dp(4), dp(4))
-                compoundDrawablePadding = dp(10)
-                minimumHeight = dp(Ui.TOUCH_MIN)
+                compoundDrawablePadding = dp(10); minimumHeight = dp(Ui.TOUCH_MIN)
                 buttonDrawable?.let { buttonDrawable = it.tinted(Ui.ACCENT, Ui.CHECK_OFF) }
                 setOnCheckedChangeListener { _, _ -> writeTabSelection() }
             }
-            tabChecks.add(cb)
-            block.addView(cb)
+            tabChecks.add(cb); block.addView(cb)
         }
-        group.addView(block)
-        tabSelectBlock = block
+        group.addView(block); tabSelectBlock = block
     }
 
     private fun writeTabSelection() {
@@ -348,15 +237,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
         writeRemoteString(Settings.KEY_TAB_KEEP, kept.joinToString(","))
     }
 
-    // ==================== 刷新与门控 ====================
-
     override fun onRefresh() {
         hideIconSwitch?.isChecked = isLauncherIconHidden()
         val kept = readLocalTabs()
-        tabChecks.forEach { cb ->
-            val t = cb.tag
-            cb.isChecked = t is String && kept.contains(t)
-        }
+        tabChecks.forEach { cb -> val t = cb.tag; cb.isChecked = t is String && kept.contains(t) }
     }
 
     override fun updateGateState() {

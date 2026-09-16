@@ -26,9 +26,9 @@ object UiCleanup : BaseHook() {
     private val mineRecommendIds = listOf("mine_ad_container")
     private val mineTabIds = listOf("mine_middle_menu_container")
 
-    // 手机清理卡片容器（不是 phone_clear_forbid_layout，那个是禁用态子 View）
+    // 手机清理和应用卸载卡片容器
     private val mineCleanupIds = listOf(
-        "clear_garbage_layout",
+        "phone_clear_layout",
         "mine_uninstall_app_layout"
     )
 
@@ -45,7 +45,9 @@ object UiCleanup : BaseHook() {
 
     // ═══════════════ init ═══════════════
     override fun init() {
-        // ── setVisibility 拦截 ──
+        // ── setVisibility 拦截：挡住商店恢复 VISIBLE ──
+        // args 是 UnmodifiableList 无法直接修改；
+        // 用 post{} 在当前帧结束后重新 hide，确保 View 不会被恢复。
         if (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
             runCatching {
                 ClassUtil.loadClass("android.view.View")
@@ -55,6 +57,7 @@ object UiCleanup : BaseHook() {
                     .hooked {
                         val view = thisObject as? View ?: return@hooked proceed()
                         val result = proceed()
+                        // proceed 后检查：如果 View 又变回 VISIBLE，下一帧重新 hide
                         if (view.visibility == View.VISIBLE) {
                             val id = view.id
                             if (id > 0 && id in getCleanupIdSet(view)) {
@@ -68,7 +71,7 @@ object UiCleanup : BaseHook() {
             }
         }
 
-        // ── onAttachedToWindow ──
+        // ── onAttachedToWindow：View 进 window 时立即检查 ──
         runCatching {
             ClassUtil.loadClass("android.view.View")
                 .methodFinder()
@@ -87,8 +90,9 @@ object UiCleanup : BaseHook() {
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
 
-        // ── 果园皮肤 ──
-        if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
+        // ── 果园皮肤：仅在清理与卸载关闭时才修正更新卡片 ──
+        if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)
+            && !Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
             hookOrchardSkin()
         }
     }
@@ -113,8 +117,8 @@ object UiCleanup : BaseHook() {
                         m.hooked {
                             val result = proceed()
                             (thisObject as? View)?.let { view ->
+                                // 只清除背景，保留 layout params（margin/padding）
                                 view.background = null
-                                view.setPadding(0, 0, 0, 0)
                             }
                             result
                         }
@@ -138,6 +142,7 @@ object UiCleanup : BaseHook() {
                         val decor = (thisObject as? Activity)
                             ?.window?.decorView ?: return@hooked result
 
+                        // 扫描：只隐藏目标 View 本身，不向上追溯父容器
                         scanTree(decor, 0)
                         mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 300L)
                         mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 800L)
@@ -241,7 +246,6 @@ object UiCleanup : BaseHook() {
         runCatching {
             v.visibility = View.GONE
             v.layoutParams?.let { lp ->
-                lp.width = 0
                 lp.height = 0
                 v.layoutParams = lp
             }
