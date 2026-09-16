@@ -32,7 +32,7 @@ object UiCleanup : BaseHook() {
     private val mineSummaryIds = listOf(
         "mine_avatar", "mine_nickname", "mine_message", "mine_message_layout",
         "mine_favorites", "mine_favorites_count", "mine_favorites_layout",
-        "mine_favorites_arrow", "mine_summary_root"
+        "mine_favorites_arrow", "mine_message_arrow", "mine_summary_root"
     )
     private val featuredTexts = setOf("精选")
 
@@ -40,113 +40,32 @@ object UiCleanup : BaseHook() {
 
     private fun getCleanupIdSet(v: View): Set<Int> = resolve(v, mineCleanupIds)
 
-    // ═══════════════ 诊断：定向搜索目标 View 的祖先链 ═══════════════
-    private var diagDone = false
-
-    /**
-     * 从 View 树中找到包含指定文本或 ID 的 View，
-     * 打印它从根到自身的完整祖先链（含每个节点的 ID 名和类名）。
-     * 这样就能看到卡片容器的真实 ID。
-     */
-    private fun traceAncestors(
-        root: View,
-        target: View,
-        path: MutableList<String> = mutableListOf()
-    ): Boolean {
-        path.add("${root.javaClass.simpleName}#" + runCatching {
-            root.resources.getResourceEntryName(root.id)
-        }.getOrNull()?.let { "id=$it(${root.id})" } ?: "id=${root.id}")
-
-        if (root === target) {
-            HookEnv.base.log(Log.INFO, TAG,
-                "$name: ═══ 祖先链 ═══\n  ${path.reversed().joinToString("\n  ")}")
-            return true
-        }
-        if (root is ViewGroup) {
-            for (i in 0 until root.childCount) {
-                val child = root.getChildAt(i) ?: continue
-                if (traceAncestors(child, target, path)) return true
-            }
-        }
-        path.removeAt(path.lastIndex)
-        return false
-    }
-
-    /**
-     * 在 View 树中搜索包含"清理"或"卸载"文本的 TextView，
-     * 打印其父容器链，帮助定位卡片容器 ID。
-     */
-    private fun searchForText(root: View, keyword: String, depth: Int = 0) {
-        if (depth > 15) return
-        if (root is TextView) {
-            val txt = root.text?.toString() ?: ""
-            if (txt.contains(keyword)) {
-                // 打印这个 View 及其所有祖先
-                HookEnv.base.log(Log.WARN, TAG,
-                    "$name: ★ 找到文本=\"$txt\" (${root.javaClass.simpleName}#${runCatching {
-                        root.resources.getResourceEntryName(root.id)
-                    }.getOrNull() ?: "?"} id=${root.id})")
-                traceAncestors(
-                    (root.parent as? View) ?: root.rootView,
-                    root
-                )
-            }
-        }
-        if (root is ViewGroup) {
-            for (i in 0 until root.childCount) {
-                searchForText(root.getChildAt(i) ?: continue, keyword, depth + 1)
-            }
-        }
-    }
-
-    /**
-     * 打印指定 View 的直接父容器信息（5 层以内）。
-     */
-    private fun printParentChain(v: View, levels: Int = 5) {
-        val sb = StringBuilder()
-        var cur: View? = v
-        repeat(levels) {
-            if (cur == null) return@repeat
-            val idName = runCatching {
-                cur!!.resources.getResourceEntryName(cur!!.id)
-            }.getOrNull() ?: "?"
-            sb.appendLine("  → ${cur!!.javaClass.simpleName}#${idName}(vis=${cur!!.visibility})")
-            cur = cur!!.parent as? View
-        }
-        HookEnv.base.log(Log.INFO, TAG, "$name: parent chain of #${runCatching {
-            v.resources.getResourceEntryName(v.id)
-        }.getOrNull() ?: "?"}:\n$sb")
-    }
-
-    /**
-     * 完整 dump 指定 subtree，深度可达 20 层。
-     */
-    private fun dumpSubtree(v: View, depth: Int = 0, maxDepth: Int = 20, sb: StringBuilder = StringBuilder()) {
-        if (depth > maxDepth) return
-        val indent = "  ".repeat(depth)
-        val idName = if (rootId(v) > 0) runCatching {
-            v.resources.getResourceEntryName(rootId(v))
-        }.getOrNull() ?: "${rootId(v)}" else "NO_ID"
-        val vis = when (v.visibility) { View.VISIBLE -> "V"; View.INVISIBLE -> "I"; View.GONE -> "G"; else -> "?" }
-        sb.appendLine("$indent[$vis] ${v.javaClass.simpleName}  id=$idName(${rootId(v)})")
-        if (v is TextView && v.text != null) {
-            val txt = v.text.toString().trim()
-            if (txt.isNotEmpty() && txt.length < 40) sb.appendLine("$indent  └─ text=\"$txt\"")
-        }
-        if (v is ViewGroup) {
-            for (i in 0 until v.childCount) {
-                dumpSubtree(v.getChildAt(i) ?: continue, depth + 1, maxDepth, sb)
-            }
-        }
-        if (depth == 0) {
-            HookEnv.base.log(Log.INFO, TAG, "$name: ═══ Subtree ═══\n$sb")
-        }
-    }
-
-    private fun rootId(v: View): Int = v.id
-
+    // ═══════════════ init ═══════════════
     override fun init() {
-        // onAttachedToWindow：View attach 时立即检查
+        // ── setVisibility 拦截：挡住商店恢复 VISIBLE ──
+        if (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
+            runCatching {
+                ClassUtil.loadClass("android.view.View")
+                    .methodFinder()
+                    .filterByName("setVisibility")
+                    .first()
+                    .hooked {
+                        val view = thisObject as? View ?: return@hooked proceed()
+                        val arg = args[0] as? Int ?: return@hooked proceed()
+                        if (arg == View.VISIBLE) {
+                            val id = view.id
+                            if (id > 0 && id in getCleanupIdSet(view)) {
+                                args[0] = View.GONE
+                            }
+                        }
+                        proceed()
+                    }
+            }.onFailure {
+                HookEnv.base.log(Log.ERROR, TAG, "$name: setVisibility 挂钩失败", it)
+            }
+        }
+
+        // ── onAttachedToWindow：View 进 window 时立即检查 ──
         runCatching {
             ClassUtil.loadClass("android.view.View")
                 .methodFinder()
@@ -154,25 +73,24 @@ object UiCleanup : BaseHook() {
                 .first()
                 .hooked {
                     val result = proceed()
-                    (thisObject as? View)?.let { v ->
-                        runCatching { inspect(v) }
-                    }
+                    (thisObject as? View)?.let { v -> runCatching { inspect(v) } }
                     result
                 }
         }.onFailure {
             HookEnv.base.log(Log.ERROR, TAG, "$name: onAttachedToWindow 挂钩失败", it)
         }
 
-        // onResume 补扫
+        // ── onResume 补扫 ──
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
 
-        // 果园皮肤
+        // ── 果园皮肤 ──
         if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
             hookOrchardSkin()
         }
     }
 
+    // ═══════════════ 果园皮肤 ═══════════════
     private val orchardMethods = listOf(
         "applyUpdateViewOrchardStyle",
         "applyViewOrchardState",
@@ -205,6 +123,7 @@ object UiCleanup : BaseHook() {
         }
     }
 
+    // ═══════════════ onResume 补扫 ═══════════════
     private fun hookActivityRescan(className: String) {
         runCatching {
             ClassUtil.loadClass(className)
@@ -216,46 +135,50 @@ object UiCleanup : BaseHook() {
                         val decor = (thisObject as? Activity)
                             ?.window?.decorView ?: return@hooked result
 
-                        HookEnv.base.log(Log.WARN, TAG,
-                            "$name: onResume, cleanupIds=${getCleanupIdSet(decor)}")
-
-                        // 诊断：首次搜索"清理"/"卸载"相关文本，找到卡片容器
-                        if (!diagDone) {
-                            diagDone = true
-                            // 延迟 1 秒等 View 全部加载完再搜索
-                            mainHandler.postDelayed({
-                                runCatching {
-                                    HookEnv.base.log(Log.WARN, TAG, "$name: === 搜索'清理'相关 View ===")
-                                    searchForText(decor, "清理")
-                                    HookEnv.base.log(Log.WARN, TAG, "$name: === 搜索'卸载'相关 View ===")
-                                    searchForText(decor, "卸载")
-                                    // 也搜一下手机清理卡片内部的特征文本
-                                    HookEnv.base.log(Log.WARN, TAG, "$name: === 搜索'禁用'相关 View ===")
-                                    searchForText(decor, "禁用")
-
-                                    // dump 已知 cleanup view 的父链
-                                    val cleanupIds = getCleanupIdSet(decor)
-                                    cleanupIds.forEach { targetId ->
-                                        findViewById(decor, targetId)?.let { v ->
-                                            HookEnv.base.log(Log.WARN, TAG,
-                                                "$name: === $targetId 的父容器链 ===")
-                                            printParentChain(v, 7)
-                                        }
-                                    }
-                                }
-                            }, 1000L)
-                        }
-
                         scanTree(decor, 0)
+
+                        // 延迟补扫
                         mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 300L)
+                        mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 800L)
+
+                        // ── 精确定位 phone_clear_forbid_layout ──
+                        // 扫描找不到它，用 findViewById 直接按 ID 找
                         mainHandler.postDelayed({
                             runCatching {
-                                scanTree(decor, 0)
-                                if (Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)) {
-                                    deepFindAndHide(decor, idSet(decor, "summary", mineSummaryIds))
+                                val cleanupIds = getCleanupIdSet(decor)
+                                cleanupIds.forEach { targetId ->
+                                    val v = findViewById(decor, targetId) ?: return@forEach
+                                    val name = getResourceName(v)
+                                    HookEnv.base.log(Log.WARN, TAG,
+                                        "$name: 精确定位 $name vis=${visStr(v)} parent=${getResourceName(v.parent as? View)}")
+
+                                    if (v.visibility == View.VISIBLE) {
+                                        HookEnv.base.log(Log.WARN, TAG,
+                                            "$name: ★ 精确 hide $name")
+                                        hide(v)
+                                        // 向上 hide 父容器
+                                        hideAncestors(v, maxLevels = 5)
+                                    }
                                 }
                             }
-                        }, 800L)
+                        }, 1500L)
+
+                        // ── 验证：确认 View 没被恢复 ──
+                        mainHandler.postDelayed({
+                            runCatching {
+                                val cleanupIds = getCleanupIdSet(decor)
+                                cleanupIds.forEach { targetId ->
+                                    val v = findViewById(decor, targetId) ?: return@forEach
+                                    if (v.visibility == View.VISIBLE) {
+                                        HookEnv.base.log(Log.WARN, TAG,
+                                            "$name: ⚠ 恢复了! 重新 hide ${getResourceName(v)}")
+                                        hide(v)
+                                        hideAncestors(v, 5)
+                                    }
+                                }
+                            }
+                        }, 3000L)
+
                         result
                     }
                 }
@@ -264,8 +187,11 @@ object UiCleanup : BaseHook() {
         }
     }
 
+    /**
+     * 精确按 ID 在 View 树中查找，不依赖 scanTree。
+     */
     private fun findViewById(root: View, targetId: Int, depth: Int = 0): View? {
-        if (depth > 12) return null
+        if (depth > 20) return null
         if (root.id == targetId) return root
         if (root is ViewGroup) {
             for (i in 0 until root.childCount) {
@@ -276,6 +202,28 @@ object UiCleanup : BaseHook() {
         return null
     }
 
+    /**
+     * 向上隐藏祖先容器，遇到 RecyclerView/ScrollView 就停。
+     */
+    private fun hideAncestors(v: View, maxLevels: Int) {
+        var cur: View? = v.parent as? View
+        repeat(maxLevels) {
+            if (cur == null) return
+            val cls = cur!!.javaClass.name
+            if (cls.contains("RecyclerView") || cls.contains("ScrollView") ||
+                cls.contains("NestedScroll") || cls.contains("CoordinatorLayout")) {
+                return
+            }
+            if (cur!!.visibility == View.VISIBLE && cur!!.id > 0) {
+                HookEnv.base.log(Log.WARN, TAG,
+                    "$name:   → hide ancestor ${getResourceName(cur!!)} (${cur!!.javaClass.simpleName})")
+                hide(cur!!)
+            }
+            cur = cur!!.parent as? View
+        }
+    }
+
+    // ═══════════════ 遍历 ═══════════════
     private fun scanTree(v: View, depth: Int) {
         if (depth > 8) return
         inspect(v)
@@ -286,22 +234,15 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    private fun deepFindAndHide(root: View, targetIds: Set<Int>, depth: Int = 0) {
-        if (depth > 12) return
-        if (root.id in targetIds) hide(root)
-        if (root !is ViewGroup) return
-        for (i in 0 until root.childCount) {
-            deepFindAndHide(root.getChildAt(i) ?: continue, targetIds, depth + 1)
-        }
-    }
-
+    // ═══════════════ 判断 & 隐藏 ═══════════════
     private fun inspect(v: View) {
         if (v.visibility != View.VISIBLE) return
         runCatching {
             if (isMineTarget(v) || isFeaturedTarget(v)) {
-                val idName = runCatching { v.resources.getResourceEntryName(v.id) }.getOrNull() ?: v.id.toString()
-                HookEnv.base.log(Log.WARN, TAG, "$name: ★ hiding $idName (${v.javaClass.simpleName})")
                 hide(v)
+                if (v.id > 0 && v.id in getCleanupIdSet(v)) {
+                    hideAncestors(v, 5)
+                }
             }
         }
     }
@@ -339,6 +280,17 @@ object UiCleanup : BaseHook() {
                 v.layoutParams = lp
             }
         }
+    }
+
+    private fun getResourceName(v: View?): String = if (v == null) "null" else runCatching {
+        v.resources.getResourceEntryName(v.id)
+    }.getOrNull() ?: "id=${v.id}"
+
+    private fun visStr(v: View): String = when (v.visibility) {
+        View.VISIBLE -> "VISIBLE"
+        View.INVISIBLE -> "INVISIBLE"
+        View.GONE -> "GONE"
+        else -> "?"
     }
 
     private fun idSet(v: View, key: String, names: List<String>): Set<Int> {
