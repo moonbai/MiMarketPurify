@@ -8,6 +8,7 @@ import org.xmlpull.v1.XmlPullParser
 object Settings {
 
     const val PREFS_GROUP = "settings"
+    private const val TARGET_PKG = "com.xiaomi.market"
 
     // ═══════════════ 通用 ═══════════════
     const val KEY_MASTER = "master"
@@ -59,20 +60,17 @@ object Settings {
 
     // ═══════════════ 读取 ═══════════════
 
-    /** 目标 app SP 文件路径 */
-    private val spFile by lazy {
-        java.io.File(HookEnv.base.applicationInfo.dataDir,
-            "shared_prefs/com.xiaomi.market_preferences.xml")
-    }
-
     /**
-     * 直接从目标 app 的 SP XML 文件中读取值。
+     * 直接从目标 app 的 SP XML 文件读取值。
      * service 为 null 时 SubSettingsActivity.writeRemote 静默失败，
-     * 但 LSPosed 框架可能已经同步过，文件里有值。
+     * 但 LSPosed 框架可能已同步过一次，文件里有值。
      */
     private fun readFromTargetSp(key: String): String? {
         return runCatching {
+            val spFile = java.io.File(
+                "/data/data/$TARGET_PKG/shared_prefs/com.xiaomi.market_preferences.xml")
             if (!spFile.exists()) return@runCatching null
+
             val parser = android.util.Xml.newPullParser()
             parser.setInput(spFile.inputStream(), "UTF-8")
             var type = parser.eventType
@@ -133,7 +131,7 @@ object Settings {
             return value
         }
 
-        // 全部失败
+        // 全部失败 → 默认 false（不隐藏，避免误伤）
         HookEnv.base.log(Log.WARN, TAG,
             "Settings.isEnabled($key): 远程+目标SP都不可用，默认 false")
         return false
