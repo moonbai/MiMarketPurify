@@ -33,6 +33,7 @@ class MainActivity : SettingsBaseActivity() {
     private lateinit var statusCard: LinearLayout
     private lateinit var statusTitle: TextView
     private lateinit var statusBody: TextView
+    private lateinit var hideIconSwitch: CompoundButton
 
     /** 二级页「广告移除」里的 10 个开关，用于在主页入口行显示启用数量 */
     private val adKeys = listOf(
@@ -54,13 +55,11 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_MINE_OFFICIAL_TAB,
         Settings.KEY_MINE_CLEANUP,
         Settings.KEY_MINE_SUMMARY,
+        Settings.KEY_MINE_SECURITY,
         Settings.KEY_ORCHARD_SKIN,
-        Settings.KEY_CARD_EXPAND,
-        Settings.KEY_CARD_EXPAND,
-        Settings.KEY_ORCHARD_SKIN
+        Settings.KEY_TAB_BADGE,
+        Settings.KEY_CARD_EXPAND
     )
-
-
 
     /** 二级页「其他界面净化」里的开关 */
     private val miscKeys = listOf(
@@ -86,6 +85,7 @@ class MainActivity : SettingsBaseActivity() {
         buildMasterSwitch()
         buildCategories()
         buildModuleRow()
+        buildModule()
         // 首次进入就按已保存的总开关状态刷新一次置灰
         refreshAll()
     }
@@ -229,21 +229,21 @@ class MainActivity : SettingsBaseActivity() {
             summary = "开屏、首页信息流、榜单、搜索、下载升级、应用详情广告",
             value = { countText(adKeys) }
         ) { openPage(SubSettingsActivity.PAGE_ADS) }
-
+    
         addNavRow(
             group = uiGroup,
             title = "首页与标签栏",
             summary = "自定义管理底部标签",
             value = { tabsText() }
         ) { openPage(SubSettingsActivity.PAGE_TABS) }
-
+    
         addNavRow(
             group = uiGroup,
             title = "「我的」页精简",
             summary = "我的页应用推荐、官方入口、清理板块",
             value = { countText(mineKeys) }
         ) { openPage(SubSettingsActivity.PAGE_MINE) }
-
+    
         addNavRow(
             group = uiGroup,
             title = "其他界面精简",
@@ -251,12 +251,14 @@ class MainActivity : SettingsBaseActivity() {
             value = { countText(miscKeys) }
         ) { openPage(SubSettingsActivity.PAGE_MISC) }
         content.addView(uiGroup)
-
+    }  // ← 这个 } 之前丢了
+    
+    private fun buildModuleRow() {
         addSectionHeader("高级功能", "深度净化与功能增强")
         val advancedGroup = groupCard()
         addSwitchRow(
             group = advancedGroup,
-            title = "启用下载超级岛",
+            title = "下载超级岛",
             summary = "强制让下载进度进入小米超级岛（无视灰度）",
             checked = readLocal(Settings.KEY_ISLAND, true),
             tag = Settings.KEY_ISLAND
@@ -269,28 +271,27 @@ class MainActivity : SettingsBaseActivity() {
             tag = Settings.KEY_MISC
         ) { on -> writeRemote(Settings.KEY_MISC, on) }
         addSwitchRow(
-            group = advancedGroup, 
+            group = advancedGroup,
             title = "升级提醒弹窗",
             summary = "不再弹出应用商店的升级提醒对话框",
-            checked = readLocal(Settings.KEY_UPDATE_DIALOG, true), 
+            checked = readLocal(Settings.KEY_UPDATE_DIALOG, true),
             tag = Settings.KEY_UPDATE_DIALOG
         ) { on -> writeRemote(Settings.KEY_UPDATE_DIALOG, on) }
         content.addView(advancedGroup)
     }
-
-    /** 模块自身：独立成「模块功能」区块 */
-    private fun buildModuleRow() {
-        addSectionHeader("模块功能", "仅影响本模块的显示与调试")
-        val group = groupCard()
-        addNavRow(
-            group = group,
-            title = "模块自身设置",
-            summary = "隐藏桌面图标、榜单调试提示",
-            gated = false,
-            value = { moduleText() }
-        ) { openPage(SubSettingsActivity.PAGE_MODULE) }
-        content.addView(group)
-
+    private fun buildModule() {
+        addSectionHeader("模块功能", "仅影响本模块的显示方式与调试选项")
+        val moduleGroup = groupCard()
+        hideIconSwitch = addSwitchRow(group = moduleGroup, title = "隐藏桌面图标",
+            summary = "仅移除桌面抽屉中的图标，仍可从 LSPosed 模块列表进入主页",
+            checked = isLauncherIconHidden(), tag = "hide_launcher_icon", gated = false, remote = false
+        ) { hide -> applyHideIcon(hide) }
+        addSwitchRow(group = moduleGroup, title = "榜单调试提示",
+            summary = "开启后进入榜单会输出未识别的视图树（logcat 前缀 [rank-tree]），用于反馈漏网的广告；用完请关掉",
+            checked = readLocal(Settings.KEY_RANK_DEBUG, false), tag = Settings.KEY_RANK_DEBUG,
+            gated = false
+        ) { on -> writeRemote(Settings.KEY_RANK_DEBUG, on) }
+        content.addView(moduleGroup)
         content.addView(TextView(this).apply {
             text = "开关即时生效，无需重启；若个别 ROM 缓存了远程偏好，重启一次应用商店即可。"
             textSize = Ui.MICRO
