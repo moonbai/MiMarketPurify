@@ -232,7 +232,7 @@ class MainActivity : SettingsBaseActivity() {
         addNavRow(
             group = uiGroup,
             title = "首页与标签栏",
-            summary = "管理底部标签、清理首页云控推广位",
+            summary = "自定义管理底部标签",
             value = { tabsText() }
         ) { openPage(SubSettingsActivity.PAGE_TABS) }
 
@@ -246,20 +246,13 @@ class MainActivity : SettingsBaseActivity() {
         addNavRow(
             group = uiGroup,
             title = "其他界面精简",
-            summary = "安全检测、领水果、升级记录、搜索相关推荐等零散页面",
+            summary = "升级记录、搜索相关推荐等零散页面",
             value = { countText(miscKeys) }
         ) { openPage(SubSettingsActivity.PAGE_MISC) }
         content.addView(uiGroup)
 
         addSectionHeader("高级功能", "深度净化与功能增强")
         val advancedGroup = groupCard()
-        addNavRow(
-            group = advancedGroup,
-            title = "高级净化",
-            summary = "运营弹窗、活动入口、角标、详情页附加推广",
-            value = { countText(extraKeys) }
-        ) { openPage(SubSettingsActivity.PAGE_EXTRA) }
-
         addSwitchRow(
             group = advancedGroup,
             title = "启用下载超级岛",
@@ -274,6 +267,11 @@ class MainActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_MISC, true),
             tag = Settings.KEY_MISC
         ) { on -> writeRemote(Settings.KEY_MISC, on) }
+        addSwitchRow(group = group, title = "升级提醒弹窗",
+            summary = "不再弹出应用商店的升级提醒对话框",
+            checked = readLocal(Settings.KEY_UPDATE_DIALOG, true), 
+            tag = Settings.KEY_UPDATE_DIALOG
+        ) { on -> writeRemote(Settings.KEY_UPDATE_DIALOG, on) }
         content.addView(advancedGroup)
     }
 

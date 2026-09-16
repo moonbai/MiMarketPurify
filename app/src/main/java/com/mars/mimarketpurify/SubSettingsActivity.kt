@@ -76,18 +76,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
             addSwitchRow(group = group, title = f.title, summary = f.summary,
                 checked = readLocal(f.key, true), tag = f.key
             ) { on -> writeRemote(f.key, on) }
-        }
-        content.addView(group)
-        addFooter("屏蔽后若页面空白，多为该页组件被整体过滤，关掉对应开关即可恢复。")
-    }
-
-    private fun buildExtra() {
-        addSectionHeader("高级净化", "深度运营内容、活动入口、弹窗与角标清理")
-        val group = groupCard()
-        addSwitchRow(group = group, title = "隐藏底栏角标",
-            summary = "去掉底部标签页的数字角标与「新」字红点",
-            checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
-        ) { on -> writeRemote(Settings.KEY_TAB_BADGE, on) }
+        addSwitchRow(group = group, title = "屏蔽领水果入口",
+            summary = "隐藏福利活动 gif 动图入口（entrance_gif）",
+            checked = readLocal(Settings.KEY_FRUIT, true), tag = Settings.KEY_FRUIT
+        ) { on -> writeRemote(Settings.KEY_FRUIT, on) }
         addSwitchRow(group = group, title = "屏蔽首页活动入口",
             summary = "隐藏搜索框左侧云控下发的活动小图标 / 动图",
             checked = readLocal(Settings.KEY_ENTRANCE, true), tag = Settings.KEY_ENTRANCE
@@ -96,10 +88,14 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "详情页拼装推荐、底部多按钮推广栏、浏览器下载弹窗广告",
             checked = readLocal(Settings.KEY_DETAIL_EXTRAS, true), tag = Settings.KEY_DETAIL_EXTRAS
         ) { on -> writeRemote(Settings.KEY_DETAIL_EXTRAS, on) }
-        addSwitchRow(group = group, title = "阻止升级提醒弹窗",
-            summary = "不再弹出应用商店的升级提醒对话框",
-            checked = readLocal(Settings.KEY_UPDATE_DIALOG, true), tag = Settings.KEY_UPDATE_DIALOG
-        ) { on -> writeRemote(Settings.KEY_UPDATE_DIALOG, on) }
+        }
+        content.addView(group)
+        addFooter("屏蔽后若页面空白，多为该页组件被整体过滤，关掉对应开关即可恢复。")
+    }
+
+    private fun buildExtra() {
+        addSectionHeader("高级净化", "深度运营内容、活动入口、弹窗与角标清理")
+        val group = groupCard()
         content.addView(group)
         addFooter("这些开关会同时作用于「移除升级/下载推荐」等既有功能，关掉后对应位置恢复原样。")
     }
@@ -139,6 +135,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "升级卡片默认展开显示更多应用更新",
             checked = readLocal(Settings.KEY_CARD_EXPAND, false), tag = Settings.KEY_CARD_EXPAND, default = false
         ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
+        addSwitchRow(group = group, title = "隐藏底栏角标",
+            summary = "去掉底部标签页的数字角标与「新」字红点",
+            checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
+        ) { on -> writeRemote(Settings.KEY_TAB_BADGE, on) }
         content.addView(group)
         addFooter("改动一般在下次进入「我的」页时生效。")
     }
@@ -158,10 +158,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
     private fun buildMisc() {
         addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
         val group = groupCard()
-        addSwitchRow(group = group, title = "屏蔽领水果入口",
-            summary = "隐藏福利活动 gif 动图入口（entrance_gif）",
-            checked = readLocal(Settings.KEY_FRUIT, true), tag = Settings.KEY_FRUIT
-        ) { on -> writeRemote(Settings.KEY_FRUIT, on) }
         addSwitchRow(group = group, title = "隐藏详情页「精选」",
             summary = "按文案匹配，仅在应用详情页生效",
             checked = readLocal(Settings.KEY_DETAIL_FEATURED, true), tag = Settings.KEY_DETAIL_FEATURED
