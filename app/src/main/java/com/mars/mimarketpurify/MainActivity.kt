@@ -267,7 +267,9 @@ class MainActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_MISC, true),
             tag = Settings.KEY_MISC
         ) { on -> writeRemote(Settings.KEY_MISC, on) }
-        addSwitchRow(group = group, title = "升级提醒弹窗",
+        addSwitchRow(
+            group = advancedGroup, 
+            title = "升级提醒弹窗",
             summary = "不再弹出应用商店的升级提醒对话框",
             checked = readLocal(Settings.KEY_UPDATE_DIALOG, true), 
             tag = Settings.KEY_UPDATE_DIALOG
