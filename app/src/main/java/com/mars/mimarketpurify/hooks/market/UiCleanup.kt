@@ -211,15 +211,19 @@ object UiCleanup : BaseHook() {
         )
         return set
     }
-
+    
     private fun resolve(v: View, names: List<String>): Set<Int> =
         names.mapNotNull { n ->
             val id = runCatching {
                 v.resources.getIdentifier(n, "id", "com.xiaomi.market")
             }.getOrNull()
-            if (id != null && id > 0) id else null
+            if (id != null && id > 0) {
+                id
+            } else {
+                HookEnv.base.log(Log.WARN, TAG, "$name: ❌ $n 未找到 id=0")
+                null
+            }
         }.toSet()
-
     /**
      * 基础隐藏：只用GONE，不再强行修改layoutParams宽高，避免商店布局回写覆盖
      */
