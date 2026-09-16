@@ -22,7 +22,7 @@ object UiCleanup : BaseHook() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    // ═══════════════ 三组开关 ID ═══════════════
+    // ═══════════════ 五组开关 ID ═══════════════
     private val mineRecommendIds = listOf("mine_ad_container")
     private val mineTabIds = listOf("mine_middle_menu_container")
     private val mineCleanupIds = listOf(
@@ -34,15 +34,17 @@ object UiCleanup : BaseHook() {
         "mine_favorites", "mine_favorites_count", "mine_favorites_layout",
         "mine_favorites_arrow", "mine_message_arrow", "mine_summary_root"
     )
+    private val mineSecurityIds = listOf("mineSecurityView")
     private val featuredTexts = setOf("精选")
 
     private val resolved = Collections.synchronizedMap(mutableMapOf<String, Set<Int>>())
-
     private fun getCleanupIdSet(v: View): Set<Int> = resolve(v, mineCleanupIds)
 
     // ═══════════════ init ═══════════════
     override fun init() {
         // ── setVisibility 拦截：挡住商店恢复 VISIBLE ──
+        // args 是 UnmodifiableList 无法直接修改；
+        // 用 post{} 在当前帧结束后重新 hide，确保 View 不会被恢复。
         if (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
             runCatching {
                 ClassUtil.loadClass("android.view.View")
@@ -51,14 +53,15 @@ object UiCleanup : BaseHook() {
                     .first()
                     .hooked {
                         val view = thisObject as? View ?: return@hooked proceed()
-                        val arg = args[0] as? Int ?: return@hooked proceed()
-                        if (arg == View.VISIBLE) {
+                        val result = proceed()
+                        // proceed 后检查：如果 View 又变回 VISIBLE，下一帧重新 hide
+                        if (view.visibility == View.VISIBLE) {
                             val id = view.id
                             if (id > 0 && id in getCleanupIdSet(view)) {
-                                args[0] = View.GONE
+                                view.post { hide(view) }
                             }
                         }
-                        proceed()
+                        result
                     }
             }.onFailure {
                 HookEnv.base.log(Log.ERROR, TAG, "$name: setVisibility 挂钩失败", it)
@@ -135,45 +138,34 @@ object UiCleanup : BaseHook() {
                         val decor = (thisObject as? Activity)
                             ?.window?.decorView ?: return@hooked result
 
+                        // 扫描：只隐藏目标 View 本身，不向上追溯父容器
                         scanTree(decor, 0)
-
-                        // 延迟补扫
                         mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 300L)
                         mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 800L)
 
-                        // ── 精确定位 phone_clear_forbid_layout ──
-                        // 扫描找不到它，用 findViewById 直接按 ID 找
+                        // 精确定位
                         mainHandler.postDelayed({
                             runCatching {
-                                val cleanupIds = getCleanupIdSet(decor)
-                                cleanupIds.forEach { targetId ->
+                                getCleanupIdSet(decor).forEach { targetId ->
                                     val v = findViewById(decor, targetId) ?: return@forEach
-                                    val name = getResourceName(v)
-                                    HookEnv.base.log(Log.WARN, TAG,
-                                        "$name: 精确定位 $name vis=${visStr(v)} parent=${getResourceName(v.parent as? View)}")
-
                                     if (v.visibility == View.VISIBLE) {
                                         HookEnv.base.log(Log.WARN, TAG,
-                                            "$name: ★ 精确 hide $name")
+                                            "$name: ★ 精确 hide ${getResourceName(v)}")
                                         hide(v)
-                                        // 向上 hide 父容器
-                                        hideAncestors(v, maxLevels = 5)
                                     }
                                 }
                             }
                         }, 1500L)
 
-                        // ── 验证：确认 View 没被恢复 ──
+                        // 验证
                         mainHandler.postDelayed({
                             runCatching {
-                                val cleanupIds = getCleanupIdSet(decor)
-                                cleanupIds.forEach { targetId ->
+                                getCleanupIdSet(decor).forEach { targetId ->
                                     val v = findViewById(decor, targetId) ?: return@forEach
                                     if (v.visibility == View.VISIBLE) {
                                         HookEnv.base.log(Log.WARN, TAG,
                                             "$name: ⚠ 恢复了! 重新 hide ${getResourceName(v)}")
                                         hide(v)
-                                        hideAncestors(v, 5)
                                     }
                                 }
                             }
@@ -187,9 +179,6 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    /**
-     * 精确按 ID 在 View 树中查找，不依赖 scanTree。
-     */
     private fun findViewById(root: View, targetId: Int, depth: Int = 0): View? {
         if (depth > 20) return null
         if (root.id == targetId) return root
@@ -200,27 +189,6 @@ object UiCleanup : BaseHook() {
             }
         }
         return null
-    }
-
-    /**
-     * 向上隐藏祖先容器，遇到 RecyclerView/ScrollView 就停。
-     */
-    private fun hideAncestors(v: View, maxLevels: Int) {
-        var cur: View? = v.parent as? View
-        repeat(maxLevels) {
-            if (cur == null) return
-            val cls = cur!!.javaClass.name
-            if (cls.contains("RecyclerView") || cls.contains("ScrollView") ||
-                cls.contains("NestedScroll") || cls.contains("CoordinatorLayout")) {
-                return
-            }
-            if (cur!!.visibility == View.VISIBLE && cur!!.id > 0) {
-                HookEnv.base.log(Log.WARN, TAG,
-                    "$name:   → hide ancestor ${getResourceName(cur!!)} (${cur!!.javaClass.simpleName})")
-                hide(cur!!)
-            }
-            cur = cur!!.parent as? View
-        }
     }
 
     // ═══════════════ 遍历 ═══════════════
@@ -240,9 +208,6 @@ object UiCleanup : BaseHook() {
         runCatching {
             if (isMineTarget(v) || isFeaturedTarget(v)) {
                 hide(v)
-                if (v.id > 0 && v.id in getCleanupIdSet(v)) {
-                    hideAncestors(v, 5)
-                }
             }
         }
     }
@@ -251,15 +216,16 @@ object UiCleanup : BaseHook() {
         val id = v.id
         if (id == View.NO_ID || id <= 0) return false
 
-        val recommendOn = Settings.isEnabled(Settings.KEY_MINE_RECOMMEND, true)
-        val tabOn = Settings.isEnabled(Settings.KEY_MINE_OFFICIAL_TAB, true)
-        val cleanupOn = Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
-        val summaryOn = Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)
-
-        if (recommendOn && id in idSet(v, "recommend", mineRecommendIds)) return true
-        if (tabOn && id in idSet(v, "tab", mineTabIds)) return true
-        if (cleanupOn && id in getCleanupIdSet(v)) return true
-        if (summaryOn && id in idSet(v, "summary", mineSummaryIds)) return true
+        if (Settings.isEnabled(Settings.KEY_MINE_RECOMMEND, true)
+            && id in idSet(v, "recommend", mineRecommendIds)) return true
+        if (Settings.isEnabled(Settings.KEY_MINE_OFFICIAL_TAB, true)
+            && id in idSet(v, "tab", mineTabIds)) return true
+        if (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
+            && id in getCleanupIdSet(v)) return true
+        if (Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)
+            && id in idSet(v, "summary", mineSummaryIds)) return true
+        if (Settings.isEnabled(Settings.KEY_MINE_SECURITY, true)
+            && id in idSet(v, "security", mineSecurityIds)) return true
 
         return false
     }
@@ -285,13 +251,6 @@ object UiCleanup : BaseHook() {
     private fun getResourceName(v: View?): String = if (v == null) "null" else runCatching {
         v.resources.getResourceEntryName(v.id)
     }.getOrNull() ?: "id=${v.id}"
-
-    private fun visStr(v: View): String = when (v.visibility) {
-        View.VISIBLE -> "VISIBLE"
-        View.INVISIBLE -> "INVISIBLE"
-        View.GONE -> "GONE"
-        else -> "?"
-    }
 
     private fun idSet(v: View, key: String, names: List<String>): Set<Int> {
         resolved[key]?.let { return it }
