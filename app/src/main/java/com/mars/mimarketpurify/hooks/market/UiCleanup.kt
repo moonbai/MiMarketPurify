@@ -23,49 +23,71 @@ object UiCleanup : BaseHook() {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     // ═══════════════ 三组开关 ID ═══════════════
-    // KEY_MINE_RECOMMEND  → 应用推荐
-    private val mineRecommendIds = listOf(
-        "mine_ad_container"
-    )
-    // KEY_MINE_OFFICIAL_TAB → 官方入口
-    private val mineTabIds = listOf(
-        "mine_middle_menu_container"
-    )
-    // KEY_MINE_CLEANUP → 清理与卸载
+    private val mineRecommendIds = listOf("mine_ad_container")
+    private val mineTabIds = listOf("mine_middle_menu_container")
     private val mineCleanupIds = listOf(
         "phone_clear_forbid_layout",
         "mine_uninstall_app_layout"
     )
-    // KEY_MINE_SUMMARY → 个人信息（头像/昵称/收藏/消息）
     private val mineSummaryIds = listOf(
-        "mine_avatar",
-        "mine_nickname",
-        "mine_message",
-        "mine_message_layout",
-        "mine_favorites",
-        "mine_favorites_count",
-        "mine_favorites_layout",
-        "mine_favorites_arrow",
-        "mine_summary_root"
+        "mine_avatar", "mine_nickname", "mine_message", "mine_message_layout",
+        "mine_favorites", "mine_favorites_count", "mine_favorites_layout",
+        "mine_favorites_arrow", "mine_summary_root"
     )
-
     private val featuredTexts = setOf("精选")
 
-    // ═══════════════ 缓存 ═══════════════
     private val resolved = Collections.synchronizedMap(mutableMapOf<String, Set<Int>>())
 
-    /**
-     * 每次都重新解析，不永久缓存。
-     * 第一次调用时 View 树可能还没有 cleanup 目标 View，
-     * 永久缓存会导致后续 setVisibility / onAttachedToWindow 拦截失效。
-     */
     private fun getCleanupIdSet(v: View): Set<Int> {
         return resolve(v, mineCleanupIds)
     }
 
-    // ═══════════════ init ═══════════════
+    // ═══════════════ 诊断：dump View 树 ═══════════════
+    private var diagDumped = false
+
+    private fun dumpViewTree(root: View, depth: Int = 0, sb: StringBuilder = StringBuilder()) {
+        if (depth > 12) return
+        val indent = "  ".repeat(depth)
+        val idName = if (root.id > 0) {
+            runCatching {
+                root.resources.getResourceEntryName(root.id)
+            }.getOrNull() ?: "unknown(${root.id})"
+        } else {
+            "NO_ID"
+        }
+        val cls = root.javaClass.simpleName
+        val vis = when (root.visibility) {
+            View.VISIBLE -> "V"
+            View.INVISIBLE -> "I"
+            View.GONE -> "G"
+            else -> "?"
+        }
+        sb.appendLine("$indent[$vis] $cls  id=$idName (${root.id})")
+
+        // 打印与 cleanup 相关的文本信息（帮助定位目标 View）
+        if (root is TextView && root.text != null) {
+            val txt = root.text.toString().trim()
+            if (txt.isNotEmpty() && txt.length < 30) {
+                sb.appendLine("$indent  └─ text=\"$txt\"")
+            }
+        }
+
+        if (root is ViewGroup) {
+            val count = root.childCount.coerceAtMost(50)
+            for (i in 0 until count) {
+                val child = root.getChildAt(i) ?: continue
+                dumpViewTree(child, depth + 1, sb)
+            }
+        }
+
+        // 根节点输出
+        if (depth == 0) {
+            HookEnv.base.log(Log.INFO, TAG, "$name: ═══ View Dump ═══\n${sb}")
+        }
+    }
+
     override fun init() {
-        // 路径 A：View 一 attach 到 window 就立即检查（抢在商店 setVisibility 之前）
+        // onAttachedToWindow：View attach 时立即检查
         runCatching {
             ClassUtil.loadClass("android.view.View")
                 .methodFinder()
@@ -82,17 +104,16 @@ object UiCleanup : BaseHook() {
             HookEnv.base.log(Log.ERROR, TAG, "$name: onAttachedToWindow 挂钩失败", it)
         }
 
-        // 路径 B：onResume 补扫（兜底，处理动态加载的 View）
+        // onResume 补扫
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
 
-        // 路径 C：果园皮肤修正（仅在开启时）
+        // 果园皮肤
         if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
             hookOrchardSkin()
         }
     }
 
-    // ═══════════════ 果园皮肤 ═══════════════
     private val orchardMethods = listOf(
         "applyUpdateViewOrchardStyle",
         "applyViewOrchardState",
@@ -108,18 +129,16 @@ object UiCleanup : BaseHook() {
             runCatching {
                 val cls = ClassUtil.loadClass(owner)
                 orchardMethods.forEach { method ->
-                    cls.methodFinder()
-                        .filterByName(method)
-                        .forEach { m ->
-                            m.hooked {
-                                val result = proceed()
-                                (thisObject as? View)?.let { view ->
-                                    view.background = null
-                                    view.setPadding(0, 0, 0, 0)
-                                }
-                                result
+                    cls.methodFinder().filterByName(method).forEach { m ->
+                        m.hooked {
+                            val result = proceed()
+                            (thisObject as? View)?.let { view ->
+                                view.background = null
+                                view.setPadding(0, 0, 0, 0)
                             }
+                            result
                         }
+                    }
                 }
             }.onFailure {
                 HookEnv.base.log(Log.VERBOSE, TAG, "$name: 无 $owner，跳过果园皮肤处理", null)
@@ -127,7 +146,6 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    // ═══════════════ onResume 补扫 ═══════════════
     private fun hookActivityRescan(className: String) {
         runCatching {
             ClassUtil.loadClass(className)
@@ -139,15 +157,21 @@ object UiCleanup : BaseHook() {
                         val decor = (thisObject as? Activity)
                             ?.window?.decorView ?: return@hooked result
 
-                        // 第一轮：立即扫描
+                        HookEnv.base.log(Log.WARN, TAG,
+                            "$name: onResume 触发, cleanupIds=${getCleanupIdSet(decor)}, settings=" +
+                            "recommend=${Settings.isEnabled(Settings.KEY_MINE_RECOMMEND, true)}, " +
+                            "tab=${Settings.isEnabled(Settings.KEY_MINE_OFFICIAL_TAB, true)}, " +
+                            "cleanup=${Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)}, " +
+                            "summary=${Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)}")
+
+                        // 诊断：首次 dump 完整 View 树
+                        if (!diagDumped) {
+                            diagDumped = true
+                            dumpViewTree(decor)
+                        }
+
                         scanTree(decor, 0)
-
-                        // 第二轮：延迟 300ms 重扫
-                        mainHandler.postDelayed({
-                            runCatching { scanTree(decor, 0) }
-                        }, 300L)
-
-                        // 第三轮：延迟 800ms 兜底
+                        mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 300L)
                         mainHandler.postDelayed({
                             runCatching {
                                 scanTree(decor, 0)
@@ -156,7 +180,6 @@ object UiCleanup : BaseHook() {
                                 }
                             }
                         }, 800L)
-
                         result
                     }
                 }
@@ -165,7 +188,6 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    // ═══════════════ 遍历 ═══════════════
     private fun scanTree(v: View, depth: Int) {
         if (depth > 8) return
         inspect(v)
@@ -178,20 +200,21 @@ object UiCleanup : BaseHook() {
 
     private fun deepFindAndHide(root: View, targetIds: Set<Int>, depth: Int = 0) {
         if (depth > 12) return
-        if (root.id in targetIds) {
-            hide(root)
-        }
+        if (root.id in targetIds) hide(root)
         if (root !is ViewGroup) return
         for (i in 0 until root.childCount) {
             deepFindAndHide(root.getChildAt(i) ?: continue, targetIds, depth + 1)
         }
     }
 
-    // ═══════════════ 判断 & 隐藏 ═══════════════
     private fun inspect(v: View) {
         if (v.visibility != View.VISIBLE) return
         runCatching {
-            if (isMineTarget(v) || isFeaturedTarget(v)) hide(v)
+            if (isMineTarget(v) || isFeaturedTarget(v)) {
+                val idName = runCatching { v.resources.getResourceEntryName(v.id) }.getOrNull() ?: v.id.toString()
+                HookEnv.base.log(Log.WARN, TAG, "$name: ★ hiding $idName (${v.javaClass.simpleName})")
+                hide(v)
+            }
         }
     }
 
@@ -225,12 +248,11 @@ object UiCleanup : BaseHook() {
             v.visibility = View.GONE
             v.layoutParams?.let { lp ->
                 lp.height = 0
-                v.layoutParams = lp  // 触发父容器重新测量，清掉占用空间
+                v.layoutParams = lp
             }
         }
     }
 
-    // ═══════════════ ID 解析（每次都重新解析，不永久缓存） ═══════════════
     private fun idSet(v: View, key: String, names: List<String>): Set<Int> {
         resolved[key]?.let { return it }
         val set = resolve(v, names)
