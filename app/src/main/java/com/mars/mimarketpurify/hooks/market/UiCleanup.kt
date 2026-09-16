@@ -16,12 +16,8 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 /**
  * 按**资源 id / 可见文本**屏蔽指定的界面元素。
  *
- * Fix 2026‑09‑16：
- * - 头像/个人信息屏蔽无效：新增针对顶部信息区的**主动深度搜索**，不只依赖View自id命中
- * - 手机清理留白：移除强制修改layoutParams宽高；增加子项全部隐藏后尝试隐藏父行兜底
- * - 彻底移除全部更新卡片拉伸、布局重排代码；仅保留去除果园背景与padding
- * - KEY_MINE_SUMMARY 默认值保持 false（与设置页一致），开关打开后主动扫描整树查找目标
- * - mine_summary_root不再作为主锚点（很多版本无有效ID），放到备选末尾
+ * Fix 2026-09-16：
+ * - 手机清理：dumpViewIds 诊断 + 移除失效 id
  */
 object UiCleanup : BaseHook() {
 
@@ -34,13 +30,9 @@ object UiCleanup : BaseHook() {
     private val mineCleanupIds = listOf(
         "phone_clear_forbid_layout",
         "phone_clear_layout",
-        "mine_uninstall_app_layout",
-        "mine_clean_root_layout"
+        "mine_uninstall_app_layout"
     )
 
-    /**
-     * 头像、昵称、消息、收藏：优先子控件，mine_summary_root仅作为备选
-     */
     private val mineSummaryIds = listOf(
         "mine_avatar",
         "mine_nickname",
@@ -121,8 +113,11 @@ object UiCleanup : BaseHook() {
                     m.hooked {
                         val result = proceed()
                         val decor = (thisObject as? Activity)?.window?.decorView ?: return@hooked result
+
+                        // 诊断：打印所有包含清理/卸载关键词的真实 id
+                        dumpViewIds(decor, 0)
+
                         scanTree(decor, 0)
-                        // 头像区开关打开时，额外一轮深度查找，兜底懒加载Fragment
                         if(Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)){
                             deepFindAndHide(decor, idSet(decor,"summary",mineSummaryIds))
                         }
@@ -134,15 +129,46 @@ object UiCleanup : BaseHook() {
         }
     }
 
+    /**
+     * 诊断：遍历整棵 View 树，把包含指定关键词的 View id 名打出来
+     * logcat 过滤: 🔍 ViewTree
+     */
+    private fun dumpViewIds(v: View, depth: Int) {
+        if (depth > 12) return
+        val id = v.id
+        if (id > 0) {
+            val name = runCatching {
+                v.resources.getResourceEntryName(id)
+            }.getOrDefault("?")
+            if (name.contains("clear", true) ||
+                name.contains("clean", true) ||
+                name.contains("uninstall", true) ||
+                name.contains("phone", true) ||
+                name.contains("forbid", true) ||
+                name.contains("remove", true) ||
+                name.contains("delete", true) ||
+                name.contains("recycle", true)
+            ) {
+                HookEnv.base.log(
+                    Log.WARN, TAG,
+                    "🔍 ViewTree: $name (id=$id) vis=${v.visibility} class=${v.javaClass.simpleName}"
+                )
+            }
+        }
+        if (v !is ViewGroup) return
+        for (i in 0 until v.childCount) {
+            dumpViewIds(v.getChildAt(i) ?: continue, depth + 1)
+        }
+    }
+
     private fun scanTree(v: View, depth: Int) {
         if (depth > 8) return
         inspect(v)
         if (v !is ViewGroup) return
-        val count = v.childCount.coerceAtMost(32)
+        val count = v.childCount.coerceAtLeast(0).coerceAtMost(32)
         for (i in 0 until count) {
             scanTree(v.getChildAt(i) ?: continue, depth + 1)
         }
-        // 手机清理兜底：如果本行所有可见子View全部隐藏，尝试隐藏父行
         if(Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)){
             runCatching {
                 val selfIdSet = idSet(v,"cleanup",mineCleanupIds)
@@ -160,9 +186,6 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    /**
-     * 主动深度遍历，专门给头像区兜底；不依赖onAttachedToWindow命中
-     */
     private fun deepFindAndHide(root: View, targetIds: Set<Int>, depth: Int = 0){
         if(depth >12) return
         if(root.id in targetIds){
@@ -211,7 +234,7 @@ object UiCleanup : BaseHook() {
         )
         return set
     }
-    
+
     private fun resolve(v: View, names: List<String>): Set<Int> =
         names.mapNotNull { n ->
             val id = runCatching {
@@ -224,9 +247,7 @@ object UiCleanup : BaseHook() {
                 null
             }
         }.toSet()
-    /**
-     * 基础隐藏：只用GONE，不再强行修改layoutParams宽高，避免商店布局回写覆盖
-     */
+
     private fun hide(v: View) {
         runCatching {
             v.visibility = View.GONE
