@@ -84,8 +84,8 @@ object UiCleanup : BaseHook() {
                     if (arg == View.VISIBLE && Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
                         val id = view.id
                         if (id > 0 && id in getCleanupIdSet(view)) {
-                            // 商店想设回 VISIBLE，直接拦截，不执行原始方法
-                            return@hooked
+                            // 偷改参数：VISHIDDEN → GONE，再正常执行
+                            args[0] = View.GONE
                         }
                     }
                     proceed()
@@ -93,7 +93,7 @@ object UiCleanup : BaseHook() {
         }.onFailure {
             HookEnv.base.log(Log.ERROR, TAG, "$name: setVisibility 挂钩失败", it)
         }
-
+        
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
 
