@@ -190,16 +190,10 @@ class AboutActivity : Activity() {
 
     private fun buildFeatureCards() {
         val features = listOf(
-            "广告移除" to "开屏、前台推荐、信息流、搜索、升级/下载页、详情页、榜单、顶栏推广位",
-            "界面精简" to "安全检测、领水果、我的页、详情页精选、底部标签栏",
-            "功能增强" to "下载超级岛（无视服务端灰度）",
-            "稳定性" to "崩溃自毁拦截、配置备份恢复、全局容错",
-            "模块自身" to "隐藏桌面图标（仍可从框架进入主页）"
+            "广告移除" to "开屏、推荐、信息流、搜索、升级/下载页、详情、榜单、顶栏推广位",
+            "界面精简" to "安全检测、领水果、我的页面、详情页精选、底栏",
+            "功能增强" to "下载超级岛"
         )
-
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
 
         features.forEachIndexed { index, (title, desc) ->
             val card = card()
@@ -216,25 +210,23 @@ class AboutActivity : Activity() {
                 })
             })
 
-            if (index > 0) {
-                card.layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).also {
+            // 统一设置LayoutParams，index>0才添加上边距
+            card.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also {
+                if (index > 0) {
                     it.topMargin = dp(8)
                 }
             }
-
-            container.addView(card)
+            content.addView(card)
         }
-
-        content.addView(container)
     }
 
     private fun buildReferenceProjects() {
         val references = listOf(
-            "NewFuckMarketAds" to "callng" to "https://github.com/callng/NewFuckMarketAds",
-            "NewFuckMarketAds_Fork" to "lisrain" to "https://github.com/lisrain/NewFuckMarketAds_Fork"
+            "callng/NewFuckMarketAds" to "https://github.com/callng/NewFuckMarketAds",
+            "lisrain/NewFuckMarketAds_Fork" to "https://github.com/lisrain/NewFuckMarketAds_Fork"
         )
 
         val card = card()
@@ -244,10 +236,7 @@ class AboutActivity : Activity() {
         }
 
         references.forEachIndexed { index, item ->
-            val name = item.first.first
-            val author = item.first.second
-            val url = item.second
-
+            val (repoName, url) = item
             val itemRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -276,13 +265,13 @@ class AboutActivity : Activity() {
                     )
                 }
                 textLayout.addView(TextView(this@AboutActivity).apply {
-                    text = name
+                    text = repoName
                     textSize = Ui.ROW_SUMMARY
                     setTypeface(null, Typeface.BOLD)
                     setTextColor(Ui.TEXT_PRIMARY)
                 })
                 textLayout.addView(TextView(this@AboutActivity).apply {
-                    text = author
+                    text = "参考项目"
                     textSize = Ui.MICRO
                     setTextColor(Ui.TEXT_SECONDARY)
                     setPadding(0, dp(3), 0, 0)
@@ -306,7 +295,7 @@ class AboutActivity : Activity() {
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         dp(1).coerceAtLeast(1)
-                    ).also { it.marginStart = dp(14) }
+                    ).also { it.marginStart = dp(12) }
                 })
             }
         }
