@@ -130,11 +130,11 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) { on -> writeRemote(Settings.KEY_MINE_SECURITY, on) }
         addSwitchRow(group = group, title = "更新卡片背景",
             summary = "清除升级卡片的果园背景",
-            checked = readLocal(Settings.KEY_ORCHARD_SKIN, true), tag = Settings.KEY_ORCHARD_SKIN, default = false
+            checked = readLocal(Settings.KEY_ORCHARD_SKIN, true), tag = Settings.KEY_ORCHARD_SKIN
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
         addSwitchRow(group = group, title = "升级卡片展开",
             summary = "升级卡片默认展开显示更多应用更新",
-            checked = readLocal(Settings.KEY_CARD_EXPAND, true), tag = Settings.KEY_CARD_EXPAND, default = false
+            checked = readLocal(Settings.KEY_CARD_EXPAND, true), tag = Settings.KEY_CARD_EXPAND
         ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
         addSwitchRow(group = group, title = "底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
