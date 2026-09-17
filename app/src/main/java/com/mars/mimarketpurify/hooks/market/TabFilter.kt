@@ -1,5 +1,6 @@
 package com.mars.mimarketpurify.hooks.market
 
+import android.os.Bundle
 import android.util.Log
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
@@ -19,7 +20,6 @@ object TabFilter : BaseHook() {
     override val prefKey: String = Settings.KEY_TAB_FILTER
     override val name: String get() = "筛选底部TAB标签"
 
-    private const val HOME_TAG = "native_market_home"
     private const val PURIFY_UPDATE = "purify_update"
 
     private var tabField: Field? = null
@@ -36,11 +36,12 @@ object TabFilter : BaseHook() {
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] init() 开始")
         hookTabInfoParse()
         runCatching { hookPageConfig() }
+        runCatching { hookInitTabs() }
         runCatching { hookGetFragmentInfo() }
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] init() 完成")
     }
 
-    // = = = = hook initTabs (构造函数内部注入) = = = =
+    // = = = = hook initTabs (构造函数内部注入 purify_update) = = = =
 
     private fun hookInitTabs() {
         val pageConfigClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.PageConfig") }.getOrNull() ?: return
@@ -101,7 +102,7 @@ object TabFilter : BaseHook() {
             val tag = runCatching { tabField?.get(tab) as? String ?: tab.invokeAs<String>("getTag") }.getOrNull()
             if (tag != PURIFY_UPDATE) return@hooked result
 
-            val args = android.os.Bundle()
+            val args = Bundle()
             args.putString("url", "market://update")
             args.putString("tab_tag", PURIFY_UPDATE)
             val fragInfo = fragmentInfoCtor.newInstance(dummyFragmentClz, args, false)

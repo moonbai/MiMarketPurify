@@ -20,19 +20,6 @@ object RankAds : BaseHook() {
     override val prefKey: String = Settings.KEY_RANK
     override val name: String get() = "移除榜单广告"
 
-    private val adTokens = setOf("ad", "ads", "advert", "advertisement", "advertorial",
-        "banner", "promo", "promote", "promotion", "sponsor", "sponsored")
-
-    private val typeGetters = listOf("getComponentType", "getItemComponentType", "getItemType",
-        "getType", "getViewType", "getItemViewType", "getTemplateType", "getCardType",
-        "getBizType", "getStyleType", "getStyle", "getComponentName")
-
-    private val adFlags = listOf(
-        "isAd", "isMarketAd", "isAdvertise", "isAdvertisement", "isAdItem",
-        "isPromote", "isPromotion", "isPromotionItem", "isSponsor", "isSponsored",
-        "isRecommendAd", "isRankAd"
-    )
-
     private val realRankClasses = listOf(
         "com.xiaomi.market.agent.AgentRankItemBinder",
         "com.xiaomi.market.agent.AgentRankItemView",
@@ -49,44 +36,118 @@ object RankAds : BaseHook() {
     private val enLabels = setOf("ad", "ads", "sponsor", "sponsored", "promoted")
 
     override fun init() {
+        // 策略1：hook AI 广告引擎
         hookAdEngine()
 
-        var bound = 0
-        val discovered = discoverRankClasses()
-        HookEnv.base.log(Log.WARN, TAG, "$name: dex 扫描发现 ${discovered.size} 个额外 rank 类")
+        // 策略2：诊断模式 - 扫描所有 rank 类的方法，找到实际的数据绑定方法
+        diagnosticScan()
+
+        // 策略3：hook 实际 rank 类的各种可能绑定方法
+        hookActualBindings()
+    }
+
+    // = = = = 诊断扫描 = = = =
+
+    private fun diagnosticScan() {
+        var discovered = listOf<String>()
+        runCatching { discovered = discoverRankClasses() }
+
+        HookEnv.base.log(Log.WARN, TAG, "=== 诊断扫描开始 ===")
 
         (realRankClasses + discovered).distinct().forEach { className ->
             runCatching {
                 val clz = ClassUtil.loadClass(className)
-                clz.methodFinder().filterByName("onBindData").forEach { m ->
-                    m.hooked {
-                        val view = thisObject as? View ?: return@hooked proceed()
-                        val bean = args.firstOrNull { isCandidateBean(it) }
+                // 打印所有公开方法名
+                val methods = clz.declaredMethods
+                    .filter { java.lang.reflect.Modifier.isPublic(it.modifiers) }
+                    .map { "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})" }
+                HookEnv.base.log(Log.WARN, TAG, "[诊断] $className: ${methods.size} 个方法")
+                methods.forEach { m ->
+                    HookEnv.base.log(Log.WARN, TAG, "[诊断]   $m")
+                }
 
-                        if (bean != null && isAdBean(bean)) {
-                            debugLog("onBindData: 广告 bean → 隐藏 ${clz.simpleName}")
-                            hide(view)
-                            return@hooked null
-                        }
-                        if (containsAdResourceNames(view)) {
-                            debugLog("onBindData: 广告 resource → 隐藏 ${clz.simpleName}")
-                            hide(view)
-                            return@hooked null
-                        }
-                        if (containsAdLabels(view)) {
-                            debugLog("onBindData: 广告标签 → 隐藏 ${clz.simpleName}")
-                            hide(view)
-                            return@hooked null
-                        }
-                        return@hooked proceed()
+                // 打印字段（找广告标记）
+                val fields = clz.declaredFields
+                fields.forEach { f ->
+                    val name = f.name.lowercase()
+                    if (name.contains("ad") || name.contains("sponsor") || name.contains("promo") ||
+                        name.contains("recommend") || name.contains("badge") || name.contains("tag") ||
+                        name.contains("type") || name.contains("component")) {
+                        HookEnv.base.log(Log.WARN, TAG, "[诊断]   字段: ${f.name} (${f.type.simpleName})")
                     }
-                    bound++
+                }
+            }.onFailure {
+                HookEnv.base.log(Log.VERBOSE, TAG, "[诊断] $className 不存在")
+            }
+        }
+
+        // 诊断 ClientAIAdReRankEngine
+        runCatching {
+            val engineClz = ClassUtil.loadClass("com.xiaomi.market.ai.ClientAIAdReRankEngine")
+            val methods = engineClz.declaredMethods.map {
+                "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})"
+            }
+            HookEnv.base.log(Log.WARN, TAG, "[诊断] AdReRankEngine: ${methods.size} 个方法")
+            methods.forEach { m ->
+                HookEnv.base.log(Log.WARN, TAG, "[诊断]   $m")
+            }
+        }.onFailure {
+            HookEnv.base.log(Log.WARN, TAG, "[诊断] AdReRankEngine 不存在: ${it.message}")
+        }
+
+        HookEnv.base.log(Log.WARN, TAG, "=== 诊断扫描结束 ===")
+    }
+
+    // = = = = hook 实际绑定方法 = = = =
+
+    private fun hookActualBindings() {
+        var bound = 0
+        var discovered = listOf<String>()
+        runCatching { discovered = discoverRankClasses() }
+
+        // 可能的数据绑定方法名
+        val bindMethods = listOf(
+            "onBindData", "bindData", "setData", "updateData", "updateUI",
+            "onBind", "bind", "render", "display", "showData", "populate"
+        )
+
+        (realRankClasses + discovered).distinct().forEach { className ->
+            runCatching {
+                val clz = ClassUtil.loadClass(className)
+                clz.methodFinder().forEach { m ->
+                    // hook 所有参数数量 >= 1 的公开方法，用于诊断
+                    if (m.parameterTypes.size >= 1 && java.lang.reflect.Modifier.isPublic(m.modifiers)) {
+                        val methodName = m.name
+                        // 只 hook 可能的数据绑定方法
+                        val isBindCandidate = bindMethods.any { methodName.contains(it, true) } ||
+                            methodName == "onBindData" ||
+                            methodName.startsWith("bind") ||
+                            methodName.startsWith("update") && methodName.contains("Data")
+
+                        if (isBindCandidate) {
+                            m.hooked {
+                                val view = thisObject
+                                val argsStr = args.joinToString(", ") { arg ->
+                                    when (arg) {
+                                        null -> "null"
+                                        is View -> "View#${arg.javaClass.simpleName}"
+                                        is CharSequence -> "String='${arg.take(50)}'"
+                                        else -> "${arg.javaClass.simpleName}@${Integer.toHexString(arg.hashCode())}"
+                                    }
+                                }
+                                HookEnv.base.log(Log.WARN, TAG, "[绑定] ${clz.simpleName}.$methodName($argsStr)")
+                            }
+                            bound++
+                        }
+                    }
                 }
             }.onFailure { }
         }
 
-        HookEnv.base.log(Log.WARN, TAG, "$name: 已挂载 $bound 个绑定点（候选 ${realRankClasses.size} + 扫描 ${discovered.size}）")
+        HookEnv.base.log(Log.WARN, TAG, "已挂载 $bound 个绑定方法监控")
     }
+
+    // = = = = AI 广告引擎拦截 = = = =
 
     private fun hookAdEngine() {
         runCatching {
@@ -96,124 +157,13 @@ object RankAds : BaseHook() {
             }
             if (computeMethod != null) {
                 computeMethod.hooked {
-                    debugLog("AdReRankEngine.compute: 拦截 suspend 函数")
+                    HookEnv.base.log(Log.WARN, TAG, "[广告引擎] compute 被调用！拦截中...")
                     return@hooked null
                 }
                 HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked AdReRankEngine.compute ✓")
-            } else {
-                HookEnv.base.log(Log.WARN, TAG, "[榜单广告] AdReRankEngine.compute 未找到")
             }
         }.onFailure {
             HookEnv.base.log(Log.WARN, TAG, "[榜单广告] AdReRankEngine hook 失败: ${it.message}")
-        }
-    }
-
-    private fun isCandidateBean(arg: Any?): Boolean {
-        if (arg == null) return false
-        if (arg is View || arg is Number || arg is Boolean || arg is CharSequence) return false
-        val n = arg.javaClass.name
-        return !n.contains("Fragment") && !n.contains("Activity") && !n.contains("Context")
-    }
-
-    private fun isAdBean(bean: Any): Boolean {
-        val cls = bean.javaClass
-        val simpleName = cls.simpleName
-
-        if (tokens(simpleName).any { it in adTokens }) return true
-
-        // showAdTag 字段
-        runCatching {
-            val f = cls.getDeclaredField("showAdTag"); f.isAccessible = true
-            if (f.getBoolean(bean)) { debugLog("isAdBean: showAdTag=true $simpleName"); return true }
-        }
-
-        // isAd() 方法
-        runCatching {
-            val m = cls.getDeclaredMethod("isAd")
-            if (m.invoke(bean) == true) { debugLog("isAdBean: isAd()=true $simpleName"); return true }
-        }
-
-        // isMarketAd() 方法
-        runCatching {
-            val m = cls.getDeclaredMethod("isMarketAd")
-            if (m.invoke(bean) == true) { debugLog("isAdBean: isMarketAd()=true $simpleName"); return true }
-        }
-
-        // analyticParams.isAd()
-        runCatching {
-            val params = cls.getMethod("getAnalyticParams").invoke(bean) ?: return@runCatching
-            if (params.javaClass.getMethod("isAd").invoke(params) == true) {
-                debugLog("isAdBean: analyticParams.isAd()=true $simpleName"); return true
-            }
-        }
-
-        // extParams 中 ad 标记
-        runCatching {
-            val ext = cls.getMethod("getExtParams").invoke(bean) as? Map<*, *> ?: return@runCatching
-            if (ext.containsKey("ad_type") || ext.containsKey("adId") || ext.containsKey("ad_id")) {
-                debugLog("isAdBean: extParams ad marker $simpleName"); return true
-            }
-        }
-
-        // getter 文本匹配
-        typeGetters.forEach { getter ->
-            val text = runCatching { bean.invokeAs<Any?>(getter)?.toString() }.getOrNull() ?: return@forEach
-            if (tokens(text).any { it in adTokens }) return true
-        }
-
-        // 其他布尔标记
-        adFlags.forEach { flag ->
-            val method = runCatching { cls.getDeclaredMethod(flag) }.getOrNull() ?: return@forEach
-            if (runCatching { method.invoke(bean) as? Boolean }.getOrNull() == true) {
-                debugLog("isAdBean: $flag=true $simpleName"); return true
-            }
-        }
-
-        return false
-    }
-
-    private fun containsAdResourceNames(view: View, depth: Int = 0): Boolean {
-        if (depth > 5) return false
-        val id = view.id
-        if (id != View.NO_ID && id > 0) {
-            val name = runCatching { view.resources.getResourceEntryName(id) }.getOrNull()?.lowercase() ?: ""
-            if (name == "ad" || name.startsWith("ad_") || name.endsWith("_ad") ||
-                name.contains("banner") || name.contains("advert")) return true
-        }
-        if (view is ViewGroup) {
-            for (i in 0 until view.childCount.coerceAtMost(16)) {
-                if (containsAdResourceNames(view.getChildAt(i) ?: continue, depth + 1)) return true
-            }
-        }
-        return false
-    }
-
-    private fun containsAdLabels(view: View, depth: Int = 0): Boolean {
-        if (depth > 5) return false
-        if (view is TextView) {
-            val text = view.text?.toString()?.trim() ?: ""
-            if (text.isEmpty()) return false
-            if (cnLabels.any { text.contains(it) }) return true
-            val noSpace = text.replace(Regex("\\s+"), "").lowercase()
-            if (tokens(noSpace).any { it in enLabels }) return true
-        }
-        if (view is ViewGroup) {
-            for (i in 0 until view.childCount.coerceAtMost(16)) {
-                if (containsAdLabels(view.getChildAt(i) ?: continue, depth + 1)) return true
-            }
-        }
-        return false
-    }
-
-    private fun tokens(raw: String): List<String> =
-        raw.replace(Regex("[^a-zA-Z0-9]+"), " ")
-            .replace(Regex("(?<=[a-z0-9])(?=[A-Z])"), " ")
-            .lowercase().split(' ').filter { it.isNotEmpty() }
-
-    private fun hide(view: View) {
-        runCatching {
-            view.visibility = View.GONE
-            view.layoutParams?.let { lp -> lp.height = 0; view.layoutParams = lp }
         }
     }
 
