@@ -125,10 +125,15 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "清除升级卡片的果园背景",
             checked = readLocal(Settings.KEY_ORCHARD_SKIN, true), tag = Settings.KEY_ORCHARD_SKIN
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
-        addSwitchRow(group = group, title = "升级卡片展开",
+        addSwitchRow(group = group, 
+            title = "升级卡片展开",
             summary = "升级卡片默认展开显示更多应用更新",
-            checked = readLocal(Settings.KEY_CARD_EXPAND, true), tag = Settings.KEY_CARD_EXPAND
-        ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
+            checked = readLocal(Settings.KEY_CARD_EXPAND, false), // 默认false关闭
+            tag = Settings.KEY_CARD_EXPAND,
+            enabled = false // 🔴 禁用，不可点击
+        ) { on -> 
+            writeRemote(Settings.KEY_CARD_EXPAND, on) 
+        }
         addSwitchRow(group = group, title = "底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
             checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
@@ -146,14 +151,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
 
-        addSwitchRow(group = group, title = "筛选顶栏推广位",
-            summary = "清理首页/榜单等页面顶部的云控推广子标签",
-            checked = readLocal(Settings.KEY_SUB_TAB_FILTER, true), tag = Settings.KEY_SUB_TAB_FILTER
-        ) { on -> writeRemote(Settings.KEY_SUB_TAB_FILTER, on) }
-
         addSwitchRow(group = group, title = "底栏「更新」入口",
             summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口",
-            checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB
+            checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB,
+            enabled = false // 🔴 禁用，不可点击
         ) { on -> writeRemote(Settings.KEY_UPDATE_TAB, on) }
 
         buildTabSelectBlock(group)
@@ -176,6 +177,12 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "隐藏搜索结果底部的「搜索 xxx 的人也在看」",
             checked = readLocal(Settings.KEY_SEARCH_ALSO_VIEW, true), tag = Settings.KEY_SEARCH_ALSO_VIEW
         ) { on -> writeRemote(Settings.KEY_SEARCH_ALSO_VIEW, on) }
+
+        addSwitchRow(group = group, title = "筛选顶栏推广位",
+            summary = "清理首页/榜单等页面顶部的云控推广子标签",
+            checked = readLocal(Settings.KEY_SUB_TAB_FILTER, true), tag = Settings.KEY_SUB_TAB_FILTER
+        ) { on -> writeRemote(Settings.KEY_SUB_TAB_FILTER, on) }
+
         content.addView(group)
         addFooter("升级记录与搜索结果按标题文案匹配，改版后可能失效，届时请反馈。")
     }

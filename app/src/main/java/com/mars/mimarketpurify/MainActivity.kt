@@ -66,7 +66,8 @@ class MainActivity : SettingsBaseActivity() {
     private val miscKeys = listOf(
         Settings.KEY_DETAIL_FEATURED,
         Settings.KEY_UPDATE_HISTORY,
-        Settings.KEY_SEARCH_ALSO_VIEW
+        Settings.KEY_SEARCH_ALSO_VIEW,
+        Settings.KEY_SUB_TAB_FILTER
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -252,7 +253,7 @@ class MainActivity : SettingsBaseActivity() {
             value = { countText(miscKeys) }
         ) { openPage(SubSettingsActivity.PAGE_MISC) }
         content.addView(uiGroup)
-    }  // ← 这个 } 之前丢了
+    }
     
     private fun buildModuleRow() {
         addSectionHeader("高级功能", "深度净化与功能增强")
