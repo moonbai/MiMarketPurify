@@ -10,6 +10,12 @@ import io.github.kyuubiran.ezxhelper.core.finder.FieldFinder.`-Static`.fieldFind
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
+/**
+ * 移花接木：在底栏注入「更新」标签，点击直达 UpdateListActivity。
+ *
+ * 只需 Hook 数据层——在 TabInfo.fromJSON() 返回的列表末尾追加一个自定义 TabInfo，
+ * 其 intent 指向 UpdateListActivity。市场框架会自动处理点击跳转和 UI 渲染。
+ */
 object UpdateTabEntry : BaseHook() {
 
     override val prefKey: String = Settings.KEY_UPDATE_TAB
@@ -51,6 +57,7 @@ object UpdateTabEntry : BaseHook() {
                     val tab = tabInfoClz.newInstance()
                     tagField?.set(tab, PURIFY_UPDATE)
 
+                    // titles
                     runCatching {
                         tabInfoClz.fieldFinder()
                             .filterByName("titles").first()
@@ -60,30 +67,32 @@ object UpdateTabEntry : BaseHook() {
                             "[UpdateTabEntry] titles 设置失败: ${it.message}")
                     }
 
+                    // icon — 从模块自身 drawable 读取资源 ID
                     runCatching {
                         val iconField = tabInfoClz.fieldFinder()
-                            .filterByName("icon").first()
+                            .filterByName("tab_view_icon").first()
                         val activityThreadClz = Class.forName("android.app.ActivityThread")
                         val appCtx = activityThreadClz
                             .getMethod("currentApplication")
                             .invoke(null) as? android.content.Context
                             ?: return@runCatching
-                        val pkgRes = appCtx.packageManager
-                            .getResourcesForApplication("com.xiaomi.market")
-                        var iconId = pkgRes.getIdentifier(
-                            "ongoing_notification_update_icon",
-                            "drawable",
-                            "com.xiaomi.market"
+                        val resId = appCtx.resources.getIdentifier(
+                            "ic_purify_update", "drawable", appCtx.packageName
                         )
-                        if (iconId == 0) iconId = 0x7f080d1f
-                        iconField.set(tab, iconId)
-                        HookEnv.base.log(Log.DEBUG, TAG,
-                            "[UpdateTabEntry] icon resId=0x${iconId.toString(16)}")
+                        if (resId != 0) {
+                            iconField.set(tab, resId)
+                            HookEnv.base.log(Log.DEBUG, TAG,
+                                "[UpdateTabEntry] icon resId=0x${resId.toString(16)} (module resource)")
+                        } else {
+                            HookEnv.base.log(Log.WARN, TAG,
+                                "[UpdateTabEntry] ic_purify_update 资源未找到")
+                        }
                     }.onFailure {
                         HookEnv.base.log(Log.WARN, TAG,
                             "[UpdateTabEntry] icon 设置失败: ${it.message}")
                     }
 
+                    // intent → UpdateListActivity
                     runCatching {
                         val intentField = tabInfoClz.fieldFinder()
                             .filterByName("intent").first()
