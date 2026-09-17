@@ -23,7 +23,6 @@ object TabFilter : BaseHook() {
 
     private const val HOME_TAG = "native_market_home"
 
-    /** 本模块注入的 tag，永远不过滤 */
     private const val PURIFY_UPDATE = "purify_update"
 
     private val homeSubTabWhitelist by lazy {
@@ -55,8 +54,6 @@ object TabFilter : BaseHook() {
         }
     }
 
-    // = = = = 公共判定 = = = =
-
     private fun tagOf(tab: Any): String? {
         tabField?.let { f -> runCatching { return f.get(tab) as? String } }
         return runCatching { tab.invokeAs<String>("getTag") }.getOrNull()
@@ -77,8 +74,6 @@ object TabFilter : BaseHook() {
         return looksManaged && !whitelisted
     }
 
-    // = = = = ① 数据层：TabInfo.fromJSON = = = =
-
     private fun hookTabInfoParse() {
         try {
             val clazz = ClassUtil.loadClass("com.xiaomi.market.model.TabInfo")
@@ -86,7 +81,6 @@ object TabFilter : BaseHook() {
                 clazz.fieldFinder().filterByName("tag").filterByType(String::class.java).firstOrNull()
             }.getOrNull()
 
-            // 预缓存注入所需的 field，存到 companion object 避免 lambda 捕获问题
             InjectFields.ensureInit(clazz)
 
             clazz.methodFinder()
@@ -123,7 +117,6 @@ object TabFilter : BaseHook() {
 
                     list.forEach { runCatching { sanitizeSubTabs(it, 0) } }
 
-                    // ====== 注入 purify_update（通过 InjectFields 访问，避免 lambda 捕获） ======
                     InjectFields.injectPurifyUpdate(list)
 
                     return@hooked list
@@ -163,8 +156,6 @@ object TabFilter : BaseHook() {
         if (removed.isNotEmpty()) subs.removeAll(removed.toSet())
         subs.forEach { runCatching { sanitizeSubTabs(it, depth + 1) } }
     }
-
-    // = = = = ② 渲染层：PagerTabsInfo.fromTabInfo = = = =
 
     private fun hookPagerTabsInfo() {
         try {
@@ -254,8 +245,7 @@ object TabFilter : BaseHook() {
 }
 
 /**
- * 注入所需的 Field 引用存到独立 object，避免 hooked lambda 无法捕获外部变量的问题。
- * hooked 扩展函数的 lambda 有特殊的接收者类型，不能直接引用 TabFilter 的成员。
+ * 注入所需的 Field 引用存到独立 object，避免 hooked lambda 捕获问题。
  */
 private object InjectFields {
     private var initialized = false
@@ -289,18 +279,18 @@ private object InjectFields {
             }.getOrNull() == "purify_update"
         }
         if (alreadyHas) {
-            debugLog("fromJSON: purify_update 已存在，跳过注入")
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] purify_update 已存在，跳过注入", null)
             return
         }
         val tab = runCatching { tabInfoClz!!.newInstance() }.getOrNull()
         if (tab == null) {
-            debugLog("fromJSON: TabInfo.newInstance() 失败")
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] TabInfo.newInstance() 失败", null)
             return
         }
         runCatching { tagField?.set(tab, "purify_update") }
         runCatching { titlesField?.set(tab, mapOf("cn" to "更新", "en" to "Update")) }
         runCatching { urlField?.set(tab, "market://update") }
         list.add(tab)
-        debugLog("fromJSON: 注入 purify_update, total=${list.size}")
+        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] 注入 purify_update, total=${list.size}", null)
     }
 }
