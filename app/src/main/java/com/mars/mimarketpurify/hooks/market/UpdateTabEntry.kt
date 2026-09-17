@@ -1,5 +1,6 @@
 package com.mars.mimarketpurify.hooks.market
 
+import android.app.ActivityThread
 import android.util.Log
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
@@ -14,22 +15,19 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
  * 移花接木：在底栏注入「更新」标签，点击直达 UpdateListActivity。
  *
  * 只需 Hook 数据层——在 TabInfo.fromJSON() 返回的列表末尾追加一个自定义 TabInfo，
- * 其 intent 指向 UpdateListActivity。市场框架会自动处理点击跳转和 UI 渲染，
- * 无需额外 Hook 点击回调或管理选中态。
+ * 其 intent 指向 UpdateListActivity。市场框架会自动处理点击跳转和 UI 渲染。
  */
 object UpdateTabEntry : BaseHook() {
 
     override val prefKey: String = Settings.KEY_UPDATE_TAB
     override val name: String get() = "底栏更新入口"
 
-    /** 注入 TabInfo 的标识 tag */
     private const val PURIFY_UPDATE = "purify_update"
 
     override fun init() {
         runCatching {
             val tabInfoClz = ClassUtil.loadClass("com.xiaomi.market.model.TabInfo")
 
-            // 缓存 tag 字段
             val tagField = runCatching {
                 tabInfoClz.fieldFinder()
                     .filterByName("tag")
@@ -42,12 +40,13 @@ object UpdateTabEntry : BaseHook() {
                 .filterByParamCount(1)
                 .first()
                 .hooked {
-                    val result = proceed()
-                    if (!enabled()) return@hooked result
+                    val raw = proceed()
+                    if (!enabled()) return@hooked raw
 
-                    val list = (result as List).toMutableList()
+                    val origList = raw as? List<*>
+                        ?: return@hooked raw
+                    val list = origList.toMutableList<Any?>()
 
-                    // 防重复注入
                     val already = list.any { item ->
                         runCatching {
                             tagField?.get(item) as? String
@@ -56,42 +55,38 @@ object UpdateTabEntry : BaseHook() {
                     }
                     if (already) return@hooked list
 
-                    // 构造 TabInfo 实例
                     val tab = tabInfoClz.newInstance()
-
-                    // tag
                     tagField?.set(tab, PURIFY_UPDATE)
 
-                    // titles（中英文）
                     runCatching {
                         tabInfoClz.fieldFinder()
                             .filterByName("titles").first()
                             .set(tab, mapOf("cn" to "更新", "en" to "Update"))
                     }.onFailure {
                         HookEnv.base.log(Log.WARN, TAG,
-                            "[UpdateTabEntry] titles 字段设置失败: ${it.message}")
+                            "[UpdateTabEntry] titles 设置失败: ${it.message}")
                     }
 
-                    // icon：优先动态查找资源名，兜底硬编码 ID
                     runCatching {
                         val iconField = tabInfoClz.fieldFinder()
                             .filterByName("icon").first()
-                        val pkgRes = HookEnv.base.getApplication().packageManager
+                        val appCtx = ActivityThread.currentApplication()
+                            ?: return@runCatching
+                        val pkgRes = appCtx.packageManager
                             .getResourcesForApplication("com.xiaomi.market")
                         val iconId = pkgRes.resources.getIdentifier(
                             "ongoing_notification_update_icon",
                             "drawable",
                             "com.xiaomi.market"
-                        ).takeIf { it != 0 } ?: 0x7f080d1f
+                        ).let { id -> if (id != 0) id else 0x7f080d1f }
                         iconField.set(tab, iconId)
                         HookEnv.base.log(Log.DEBUG, TAG,
                             "[UpdateTabEntry] icon resId=0x${iconId.toString(16)}")
                     }.onFailure {
                         HookEnv.base.log(Log.WARN, TAG,
-                            "[UpdateTabEntry] icon 字段设置失败: ${it.message}")
+                            "[UpdateTabEntry] icon 设置失败: ${it.message}")
                     }
 
-                    // intent：点击时跳转 UpdateListActivity
                     runCatching {
                         val intentField = tabInfoClz.fieldFinder()
                             .filterByName("intent").first()
@@ -107,7 +102,7 @@ object UpdateTabEntry : BaseHook() {
                             "[UpdateTabEntry] intent 设置完成")
                     }.onFailure {
                         HookEnv.base.log(Log.WARN, TAG,
-                            "[UpdateTabEntry] intent 字段设置失败: ${it.message}")
+                            "[UpdateTabEntry] intent 设置失败: ${it.message}")
                     }
 
                     list.add(tab)
