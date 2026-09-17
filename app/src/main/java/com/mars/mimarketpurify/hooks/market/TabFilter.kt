@@ -41,26 +41,34 @@ object TabFilter : BaseHook() {
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] init() 完成")
     }
 
-    // = = = = hook initTabs (构造函数内部注入 purify_update) = = = =
+    // = = = = hook initTabs = = = =
 
     private fun hookInitTabs() {
         val pageConfigClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.PageConfig") }.getOrNull() ?: return
-        val initTabsMethod = findMethod(pageConfigClz, "initTabs", 1) ?: return
+        val initTabsMethod = findMethod(pageConfigClz, "initTabs", 1)
+        if (initTabsMethod == null) {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] initTabs 方法未找到")
+            return
+        }
+        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] initTabs 方法: ${initTabsMethod.name} private=${Modifier.isPrivate(initTabsMethod.modifiers)}")
 
         initTabsMethod.hooked {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] ★ initTabs lambda 被触发! thisObject=${thisObject?.javaClass?.simpleName}")
             val result = proceed()
             val tabsField = runCatching { pageConfigClz.getDeclaredField("tabs") }.getOrNull()
             if (tabsField != null) {
                 tabsField.isAccessible = true
                 val tabs = tabsField.get(thisObject) as? MutableList<Any?> ?: return@hooked result
+                HookEnv.base.log(Log.WARN, TAG, "[TabFilter] tabs.size=${tabs.size}")
                 val alreadyHas = tabs.any { item ->
                     item != null && runCatching { tabField?.get(item) as? String }.getOrNull() == PURIFY_UPDATE
                 }
+                HookEnv.base.log(Log.WARN, TAG, "[TabFilter] alreadyHas=$alreadyHas")
                 if (!alreadyHas) {
                     val tabInfo = ensurePurifyTab()
                     if (tabInfo != null) {
                         tabs.add(tabInfo)
-                        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] initTabs: 注入 purify_update, tabs.size=${tabs.size}")
+                        HookEnv.base.log(Log.WARN, TAG, "[TabFilter] ★ 注入 purify_update! tabs.size=${tabs.size}")
                     }
                 }
             }

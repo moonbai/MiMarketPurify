@@ -30,23 +30,12 @@ object RankAds : BaseHook() {
         "com.xiaomi.market.agent.AgentRankTabFragment"
     )
 
-    private val resolvedIds = Collections.synchronizedMap(mutableMapOf<String, Int>())
-
-    private val cnLabels = setOf("广告", "推广", "赞助", "热推", "游戏推荐", "精品推荐", "编辑推荐", "推荐安装")
-    private val enLabels = setOf("ad", "ads", "sponsor", "sponsored", "promoted")
-
     override fun init() {
-        // 策略1：hook AI 广告引擎
         hookAdEngine()
-
-        // 策略2：诊断模式 - 扫描所有 rank 类的方法，找到实际的数据绑定方法
         diagnosticScan()
-
-        // 策略3：hook 实际 rank 类的各种可能绑定方法
-        hookActualBindings()
     }
 
-    // = = = = 诊断扫描 = = = =
+    // = = = = 诊断扫描（只读，不 hook） = = = =
 
     private fun diagnosticScan() {
         var discovered = listOf<String>()
@@ -57,7 +46,6 @@ object RankAds : BaseHook() {
         (realRankClasses + discovered).distinct().forEach { className ->
             runCatching {
                 val clz = ClassUtil.loadClass(className)
-                // 打印所有公开方法名
                 val methods = clz.declaredMethods
                     .filter { java.lang.reflect.Modifier.isPublic(it.modifiers) }
                     .map { "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})" }
@@ -65,14 +53,10 @@ object RankAds : BaseHook() {
                 methods.forEach { m ->
                     HookEnv.base.log(Log.WARN, TAG, "[诊断]   $m")
                 }
-
-                // 打印字段（找广告标记）
-                val fields = clz.declaredFields
-                fields.forEach { f ->
+                clz.declaredFields.forEach { f ->
                     val name = f.name.lowercase()
                     if (name.contains("ad") || name.contains("sponsor") || name.contains("promo") ||
-                        name.contains("recommend") || name.contains("badge") || name.contains("tag") ||
-                        name.contains("type") || name.contains("component")) {
+                        name.contains("type") || name.contains("tag")) {
                         HookEnv.base.log(Log.WARN, TAG, "[诊断]   字段: ${f.name} (${f.type.simpleName})")
                     }
                 }
@@ -81,7 +65,6 @@ object RankAds : BaseHook() {
             }
         }
 
-        // 诊断 ClientAIAdReRankEngine
         runCatching {
             val engineClz = ClassUtil.loadClass("com.xiaomi.market.ai.ClientAIAdReRankEngine")
             val methods = engineClz.declaredMethods.map {
@@ -95,56 +78,31 @@ object RankAds : BaseHook() {
             HookEnv.base.log(Log.WARN, TAG, "[诊断] AdReRankEngine 不存在: ${it.message}")
         }
 
-        HookEnv.base.log(Log.WARN, TAG, "=== 诊断扫描结束 ===")
-    }
-
-    // = = = = hook 实际绑定方法 = = = =
-
-    private fun hookActualBindings() {
-        var bound = 0
-        var discovered = listOf<String>()
-        runCatching { discovered = discoverRankClasses() }
-
-        // 可能的数据绑定方法名
-        val bindMethods = listOf(
-            "onBindData", "bindData", "setData", "updateData", "updateUI",
-            "onBind", "bind", "render", "display", "showData", "populate"
-        )
-
+        // ★ 只 hook onBindData（精确方法名），不 hook 其他方法
         (realRankClasses + discovered).distinct().forEach { className ->
             runCatching {
                 val clz = ClassUtil.loadClass(className)
-                clz.methodFinder().forEach { m ->
-                    // hook 所有参数数量 >= 1 的公开方法，用于诊断
-                    if (m.parameterTypes.size >= 1 && java.lang.reflect.Modifier.isPublic(m.modifiers)) {
-                        val methodName = m.name
-                        // 只 hook 可能的数据绑定方法
-                        val isBindCandidate = bindMethods.any { methodName.contains(it, true) } ||
-                            methodName == "onBindData" ||
-                            methodName.startsWith("bind") ||
-                            methodName.startsWith("update") && methodName.contains("Data")
-
-                        if (isBindCandidate) {
-                            m.hooked {
-                                val view = thisObject
-                                val argsStr = args.joinToString(", ") { arg ->
-                                    when (arg) {
-                                        null -> "null"
-                                        is View -> "View#${arg.javaClass.simpleName}"
-                                        is CharSequence -> "String='${arg.take(50)}'"
-                                        else -> "${arg.javaClass.simpleName}@${Integer.toHexString(arg.hashCode())}"
-                                    }
+                clz.methodFinder()
+                    .filterByName("onBindData")
+                    .forEach { m ->
+                        m.hooked {
+                            val argsStr = args.joinToString(", ") { arg ->
+                                when (arg) {
+                                    null -> "null"
+                                    is View -> "View#${arg.javaClass.simpleName}"
+                                    is CharSequence -> "String='${arg.take(50)}'"
+                                    else -> "${arg.javaClass.simpleName}"
                                 }
-                                HookEnv.base.log(Log.WARN, TAG, "[绑定] ${clz.simpleName}.$methodName($argsStr)")
                             }
-                            bound++
+                            HookEnv.base.log(Log.WARN, TAG, "[绑定] ${clz.simpleName}.onBindData($argsStr)")
+                            return@hooked proceed()
                         }
+                        HookEnv.base.log(Log.DEBUG, TAG, "[绑定] hooked ${className}.onBindData")
                     }
-                }
             }.onFailure { }
         }
 
-        HookEnv.base.log(Log.WARN, TAG, "已挂载 $bound 个绑定方法监控")
+        HookEnv.base.log(Log.WARN, TAG, "=== 诊断扫描结束 ===")
     }
 
     // = = = = AI 广告引擎拦截 = = = =
