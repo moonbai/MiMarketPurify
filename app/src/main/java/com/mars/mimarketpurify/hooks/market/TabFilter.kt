@@ -48,7 +48,24 @@ object TabFilter : BaseHook() {
 
     private var tabField: Field? = null
 
+    // ====== UpdateTabEntry 合并字段 ======
+    private var tabInfoClz: Class<*>? = null
+    private var titlesField: Field? = null
+    private var urlField: Field? = null
+
     override fun init() {
+        // 预加载 UpdateTabEntry 所需字段
+        runCatching {
+            tabInfoClz = ClassUtil.loadClass("com.xiaomi.market.model.TabInfo")
+            titlesField = tabInfoClz?.fieldFinder()
+                ?.filterByName("titles")?.firstOrNull()
+            urlField = tabInfoClz?.fieldFinder()
+                ?.filterByName("url")?.firstOrNull()
+            debugLog("UpdateTabEntry fields: titles=${titlesField != null}, url=${urlField != null}")
+        }.onFailure {
+            debugLog("UpdateTabEntry fields 加载失败: ${it.message}")
+        }
+
         hookTabInfoParse()
         runCatching { hookPagerTabsInfo() }.onFailure {
             HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PagerTabsInfo 收口不可用，跳过: ${it.message}", null)
@@ -102,10 +119,10 @@ object TabFilter : BaseHook() {
                     val list = (result as List<*>).toMutableList()
                     val beforeCount = list.size
 
+                    // ====== Step 1: 过滤 unwanted tabs ======
                     list.removeAll { item ->
                         if (item == null) return@removeAll true
                         val tag = runCatching { tagOf(item) }.getOrNull()
-                        // ★ 永远保留本模块注入的 tab
                         if (tag == PURIFY_UPDATE) return@removeAll false
                         val removed = tag == null || tag !in kept
                         if (removed) {
@@ -120,6 +137,28 @@ object TabFilter : BaseHook() {
                     }
 
                     list.forEach { runCatching { sanitizeSubTabs(it, 0) } }
+
+                    // ====== Step 2: 注入 purify_update ======
+                    val alreadyHas = list.any { item ->
+                        item != null && runCatching {
+                            tagField?.get(item) as? String
+                        }.getOrNull() == PURIFY_UPDATE
+                    }
+                    if (!alreadyHas && tabInfoClz != null) {
+                        val tab = runCatching { tabInfoClz!!.newInstance() }.getOrNull()
+                        if (tab != null) {
+                            runCatching { tabField?.set(tab, PURIFY_UPDATE) }
+                            runCatching { titlesField?.set(tab, mapOf("cn" to "更新", "en" to "Update")) }
+                            runCatching { urlField?.set(tab, "market://update") }
+                            list.add(tab)
+                            debugLog("fromJSON: 注入 purify_update, total=${list.size}")
+                        } else {
+                            debugLog("fromJSON: TabInfo.newInstance() 失败")
+                        }
+                    } else if (alreadyHas) {
+                        debugLog("fromJSON: purify_update 已存在，跳过注入")
+                    }
+
                     return@hooked list
                 }
             HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked TabInfo.fromJSON", null)
@@ -206,7 +245,6 @@ object TabFilter : BaseHook() {
         val dropped = mutableListOf<String>()
         val keepIdx = mutableListOf<Int>()
         tags.forEachIndexed { i, tag ->
-            // ★ 永远保留本模块注入的 tab
             if (tag == PURIFY_UPDATE) { keepIdx += i; return@forEachIndexed }
             val titleMap = titles?.getOrNull(i)
             val whitelisted = parentTag == HOME_TAG && homeSubTabWhitelist.contains(tag)
