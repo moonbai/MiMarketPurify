@@ -126,9 +126,9 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_ORCHARD_SKIN, true), tag = Settings.KEY_ORCHARD_SKIN
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
             
-        
+
         // ========== 锁定：升级卡片展开 ==========
-        addSwitchRow(group = group,
+        val expandRow = addSwitchRow(group = group,
             title = "升级卡片展开",
             summary = "升级卡片默认展开显示更多应用更新（该选项已锁定，不可修改）",
             checked = readLocal(Settings.KEY_CARD_EXPAND, false),
@@ -138,7 +138,13 @@ class SubSettingsActivity : SettingsBaseActivity() {
             isClickable = false
             setOnTouchListener { _, _ -> true }
         }
-                    
+        // 拿到内部Switch，彻底禁用
+        (expandRow as? CompoundButton)?.apply {
+            isEnabled = false
+            isClickable = false
+            isFocusable = false
+        }
+                            
         addSwitchRow(group = group, title = "底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
             checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
@@ -155,9 +161,9 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "隐藏不需要的底部标签（首页/我的/榜单等）",
             checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
-
+        
         // ========== 锁定：底栏「更新」入口 ==========
-        addSwitchRow(group = group, title = "底栏「更新」入口",
+        val updateTabRow = addSwitchRow(group = group, title = "底栏「更新」入口",
             summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口（该选项已锁定，不可修改）",
             checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB
         ) {}.apply {
@@ -165,7 +171,13 @@ class SubSettingsActivity : SettingsBaseActivity() {
             isClickable = false
             setOnTouchListener { _, _ -> true }
         }
-                
+        // 拿到内部Switch，彻底禁用
+        (updateTabRow as? CompoundButton)?.apply {
+            isEnabled = false
+            isClickable = false
+            isFocusable = false
+        }
+        
         buildTabSelectBlock(group)
         content.addView(group)
         addFooter("隐藏标签后需重启一次应用商店才会重建底栏。")
