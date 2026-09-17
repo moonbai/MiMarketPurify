@@ -1,6 +1,5 @@
 package com.mars.mimarketpurify.hooks.market
 
-import android.app.ActivityThread
 import android.util.Log
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
@@ -50,7 +49,7 @@ object UpdateTabEntry : BaseHook() {
                     val already = list.any { item ->
                         runCatching {
                             tagField?.get(item) as? String
-                                ?: item.invokeAs("getTag") as? String
+                                ?: (item as? Any?)?.invokeAs("getTag") as? String
                         }.getOrDefault(null) == PURIFY_UPDATE
                     }
                     if (already) return@hooked list
@@ -70,7 +69,10 @@ object UpdateTabEntry : BaseHook() {
                     runCatching {
                         val iconField = tabInfoClz.fieldFinder()
                             .filterByName("icon").first()
-                        val appCtx = ActivityThread.currentApplication()
+                        val activityThreadClz = Class.forName("android.app.ActivityThread")
+                        val appCtx = activityThreadClz
+                            .getMethod("currentApplication")
+                            .invoke(null) as? android.content.Context
                             ?: return@runCatching
                         val pkgRes = appCtx.packageManager
                             .getResourcesForApplication("com.xiaomi.market")
@@ -78,7 +80,7 @@ object UpdateTabEntry : BaseHook() {
                             "ongoing_notification_update_icon",
                             "drawable",
                             "com.xiaomi.market"
-                        ).let { id -> if (id != 0) id else 0x7f080d1f }
+                        ).let { id: Int -> if (id != 0) id else 0x7f080d1f }
                         iconField.set(tab, iconId)
                         HookEnv.base.log(Log.DEBUG, TAG,
                             "[UpdateTabEntry] icon resId=0x${iconId.toString(16)}")
