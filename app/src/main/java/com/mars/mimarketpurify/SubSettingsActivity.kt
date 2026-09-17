@@ -126,7 +126,8 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_ORCHARD_SKIN, true), tag = Settings.KEY_ORCHARD_SKIN
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
             
-
+        
+        // ========== 锁定：升级卡片展开 ==========
         addSwitchRow(group = group,
             title = "升级卡片展开",
             summary = "升级卡片默认展开显示更多应用更新（该选项已锁定，不可修改）",
@@ -135,10 +136,9 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) {}.apply {
             isEnabled = false
             isClickable = false
-            // 阻止所有子控件获取焦点、接收点击事件
-            (this as? ViewGroup)?.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+            setOnTouchListener { _, _ -> true }
         }
-            
+                    
         addSwitchRow(group = group, title = "底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
             checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
@@ -156,15 +156,16 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
 
+        // ========== 锁定：底栏「更新」入口 ==========
         addSwitchRow(group = group, title = "底栏「更新」入口",
             summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口（该选项已锁定，不可修改）",
             checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB
         ) {}.apply {
             isEnabled = false
             isClickable = false
-            (this as? ViewGroup)?.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+            setOnTouchListener { _, _ -> true }
         }
-        
+                
         buildTabSelectBlock(group)
         content.addView(group)
         addFooter("隐藏标签后需重启一次应用商店才会重建底栏。")
