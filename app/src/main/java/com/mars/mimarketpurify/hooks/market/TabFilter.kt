@@ -7,8 +7,6 @@ import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
 import com.mars.mimarketpurify.util.getFieldValue
 import com.mars.mimarketpurify.util.invokeAs
-import com.mars.mimarketpurify.util.setFieldValue
-import io.github.kyuubiran.ezxhelper.EzXHelper.appContext
 import io.github.kyuubiran.ezxhelper.core.finder.FieldFinder.`-Static`.fieldFinder
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
@@ -35,194 +33,154 @@ object TabFilter : BaseHook() {
 
     private var tabField: Field? = null
 
+    // = = = = PageConfig 引用缓存 = = = =
+    private var cachedPageConfig: Any? = null
+    private var purifyTabInfo: Any? = null
+    private var tabsSizeAtInject = -1
+
     override fun init() {
         hookTabInfoParse()
         runCatching { hookPagerTabsInfo() }.onFailure {
             HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PagerTabsInfo 跳过: ${it.message}", null)
         }
-        // 新增：探测底栏渲染路径
-        runCatching { probeBottomBar() }
+        runCatching { hookPageConfig() }
     }
 
-    // = = = = 探测底栏渲染 = = = =
+    // = = = = PageConfig hook = = = =
 
-    private fun probeBottomBar() {
-        // 尝试 hook ViewPager2 RecyclerView.Adapter 的 getItemCount
-        runCatching {
-            val vp2Class = Class.forName("androidx.viewpager2.widget.ViewPager2")
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] ViewPager2 class found, probing adapters...")
-        }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] ViewPager2 not found: ${it.message}")
-        }
-
-        // 尝试找 BottomNavigationView
-        runCatching {
-            val bnClass = Class.forName("com.google.android.material.bottomnavigation.BottomNavigationView")
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] BottomNavigationView class found")
-        }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] BottomNavigationView not found: ${it.message}")
-        }
-
-        // 扫描市场 App 的 adapter 类
-        runCatching {
-            val marketPkg = "com.xiaomi.market"
-            val classLoader = appContext.classLoader
-            val adapterCandidates = listOf(
-                "com.xiaomi.market.ui.adapter.MainTabAdapter",
-                "com.xiaomi.market.ui.adapter.TabAdapter",
-                "com.xiaomi.market.ui.adapter.BottomTabAdapter",
-                "com.xiaomi.market.ui.MainTabFragmentPagerAdapter",
-                "com.xiaomi.market.ui.MainPagerAdapter",
-                "com.xiaomi.market.ui.adapter.HomePagerAdapter",
-                "com.xiaomi.market.adapter.MainPagerAdapter",
-                "com.xiaomi.market.adapter.TabFragmentPagerAdapter"
-            )
-            adapterCandidates.forEach { name ->
-                runCatching {
-                    val clz = Class.forName(name, false, classLoader)
-                    HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] FOUND adapter: $name")
-                    // 打印方法列表
-                    clz.declaredMethods.forEach { m ->
-                        if (m.name.contains("count", true) || m.name.contains("item", true) ||
-                            m.name.contains("tab", true) || m.name.contains("page", true)) {
-                            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter]   method: ${m.name}(${m.parameterTypes.joinToString { it.simpleName }})")
-                        }
-                    }
-                }
-            }
-        }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] adapter scan failed: ${it.message}")
-        }
-
-        // 扫描包含 "tab" 关键词的市场包内类
-        runCatching {
-            val classLoader = appContext.classLoader
-            val pkg = "com.xiaomi.market"
-            // 尝试常见的 tab 相关类名
-            val tabClasses = listOf(
-                "com.xiaomi.market.ui.MainTabActivity",
-                "com.xiaomi.market.ui.MainActivity",
-                "com.xiaomi.market.ui.HomeActivity",
-                "com.xiaomi.market.activity.MainActivity",
-                "com.xiaomi.market.MainTabActivity",
-                "com.xiaomi.market.MainActivity"
-            )
-            tabClasses.forEach { name ->
-                runCatching {
-                    val clz = Class.forName(name, false, classLoader)
-                    HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] FOUND activity: $name")
-                    // 找 ViewPager/Adapter 相关字段
-                    clz.declaredFields.forEach { f ->
-                        val type = f.type.simpleName
-                        if (type.contains("Pager") || type.contains("Adapter") || type.contains("Tab") ||
-                            type.contains("Navigation") || type.contains("Bottom")) {
-                            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter]   field: ${f.name}: ${f.type.name}")
-                        }
-                    }
-                }
-            }
-        }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] activity scan failed: ${it.message}")
-        }
-
-        // hook 所有 Activity 的 onCreate，打印 View 层级中的 tab 相关组件
-        runCatching {
-            val activityClass = Class.forName("android.app.Activity")
-            activityClass.methodFinder()
-                .filterByName("onCreate")
-                .first()
-                .hooked {
-                    val act = instance ?: return@hooked proceed()
-                    val actName = act.javaClass.name
-                    if (!actName.contains("market", true)) return@hooked proceed()
-
-                    HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] Activity.onCreate: $actName")
-
-                    // 递归搜索 View 层级中的 ViewPager / BottomNavigationView
-                    runCatching {
-                        val decorView = act.window?.decorView ?: return@runCatching
-                        searchViews(decorView, 0)
-                    }
-
-                    return@hooked proceed()
-                }
-        }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] activity hook failed: ${it.message}")
-        }
+    private fun ensurePurifyTab(): Any? {
+        purifyTabInfo?.let { return it }
+        val tabInfoClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.TabInfo") }.getOrNull() ?: return null
+        val tagF = runCatching { tabInfoClz.fieldFinder().filterByName("tag").filterByType(String::class.java).firstOrNull() }.getOrNull()
+        val titlesF = runCatching { tabInfoClz.fieldFinder().filterByName("titles").firstOrNull() }.getOrNull()
+        val urlF = runCatching { tabInfoClz.fieldFinder().filterByName("url").firstOrNull() }.getOrNull()
+        val tab = runCatching { tabInfoClz.newInstance() }.getOrNull() ?: return null
+        runCatching { tagF?.set(tab, PURIFY_UPDATE) }
+        runCatching { titlesF?.set(tab, mapOf("cn" to "更新", "en" to "Update")) }
+        runCatching { urlF?.set(tab, "market://update") }
+        purifyTabInfo = tab
+        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] purify TabInfo created")
+        return tab
     }
 
-    private fun searchViews(view: android.view.View, depth: Int) {
-        if (depth > 8) return
-        val name = view.javaClass.name
-        if (name.contains("TabLayout") || name.contains("BottomNav") ||
-            name.contains("ViewPager") || name.contains("RecyclerView")) {
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] View[$depth]: $name id=${getResourceId(view)}")
-            // 尝试获取 adapter
+    private fun getTabsSize(): Int {
+        val pc = cachedPageConfig ?: return -1
+        val tabs = runCatching { pc.getFieldValue("tabs") as? List<*> }.getOrNull() ?: return -1
+        return tabs.size
+    }
+
+    private fun hookPageConfig() {
+        try {
+            val clazz = ClassUtil.loadClass("com.xiaomi.market.model.PageConfig")
+
+            // 1. hook PageConfig.get() 存单例引用
+            clazz.methodFinder()
+                .filterByName("get")
+                .filterByParamCount(0)
+                .firstOrNull { Modifier.isStatic(it.modifiers) }
+                ?.hooked {
+                    val result = proceed()
+                    if (result != null && cachedPageConfig == null) {
+                        cachedPageConfig = result
+                        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] PageConfig 单例已缓存")
+                        // 缓存后立即尝试创建 purify TabInfo
+                        ensurePurifyTab()
+                    }
+                    return@hooked result
+                }
+
+            // 2. hook getTabInfo(int) → 当 index == tabs.size 时返回 purify_update
+            clazz.methodFinder()
+                .filterByName("getTabInfo")
+                .filterByParamCount(1)
+                .firstOrNull {
+                    it.parameterTypes[0] == Int::class.javaPrimitiveType ||
+                        it.parameterTypes[0] == Int::class.java
+                }
+                ?.hooked {
+                    val result = proceed()
+                    val index = args[0] as? Int ?: return@hooked result
+
+                    // 已是 purify_update 则直接返回
+                    val resultTag = if (result != null) runCatching {
+                        tabField?.get(result) as? String ?: result.invokeAs<String>("getTag")
+                    }.getOrNull() else null
+                    if (resultTag == PURIFY_UPDATE) return@hooked result
+
+                    // 如果 index == tabs.size，说明是额外的 tab
+                    val tabsSize = getTabsSize()
+                    if (tabsSize > 0 && index == tabsSize) {
+                        debugLog("getTabInfo($index): 返回 purify_update (tabs.size=$tabsSize)")
+                        return@hooked ensurePurifyTab()
+                    }
+
+                    return@hooked result
+                }
+
+            // 3. hook getTabIndexFromTag(String) → purify_update 返回 tabs.size
             runCatching {
-                val adapterField = view.javaClass.getField("mAdapter")
-                    .orDeclaredField(view.javaClass, "mRecycler")
-                    ?.let { null } // RecyclerView
-                // 尝试 ViewPager2
-                if (name.contains("ViewPager2")) {
-                    val getter = view.javaClass.getMethod("getAdapter")
-                    val adapter = getter.invoke(view)
-                    if (adapter != null) {
-                        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter]   ViewPager2 adapter: ${adapter.javaClass.name}")
-                        // 打印 adapter 的 count 方法
-                        runCatching {
-                            val countMethod = adapter.javaClass.getMethod("getItemCount")
-                            val count = countMethod.invoke(adapter)
-                            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter]   adapter.itemCount = $count")
+                clazz.methodFinder()
+                    .filterByName("getTabIndexFromTag")
+                    .filterByParamCount(1)
+                    .first()
+                    .hooked {
+                        val tag = args[0] as? String
+                        if (tag == PURIFY_UPDATE) {
+                            val size = getTabsSize()
+                            debugLog("getTabIndexFromTag(purify_update): 返回 $size")
+                            return@hooked size
                         }
+                        return@hooked proceed()
                     }
-                }
-                // 尝试 ViewPager (v1)
-                if (name.endsWith("ViewPager") && !name.contains("2")) {
-                    val getter = view.javaClass.getMethod("getAdapter")
-                    val adapter = getter.invoke(view)
-                    if (adapter != null) {
-                        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter]   ViewPager adapter: ${adapter.javaClass.name}")
-                        runCatching {
-                            val countMethod = adapter.javaClass.getMethod("getCount")
-                            val count = countMethod.invoke(adapter)
-                            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter]   adapter.count = $count")
+            }
+
+            // 4. hook isTabValid(int) → 对 purify_update 的 index 返回 true
+            runCatching {
+                clazz.methodFinder()
+                    .filterByName("isTabValid")
+                    .filterByParamCount(1)
+                    .firstOrNull {
+                        it.parameterTypes[0] == Int::class.javaPrimitiveType ||
+                            it.parameterTypes[0] == Int::class.java
+                    }
+                    ?.hooked {
+                        val index = args[0] as? Int ?: return@hooked proceed()
+                        val tabsSize = getTabsSize()
+                        if (tabsSize > 0 && index == tabsSize) {
+                            debugLog("isTabValid($index): purify_update → true")
+                            return@hooked true
                         }
+                        return@hooked proceed()
                     }
-                }
-                // 尝试 BottomNavigationView
-                if (name.contains("BottomNav")) {
-                    val getter = view.javaClass.getMethod("getMenu")
-                    val menu = getter.invoke(view)
-                    HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter]   BottomNav menu: ${menu?.javaClass?.name}")
-                    runCatching {
-                        val sizeMethod = menu!!.javaClass.getMethod("size")
-                        val size = sizeMethod.invoke(menu)
-                        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter]   menu.size = $size")
+            }
+
+            // 5. hook toValidTabIndex(int) → 对 purify_update 的 index 不 clamp
+            runCatching {
+                clazz.methodFinder()
+                    .filterByName("toValidTabIndex")
+                    .filterByParamCount(1)
+                    .firstOrNull {
+                        it.parameterTypes[0] == Int::class.javaPrimitiveType ||
+                            it.parameterTypes[0] == Int::class.java
                     }
-                }
-            }.onFailure {
-                HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter]   adapter introspect failed: ${it.message}")
+                    ?.hooked {
+                        val index = args[0] as? Int ?: return@hooked proceed()
+                        val tabsSize = getTabsSize()
+                        if (tabsSize > 0 && index == tabsSize) {
+                            debugLog("toValidTabIndex($index): purify_update → $index")
+                            return@hooked index
+                        }
+                        return@hooked proceed()
+                    }
             }
+
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig")
+        } catch (e: Exception) {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] hook PageConfig 失败: ${e.message}", null)
         }
-        if (view is android.view.ViewGroup) {
-            for (i in 0 until view.childCount) {
-                runCatching { searchViews(view.getChildAt(i), depth + 1) }
-            }
-        }
     }
 
-    private fun getResourceId(view: android.view.View): Int {
-        return runCatching {
-            val method = android.view.View::class.java.getMethod("getId")
-            method.invoke(view) as? Int ?: -1
-        }.getOrNull() ?: -1
-    }
-
-    private fun Class<*>.orDeclaredField(parent: Class<*>, name: String): Field? {
-        return runCatching { parent.getDeclaredField(name) }.getOrNull()
-    }
-
-    // = = = = TabInfo.fromJSON (保持不变) = = = =
+    // = = = = TabInfo.fromJSON = = = =
 
     private fun tagOf(tab: Any): String? {
         tabField?.let { f -> runCatching { return f.get(tab) as? String } }
@@ -251,8 +209,6 @@ object TabFilter : BaseHook() {
                 clazz.fieldFinder().filterByName("tag").filterByType(String::class.java).firstOrNull()
             }.getOrNull()
 
-            InjectFields.ensureInit(clazz)
-
             clazz.methodFinder()
                 .filterByName("fromJSON")
                 .filterByParamCount(1)
@@ -266,11 +222,6 @@ object TabFilter : BaseHook() {
                     val list = (result as List<*>).toMutableList()
                     val beforeCount = list.size
 
-                    list.forEachIndexed { i, item ->
-                        val tag = if (item != null) runCatching { tagOf(item) }.getOrNull() else null
-                        debugLog("fromJSON: tab[$i] tag='${tag}' class=${item?.javaClass?.simpleName}")
-                    }
-
                     list.removeAll { item ->
                         if (item == null) return@removeAll true
                         val tag = runCatching { tagOf(item) }.getOrNull()
@@ -280,12 +231,11 @@ object TabFilter : BaseHook() {
                         removed
                     }
 
-                    val afterCount = list.size
-                    if (beforeCount != afterCount) debugLog("fromJSON: ${beforeCount} → ${afterCount} tabs")
+                    if (beforeCount != list.size) debugLog("fromJSON: ${beforeCount} → ${list.size} tabs")
 
                     list.forEach { runCatching { sanitizeSubTabs(it, 0) } }
-                    InjectFields.injectPurifyUpdate(list)
 
+                    // 不再在这里注入 purify_update，改由 PageConfig hook 注入
                     return@hooked list
                 }
             HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked TabInfo.fromJSON", null)
@@ -304,10 +254,8 @@ object TabFilter : BaseHook() {
         val removed = subs.filterIndexed { i, _ ->
             val titles = runCatching { titlesOf(subs[i]) }.getOrNull()
             val hit = isBlacklisted(subTags[i], titles) || deniedByWhitelist(parentTag, subTags, subTags[i])
-            if (hit) {
-                HookEnv.base.log(Log.INFO, TAG,
-                    "[TabFilter] removed subTab: ${subTags[i]}(${titles?.get("cn")}) under $parentTag", null)
-            }
+            if (hit) HookEnv.base.log(Log.INFO, TAG,
+                "[TabFilter] removed subTab: ${subTags[i]}(${titles?.get("cn")}) under $parentTag", null)
             hit
         }
         if (removed.isNotEmpty()) subs.removeAll(removed.toSet())
@@ -359,11 +307,8 @@ object TabFilter : BaseHook() {
             val whitelisted = parentTag == HOME_TAG && homeSubTabWhitelist.contains(tag)
             val promoIcon = abNormals?.getOrNull(i) == true && !whitelisted
             val hit = isBlacklisted(tag, titleMap) || promoIcon || deniedByWhitelist(parentTag, tags, tag)
-            if (hit) {
-                dropped += "$tag(${titleMap?.get("cn") ?: ""})"
-            } else {
-                keepIdx += i
-            }
+            if (hit) dropped += "$tag(${titleMap?.get("cn") ?: ""})"
+            else keepIdx += i
         }
         if (dropped.isEmpty() || keepIdx.isEmpty()) return
         dropped.forEach {
@@ -380,38 +325,5 @@ object TabFilter : BaseHook() {
         val copy = keepIdx.map { list[it] }
         list.clear()
         list.addAll(copy)
-    }
-}
-
-private object InjectFields {
-    private var initialized = false
-    private var tagField: Field? = null
-    private var titlesField: Field? = null
-    private var urlField: Field? = null
-    private var tabInfoClz: Class<*>? = null
-
-    fun ensureInit(clazz: Class<*>) {
-        if (initialized) return
-        tabInfoClz = clazz
-        tagField = runCatching { clazz.fieldFinder().filterByName("tag").filterByType(String::class.java).firstOrNull() }.getOrNull()
-        titlesField = runCatching { clazz.fieldFinder().filterByName("titles").firstOrNull() }.getOrNull()
-        urlField = runCatching { clazz.fieldFinder().filterByName("url").firstOrNull() }.getOrNull()
-        initialized = true
-        HookEnv.base.log(Log.DEBUG, TAG,
-            "[TabFilter] InjectFields: tag=${tagField != null}, titles=${titlesField != null}, url=${urlField != null}", null)
-    }
-
-    fun injectPurifyUpdate(list: MutableList<Any?>) {
-        if (!initialized || tabInfoClz == null) return
-        val alreadyHas = list.any { item ->
-            item != null && runCatching { tagField?.get(item) as? String }.getOrNull() == "purify_update"
-        }
-        if (alreadyHas) return
-        val tab = runCatching { tabInfoClz!!.newInstance() }.getOrNull() ?: return
-        runCatching { tagField?.set(tab, "purify_update") }
-        runCatching { titlesField?.set(tab, mapOf("cn" to "更新", "en" to "Update")) }
-        runCatching { urlField?.set(tab, "market://update") }
-        list.add(tab)
-        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] 注入 purify_update, total=${list.size}", null)
     }
 }
