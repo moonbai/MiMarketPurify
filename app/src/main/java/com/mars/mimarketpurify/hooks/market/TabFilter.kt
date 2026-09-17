@@ -17,40 +17,27 @@ import java.lang.reflect.Modifier
 object TabFilter : BaseHook() {
 
     override val prefKey: String = Settings.KEY_TAB_FILTER
-
-    override val name: String
-        get() = "筛选底部TAB标签与云控推广位"
+    override val name: String get() = "筛选底部TAB标签与云控推广位"
 
     private const val HOME_TAG = "native_market_home"
-
     private const val PURIFY_UPDATE = "purify_update"
 
     private val homeSubTabWhitelist by lazy {
-        setOf(
-            "native_market_feature",
-            "native_market_rank_software",
-            "must-have",
-            "GOLDEN MI AWARD",
-            "Classification",
-            "software_sub5",
-            "minor"
-        )
+        setOf("native_market_feature", "native_market_rank_software",
+            "must-have", "GOLDEN MI AWARD", "Classification",
+            "software_sub5", "minor")
     }
-
     private val subBlackTags by lazy {
         setOf("xiaomishipin", "native_market_shortplay", "native_market_agent")
     }
-
-    private val subBlackTitles by lazy {
-        setOf("看剧", "短剧")
-    }
+    private val subBlackTitles by lazy { setOf("看剧", "短剧") }
 
     private var tabField: Field? = null
 
     override fun init() {
         hookTabInfoParse()
         runCatching { hookPagerTabsInfo() }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PagerTabsInfo 收口不可用，跳过: ${it.message}", null)
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PagerTabsInfo 跳过: ${it.message}", null)
         }
     }
 
@@ -74,6 +61,8 @@ object TabFilter : BaseHook() {
         return looksManaged && !whitelisted
     }
 
+    // = = = = ① 数据层：TabInfo.fromJSON = = = =
+
     private fun hookTabInfoParse() {
         try {
             val clazz = ClassUtil.loadClass("com.xiaomi.market.model.TabInfo")
@@ -90,23 +79,28 @@ object TabFilter : BaseHook() {
                 .hooked {
                     val kept = Settings.getKeptTabs()
                     debugLog("fromJSON: kept=$kept")
-                    if (kept.isEmpty()) {
-                        debugLog("fromJSON: kept 为空，跳过过滤")
-                        return@hooked proceed()
-                    }
+                    if (kept.isEmpty()) return@hooked proceed()
 
                     val result = proceed()
                     val list = (result as List<*>).toMutableList()
                     val beforeCount = list.size
 
+                    // 调试：打印每个 tab 的 tag
+                    list.forEachIndexed { i, item ->
+                        val tag = if (item != null) runCatching { tagOf(item) }.getOrNull() else null
+                        debugLog("fromJSON: tab[$i] tag='${tag}' class=${item?.javaClass?.simpleName}")
+                    }
+
                     list.removeAll { item ->
                         if (item == null) return@removeAll true
                         val tag = runCatching { tagOf(item) }.getOrNull()
-                        if (tag == PURIFY_UPDATE) return@removeAll false
-                        val removed = tag == null || tag !in kept
-                        if (removed) {
-                            debugLog("fromJSON: removed tab ${tag ?: "(null)"}")
+                        // 永远保留 purify_update
+                        if (tag == PURIFY_UPDATE) {
+                            debugLog("fromJSON: 保留 purify_update ✓")
+                            return@removeAll false
                         }
+                        val removed = tag == null || tag !in kept
+                        if (removed) debugLog("fromJSON: removed ${tag ?: "(null)"}")
                         removed
                     }
 
@@ -117,6 +111,7 @@ object TabFilter : BaseHook() {
 
                     list.forEach { runCatching { sanitizeSubTabs(it, 0) } }
 
+                    // 注入 purify_update（如果没有）
                     InjectFields.injectPurifyUpdate(list)
 
                     return@hooked list
@@ -145,17 +140,16 @@ object TabFilter : BaseHook() {
                     else -> "denied by whitelist"
                 }
                 debugLog("subTab removed: ${subTags[i]}(${titles?.get("cn")}) under $parentTag reason=$reason")
-                HookEnv.base.log(
-                    Log.INFO, TAG,
-                    "[TabFilter] removed subTab: ${subTags[i]}(${titles?.get("cn")}) under $parentTag",
-                    null
-                )
+                HookEnv.base.log(Log.INFO, TAG,
+                    "[TabFilter] removed subTab: ${subTags[i]}(${titles?.get("cn")}) under $parentTag", null)
             }
             hit
         }
         if (removed.isNotEmpty()) subs.removeAll(removed.toSet())
         subs.forEach { runCatching { sanitizeSubTabs(it, depth + 1) } }
     }
+
+    // = = = = ② 渲染层：PagerTabsInfo.fromTabInfo = = = =
 
     private fun hookPagerTabsInfo() {
         try {
@@ -168,18 +162,16 @@ object TabFilter : BaseHook() {
                         returnType.name.endsWith("PagerTabsInfo")
                 }
             if (method == null) {
-                HookEnv.base.log(Log.VERBOSE, TAG, "[TabFilter] PagerTabsInfo.fromTabInfo 不存在，跳过", null)
+                HookEnv.base.log(Log.VERBOSE, TAG, "[TabFilter] PagerTabsInfo 不存在，跳过", null)
                 return
             }
             method.hooked {
                 val result = proceed()
                 if (result != null) {
                     val parentTag = runCatching { args[0]?.let { tagOf(it) } }.getOrNull()
-                    debugLog("PagerTabsInfo: parentTag=$parentTag, processing...")
+                    debugLog("PagerTabsInfo: parentTag=$parentTag")
                     runCatching { filterPagerTabsInfo(result, parentTag) }
-                        .onFailure {
-                            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] filterPagerTabsInfo: ${it.message}", null)
-                        }
+                        .onFailure { HookEnv.base.log(Log.WARN, TAG, "[TabFilter] filterPagerTabsInfo: ${it.message}", null) }
                 }
                 return@hooked result
             }
@@ -207,8 +199,7 @@ object TabFilter : BaseHook() {
             val titleMap = titles?.getOrNull(i)
             val whitelisted = parentTag == HOME_TAG && homeSubTabWhitelist.contains(tag)
             val promoIcon = abNormals?.getOrNull(i) == true && !whitelisted
-            val hit = isBlacklisted(tag, titleMap) || promoIcon ||
-                deniedByWhitelist(parentTag, tags, tag)
+            val hit = isBlacklisted(tag, titleMap) || promoIcon || deniedByWhitelist(parentTag, tags, tag)
             if (hit) {
                 val reason = when {
                     subBlackTags.contains(tag) -> "blacklisted"
@@ -244,9 +235,6 @@ object TabFilter : BaseHook() {
     }
 }
 
-/**
- * 注入所需的 Field 引用存到独立 object，避免 hooked lambda 捕获问题。
- */
 private object InjectFields {
     private var initialized = false
     private var tagField: Field? = null
@@ -257,15 +245,9 @@ private object InjectFields {
     fun ensureInit(clazz: Class<*>) {
         if (initialized) return
         tabInfoClz = clazz
-        tagField = runCatching {
-            clazz.fieldFinder().filterByName("tag").filterByType(String::class.java).firstOrNull()
-        }.getOrNull()
-        titlesField = runCatching {
-            clazz.fieldFinder().filterByName("titles").firstOrNull()
-        }.getOrNull()
-        urlField = runCatching {
-            clazz.fieldFinder().filterByName("url").firstOrNull()
-        }.getOrNull()
+        tagField = runCatching { clazz.fieldFinder().filterByName("tag").filterByType(String::class.java).firstOrNull() }.getOrNull()
+        titlesField = runCatching { clazz.fieldFinder().filterByName("titles").firstOrNull() }.getOrNull()
+        urlField = runCatching { clazz.fieldFinder().filterByName("url").firstOrNull() }.getOrNull()
         initialized = true
         HookEnv.base.log(Log.DEBUG, TAG,
             "[TabFilter] InjectFields: tag=${tagField != null}, titles=${titlesField != null}, url=${urlField != null}", null)
@@ -274,19 +256,13 @@ private object InjectFields {
     fun injectPurifyUpdate(list: MutableList<Any?>) {
         if (!initialized || tabInfoClz == null) return
         val alreadyHas = list.any { item ->
-            item != null && runCatching {
-                tagField?.get(item) as? String
-            }.getOrNull() == "purify_update"
+            item != null && runCatching { tagField?.get(item) as? String }.getOrNull() == "purify_update"
         }
         if (alreadyHas) {
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] purify_update 已存在，跳过注入", null)
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] purify_update 已存在，跳过", null)
             return
         }
-        val tab = runCatching { tabInfoClz!!.newInstance() }.getOrNull()
-        if (tab == null) {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] TabInfo.newInstance() 失败", null)
-            return
-        }
+        val tab = runCatching { tabInfoClz!!.newInstance() }.getOrNull() ?: return
         runCatching { tagField?.set(tab, "purify_update") }
         runCatching { titlesField?.set(tab, mapOf("cn" to "更新", "en" to "Update")) }
         runCatching { urlField?.set(tab, "market://update") }
