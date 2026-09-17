@@ -33,10 +33,9 @@ object TabFilter : BaseHook() {
 
     private var tabField: Field? = null
 
-    // = = = = PageConfig 引用缓存 = = = =
+    // PageConfig 引用缓存
     private var cachedPageConfig: Any? = null
     private var purifyTabInfo: Any? = null
-    private var tabsSizeAtInject = -1
 
     override fun init() {
         hookTabInfoParse()
@@ -73,47 +72,41 @@ object TabFilter : BaseHook() {
         try {
             val clazz = ClassUtil.loadClass("com.xiaomi.market.model.PageConfig")
 
-            // 1. hook PageConfig.get() 存单例引用
+            // 1. hook PageConfig.get() 存单例
             clazz.methodFinder()
                 .filterByName("get")
                 .filterByParamCount(0)
-                .firstOrNull { Modifier.isStatic(it.modifiers) }
+                .toList().firstOrNull { Modifier.isStatic(modifiers) }
                 ?.hooked {
                     val result = proceed()
                     if (result != null && cachedPageConfig == null) {
                         cachedPageConfig = result
                         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] PageConfig 单例已缓存")
-                        // 缓存后立即尝试创建 purify TabInfo
                         ensurePurifyTab()
                     }
                     return@hooked result
                 }
 
-            // 2. hook getTabInfo(int) → 当 index == tabs.size 时返回 purify_update
+            // 2. hook getTabInfo(int) → index == tabs.size 时返回 purify_update
             clazz.methodFinder()
                 .filterByName("getTabInfo")
                 .filterByParamCount(1)
-                .firstOrNull {
-                    it.parameterTypes[0] == Int::class.javaPrimitiveType ||
-                        it.parameterTypes[0] == Int::class.java
+                .toList().firstOrNull {
+                    parameterTypes[0] == Int::class.javaPrimitiveType ||
+                        parameterTypes[0] == Int::class.java
                 }
                 ?.hooked {
                     val result = proceed()
                     val index = args[0] as? Int ?: return@hooked result
-
-                    // 已是 purify_update 则直接返回
                     val resultTag = if (result != null) runCatching {
                         tabField?.get(result) as? String ?: result.invokeAs<String>("getTag")
                     }.getOrNull() else null
                     if (resultTag == PURIFY_UPDATE) return@hooked result
-
-                    // 如果 index == tabs.size，说明是额外的 tab
                     val tabsSize = getTabsSize()
                     if (tabsSize > 0 && index == tabsSize) {
                         debugLog("getTabInfo($index): 返回 purify_update (tabs.size=$tabsSize)")
                         return@hooked ensurePurifyTab()
                     }
-
                     return@hooked result
                 }
 
@@ -134,14 +127,14 @@ object TabFilter : BaseHook() {
                     }
             }
 
-            // 4. hook isTabValid(int) → 对 purify_update 的 index 返回 true
+            // 4. hook isTabValid(int) → purify_update 的 index 返回 true
             runCatching {
                 clazz.methodFinder()
                     .filterByName("isTabValid")
                     .filterByParamCount(1)
-                    .firstOrNull {
-                        it.parameterTypes[0] == Int::class.javaPrimitiveType ||
-                            it.parameterTypes[0] == Int::class.java
+                    .toList().firstOrNull {
+                        parameterTypes[0] == Int::class.javaPrimitiveType ||
+                            parameterTypes[0] == Int::class.java
                     }
                     ?.hooked {
                         val index = args[0] as? Int ?: return@hooked proceed()
@@ -154,14 +147,14 @@ object TabFilter : BaseHook() {
                     }
             }
 
-            // 5. hook toValidTabIndex(int) → 对 purify_update 的 index 不 clamp
+            // 5. hook toValidTabIndex(int) → purify_update 的 index 不被 clamp
             runCatching {
                 clazz.methodFinder()
                     .filterByName("toValidTabIndex")
                     .filterByParamCount(1)
-                    .firstOrNull {
-                        it.parameterTypes[0] == Int::class.javaPrimitiveType ||
-                            it.parameterTypes[0] == Int::class.java
+                    .toList().firstOrNull {
+                        parameterTypes[0] == Int::class.javaPrimitiveType ||
+                            parameterTypes[0] == Int::class.java
                     }
                     ?.hooked {
                         val index = args[0] as? Int ?: return@hooked proceed()
@@ -235,7 +228,7 @@ object TabFilter : BaseHook() {
 
                     list.forEach { runCatching { sanitizeSubTabs(it, 0) } }
 
-                    // 不再在这里注入 purify_update，改由 PageConfig hook 注入
+                    // 不再在这里注入，改由 PageConfig hook 注入
                     return@hooked list
                 }
             HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked TabInfo.fromJSON", null)
