@@ -125,15 +125,19 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "清除升级卡片的果园背景",
             checked = readLocal(Settings.KEY_ORCHARD_SKIN, true), tag = Settings.KEY_ORCHARD_SKIN
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
-        addSwitchRow(group = group, 
+
+        // ========== 修改点1：升级卡片展开 ==========
+        addSwitchRow(group = group,
             title = "升级卡片展开",
-            summary = "升级卡片默认展开显示更多应用更新",
-            checked = readLocal(Settings.KEY_CARD_EXPAND, false), // 默认false关闭
-            tag = Settings.KEY_CARD_EXPAND,
-            enabled = false // 🔴 禁用，不可点击
-        ) { on -> 
-            writeRemote(Settings.KEY_CARD_EXPAND, on) 
+            summary = "升级卡片默认展开显示更多应用更新（该选项已锁定，不可修改）",
+            checked = readLocal(Settings.KEY_CARD_EXPAND, false),
+            tag = Settings.KEY_CARD_EXPAND
+        ) { on ->
+            writeRemote(Settings.KEY_CARD_EXPAND, false)
+        }.apply {
+            isEnabled = false
         }
+
         addSwitchRow(group = group, title = "底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
             checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
@@ -151,11 +155,15 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
 
+        // ========== 修改点2：底栏「更新」入口 ==========
         addSwitchRow(group = group, title = "底栏「更新」入口",
-            summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口",
-            checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB,
-            enabled = false // 🔴 禁用，不可点击
-        ) { on -> writeRemote(Settings.KEY_UPDATE_TAB, on) }
+            summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口（该选项已锁定，不可修改）",
+            checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB
+        ) { on ->
+            writeRemote(Settings.KEY_UPDATE_TAB, false)
+        }.apply {
+            isEnabled = false
+        }
 
         buildTabSelectBlock(group)
         content.addView(group)
