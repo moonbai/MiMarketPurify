@@ -27,10 +27,13 @@ object RankAds : BaseHook() {
         "getType", "getViewType", "getItemViewType", "getTemplateType", "getCardType",
         "getBizType", "getStyleType", "getStyle", "getComponentName")
 
-    private val adFlags = listOf("isAd", "getIsAd", "isAdvertise", "isAdvertisement",
-        "isAdItem", "isPromote", "isPromotion", "isPromotionItem", "isSponsor", "isSponsored")
+    /** ★ 修正：使用实际存在的广告标记方法 + 字段 */
+    private val adFlags = listOf(
+        "isAd", "isMarketAd", "isAdvertise", "isAdvertisement", "isAdItem",
+        "isPromote", "isPromotion", "isPromotionItem", "isSponsor", "isSponsored",
+        "isRecommendAd", "isRankAd"
+    )
 
-    /** 实际 rank 类（MT-MCP 反编译确认） */
     private val realRankClasses = listOf(
         "com.xiaomi.market.agent.AgentRankItemBinder",
         "com.xiaomi.market.agent.AgentRankItemView",
@@ -48,10 +51,8 @@ object RankAds : BaseHook() {
     private val knownNormalTypes = setOf("nativeranklistapps", "ranklistapps", "rankapp")
 
     override fun init() {
-        // 策略1：hook AI 广告重排引擎（suspend 函数）
         hookAdEngine()
 
-        // 策略2：hook 实际 rank 类的 onBindData
         var bound = 0
         val discovered = discoverRankClasses()
         HookEnv.base.log(Log.WARN, TAG, "$name: dex 扫描发现 ${discovered.size} 个额外 rank 类")
@@ -94,15 +95,12 @@ object RankAds : BaseHook() {
     private fun hookAdEngine() {
         runCatching {
             val engineClz = ClassUtil.loadClass("com.xiaomi.market.ai.ClientAIAdReRankEngine")
-            // compute(ClientAIAdRequest, Continuation) 是 suspend 函数
             val computeMethod = engineClz.declaredMethods.firstOrNull {
                 it.name == "compute" && it.parameterTypes.size == 2
             }
             if (computeMethod != null) {
                 computeMethod.hooked {
                     debugLog("AdReRankEngine.compute: 拦截 suspend 函数")
-                    // suspend 函数返回 null 会让协程正常完成（Flow 级别），不会崩溃
-                    // 如果上游对 null 有特殊处理，这里返回 proceed() 也可
                     return@hooked null
                 }
                 HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked AdReRankEngine.compute ✓")
@@ -125,14 +123,57 @@ object RankAds : BaseHook() {
 
     private fun isAdBean(bean: Any): Boolean {
         val cls = bean.javaClass
-        if (tokens(cls.simpleName).any { it in adTokens }) return true
+        val simpleName = cls.simpleName
+
+        // 检查类名
+        if (tokens(simpleName).any { it in adTokens }) return true
+
+        // ★ 检查 showAdTag 字段（boolean）
+        val showAdTagField = runCatching { cls.getDeclaredField("showAdTag") }.getOrNull()
+        if (showAdTagField != null) {
+            showAdTagField.isAccessible = true
+            val isAd = runCatching { showAdTagField.getBoolean(bean) }.getOrNull() ?: false
+            if (isAd) {
+                debugLog("isAdBean: showAdTag=true in $simpleName")
+                return true
+            }
+        }
+
+        // 检查 isAd() 方法
+        val isAdMethod = runCatching { cls.getDeclaredMethod("isAd") }.getOrNull()
+        if (isAdMethod != null) {
+            val result = runCatching { isAdMethod.invoke(bean) as? Boolean }.getOrNull() ?: false
+            if (result) {
+                debugLog("isAdBean: isAd()=true in $simpleName")
+                return true
+            }
+        }
+
+        // 检查 isMarketAd() 方法
+        val isMarketAdMethod = runCatching { cls.getDeclaredMethod("isMarketAd") }.getOrNull()
+        if (isMarketAdMethod != null) {
+            val result = runCatching { isMarketAdMethod.invoke(bean) as? Boolean }.getOrNull() ?: false
+            if (result) {
+                debugLog("isAdBean: isMarketAd()=true in $simpleName")
+                return true
+            }
+        }
+
+        // 检查各种 getter 返回值
         typeGetters.forEach { getter ->
             val text = runCatching { bean.invokeAs<Any?>(getter)?.toString() }.getOrNull() ?: return@forEach
             if (tokens(text).any { it in adTokens }) return true
         }
+
+        // 检查其他布尔标记
         adFlags.forEach { flag ->
-            if (runCatching { bean.invokeAs<Boolean?>(flag) }.getOrNull() == true) return true
+            val method = runCatching { cls.getDeclaredMethod(flag) }.getOrNull() ?: return@forEach
+            if (runCatching { method.invoke(bean) as? Boolean }.getOrNull() == true) {
+                debugLog("isAdBean: $flag=true in $simpleName")
+                return true
+            }
         }
+
         return false
     }
 
