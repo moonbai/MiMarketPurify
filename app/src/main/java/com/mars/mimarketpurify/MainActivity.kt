@@ -223,12 +223,12 @@ class MainActivity : SettingsBaseActivity() {
      * 主页只放**分类入口**，具体开关全部收进二级页。
      */
     private fun buildCategories() {
-        addSectionHeader("净化设置", "广告与界面冗余内容清理")
+        addSectionHeader("界面设置", "广告与界面内容清理")
         val uiGroup = groupCard()
         addNavRow(
             group = uiGroup,
             title = "广告净化",
-            summary = "开屏、首页信息流、榜单、搜索、下载升级、应用详情广告",
+            summary = "开屏、首页信息流、搜索、下载升级、应用详情等一系列广告",
             value = { countText(adKeys) }
         ) { openPage(SubSettingsActivity.PAGE_ADS) }
     
@@ -295,7 +295,7 @@ class MainActivity : SettingsBaseActivity() {
         ) { on -> writeRemote(Settings.KEY_RANK_DEBUG, on) }
         content.addView(moduleGroup)
         content.addView(TextView(this).apply {
-            text = "开关即时生效，无需重启；若个别 ROM 缓存了远程偏好，重启一次应用商店即可。"
+            text = "Tips：开关实时生效，但还是建议重启应用商店"
             textSize = Ui.MICRO
             setTextColor(Ui.TEXT_TERTIARY)
             setPadding(dp(4), dp(2), dp(4), dp(16))

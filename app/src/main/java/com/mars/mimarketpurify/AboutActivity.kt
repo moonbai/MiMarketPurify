@@ -167,7 +167,7 @@ class AboutActivity : Activity() {
             setPadding(0, dp(3), 0, 0)
         })
         info.addView(TextView(this).apply {
-            text = "移除小米应用商店广告与推荐信息"
+            text = "移除广告与推荐信息"
             textSize = Ui.MICRO
             setTextColor(Ui.TEXT_TERTIARY)
             setPadding(0, dp(3), 0, 0)

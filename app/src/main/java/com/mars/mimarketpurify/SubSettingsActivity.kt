@@ -68,7 +68,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
     }
 
     private fun buildAds() {
-        addSectionHeader("广告净化", "拦截商店各处的广告与软件推荐")
+        // addSectionHeader("广告净化", "拦截商店各处的广告与软件推荐")
         val group = groupCard()
         adFeatures.forEach { f ->
             addSwitchRow(group = group, title = f.title, summary = f.summary,
@@ -88,7 +88,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_DETAIL_EXTRAS, true), tag = Settings.KEY_DETAIL_EXTRAS
         ) { on -> writeRemote(Settings.KEY_DETAIL_EXTRAS, on) }
         content.addView(group)
-        addFooter("屏蔽后若页面空白，多为该页组件被整体过滤，关掉对应开关即可恢复。")
+        addFooter("Tips：屏蔽后若页面空白，关掉对应页面开关即可恢复")
     }
 
     private fun buildExtra() {
@@ -99,7 +99,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
     }
 
     private fun buildMine() {
-        addSectionHeader("「我的」页精简", "清理「我的」页中不需要的板块与推荐")
+        // addSectionHeader("「我的」页精简", "清理「我的」页中不需要的板块与推荐")
         val group = groupCard()
         addSwitchRow(group = group, title = "应用推荐与推广",
             summary = "隐藏页面顶部推荐卡片与底部推广列表",
@@ -136,7 +136,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
         ) { on -> writeRemote(Settings.KEY_TAB_BADGE, on) }
         content.addView(group)
-        addFooter("改动一般在下次进入「我的」页时生效。")
+        addFooter("Tips：改动一般在下次进入界面时生效，不过重启会立刻生效。")
     }
 
     private fun buildTabs() {
@@ -144,7 +144,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         val group = groupCard()
 
         addSwitchRow(group = group, title = "筛选底部标签",
-            summary = "隐藏不需要的底部标签（首页/我的/榜单等）",
+            summary = "选择需要展示的底栏标签",
             checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
         
@@ -155,11 +155,11 @@ class SubSettingsActivity : SettingsBaseActivity() {
 
         buildTabSelectBlock(group)
         content.addView(group)
-        addFooter("隐藏标签后需重启一次应用商店才会重建底栏。")
+        addFooter("Tips：隐藏标签后需重启一次应用商店才会生效")
     }
 
     private fun buildMisc() {
-        addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
+        // addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
         val group = groupCard()
         addSwitchRow(group = group, title = "详情页「精选」",
             summary = "按文案匹配，仅在应用详情页生效",
@@ -180,7 +180,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) { on -> writeRemote(Settings.KEY_SUB_TAB_FILTER, on) }
 
         content.addView(group)
-        addFooter("升级记录与搜索结果按标题文案匹配，改版后可能失效，届时请反馈。")
+        addFooter("Tips：隐藏的可能只是标题~")
     }
 
     private fun buildModule() {
@@ -214,7 +214,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             setPadding(dp(12), 0, 0, 0)
         }
         block.addView(TextView(this).apply {
-            text = "保留哪些标签（取消勾选 = 隐藏该标签）"
+            // text = "保留哪些标签（取消勾选 = 隐藏该标签）"
             textSize = Ui.ROW_SUMMARY; setTextColor(Ui.TEXT_SECONDARY)
             setPadding(dp(Ui.ROW_PAD_H), dp(4), dp(Ui.ROW_PAD_H), dp(2))
         })
