@@ -67,8 +67,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
         else -> "模块功能"
     }
 
-    // ==================== 各组页面 ====================
-
     private fun buildAds() {
         addSectionHeader("广告净化", "拦截商店各处的广告与软件推荐")
         val group = groupCard()
@@ -76,7 +74,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             addSwitchRow(group = group, title = f.title, summary = f.summary,
                 checked = readLocal(f.key, true), tag = f.key
             ) { on -> writeRemote(f.key, on) }
-            }
+        }
         addSwitchRow(group = group, title = "领水果入口",
             summary = "隐藏福利活动 gif 动图入口",
             checked = readLocal(Settings.KEY_FRUIT, true), tag = Settings.KEY_FRUIT
@@ -88,8 +86,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addSwitchRow(group = group, title = "详情页广告",
             summary = "详情页拼装推荐、底部多按钮推广栏、浏览器下载弹窗广告",
             checked = readLocal(Settings.KEY_DETAIL_EXTRAS, true), tag = Settings.KEY_DETAIL_EXTRAS
-        ) { on -> writeRemote(Settings.KEY_DETAIL_EXTRAS, on) 
-        }
+        ) { on -> writeRemote(Settings.KEY_DETAIL_EXTRAS, on) }
         content.addView(group)
         addFooter("屏蔽后若页面空白，多为该页组件被整体过滤，关掉对应开关即可恢复。")
     }
@@ -101,16 +98,12 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addFooter("这些开关会同时作用于「移除升级/下载推荐」等既有功能，关掉后对应位置恢复原样。")
     }
 
-    /** 「我的」页精简 */
     private fun buildMine() {
         addSectionHeader("「我的」页精简", "清理「我的」页中不需要的板块与推荐")
         val group = groupCard()
-        addSwitchRow(
-            group = group,
-            title = "应用推荐与推广",
+        addSwitchRow(group = group, title = "应用推荐与推广",
             summary = "隐藏页面顶部推荐卡片与底部推广列表",
-            checked = readLocal(Settings.KEY_MINE_RECOMMEND, true),
-            tag = Settings.KEY_MINE_RECOMMEND
+            checked = readLocal(Settings.KEY_MINE_RECOMMEND, true), tag = Settings.KEY_MINE_RECOMMEND
         ) { on -> writeRemote(Settings.KEY_MINE_RECOMMEND, on) }
         addSwitchRow(group = group, title = "应用管理入口",
             summary = "隐藏页面中间的官方应用管理功能入口 tab",
@@ -145,19 +138,24 @@ class SubSettingsActivity : SettingsBaseActivity() {
     }
 
     private fun buildTabs() {
-        addSectionHeader("底栏自定义", "隐藏不需要的底部标签，同时清理首页顶栏云控推广位")
+        addSectionHeader("底部标签栏", "分别控制底栏标签与顶栏推广位")
         val group = groupCard()
-        addSwitchRow(group = group, title = "启用筛选",
-            summary = "关闭后底部标签与顶栏推广位均保持原样",
+
+        addSwitchRow(group = group, title = "筛选底部标签",
+            summary = "隐藏不需要的底部标签（首页/我的/榜单等）",
             checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
-     
+
+        addSwitchRow(group = group, title = "筛选顶栏推广位",
+            summary = "清理首页/榜单等页面顶部的云控推广子标签",
+            checked = readLocal(Settings.KEY_SUB_TAB_FILTER, true), tag = Settings.KEY_SUB_TAB_FILTER
+        ) { on -> writeRemote(Settings.KEY_SUB_TAB_FILTER, on) }
+
         addSwitchRow(group = group, title = "底栏「更新」入口",
             summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口",
-            checked = readLocal(Settings.KEY_UPDATE_TAB, false),
-            tag = Settings.KEY_UPDATE_TAB
+            checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB
         ) { on -> writeRemote(Settings.KEY_UPDATE_TAB, on) }
-    
+
         buildTabSelectBlock(group)
         content.addView(group)
         addFooter("隐藏标签后需重启一次应用商店才会重建底栏。")
@@ -181,7 +179,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         content.addView(group)
         addFooter("升级记录与搜索结果按标题文案匹配，改版后可能失效，届时请反馈。")
     }
-        /** 模块功能页 */
+
     private fun buildModule() {
         addSectionHeader("模块功能", "仅影响本模块的显示方式与调试选项")
         val group = groupCard()
@@ -196,7 +194,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         content.addView(group)
         addFooter("隐藏图标后需从 LSPosed 等框架的模块列表打开主页。")
     }
-    
+
     private fun addFooter(text: String) {
         content.addView(TextView(this).apply {
             this.text = text; textSize = Ui.MICRO; setTextColor(Ui.TEXT_TERTIARY)

@@ -19,6 +19,7 @@ import com.mars.mimarketpurify.hooks.market.RecommendSections
 import com.mars.mimarketpurify.hooks.market.SearchAds
 import com.mars.mimarketpurify.hooks.market.SplashAds
 import com.mars.mimarketpurify.hooks.market.TabFilter
+import com.mars.mimarketpurify.hooks.market.SubTabFilter
 import com.mars.mimarketpurify.hooks.market.UiCleanup
 import com.mars.mimarketpurify.hooks.market.UpdateDownloadAds
 import com.mars.mimarketpurify.init.AppPackage
@@ -43,10 +44,10 @@ object Market : AppRegister() {
             HideSecurityView,
             HideFruitEntry,
             TabFilter,
+            SubTabFilter,
             RankAds,
             UiCleanup,
             RecommendSections,
-            // 以下为从 XiaomiHelper 补移植的应用商店规则
             TabBadge,
             EntranceAds,
             MineAdGroup,
@@ -54,10 +55,8 @@ object Market : AppRegister() {
             UpdateDialogBlock,
             EnableSuperIsland,
             MiscApply,
-            // 以下为稳定性增强（参考 lisrain/NewFuckMarketAds_Fork）：
-            // 纯保护性安全网，不受单个功能开关控制，由总开关统一门控。
             AntiSelfDestruct,
-            UpdateTabEntry,  // ← 添加
+            UpdateTabEntry,
             ConfigBackupRestore
         )
     }

@@ -20,6 +20,7 @@ object Settings {
     const val KEY_DETAIL = "detail_ads"
     const val KEY_SECURITY = "hide_security"
     const val KEY_TAB_FILTER = "tab_filter"
+    const val KEY_SUB_TAB_FILTER = "sub_tab_filter"
     const val KEY_TAB_KEEP = "tab_keep"
     const val DEFAULT_TAB_KEEP = "native_market_home,native_market_mine"
     val TAB_ITEMS: LinkedHashMap<String, String> = linkedMapOf(
@@ -63,17 +64,11 @@ object Settings {
     
     // ═══════════════ 读取 ═══════════════
 
-    /**
-     * 直接从目标 app 的 SP XML 文件读取值。
-     * service 为 null 时 SubSettingsActivity.writeRemote 静默失败，
-     * 但 LSPosed 框架可能已同步过一次，文件里有值。
-     */
     private fun readFromTargetSp(key: String): String? {
         return runCatching {
             val spFile = java.io.File(
                 "/data/data/$TARGET_PKG/shared_prefs/com.xiaomi.market_preferences.xml")
             if (!spFile.exists()) return@runCatching null
-
             val parser = android.util.Xml.newPullParser()
             parser.setInput(spFile.inputStream(), "UTF-8")
             var type = parser.eventType
@@ -96,11 +91,6 @@ object Settings {
         }.getOrNull()
     }
 
-    /**
-     * 两层读取：
-     * 1. LSPosed 远程偏好（标准路径）
-     * 2. 目标 app SP XML 文件（service 为 null 时兜底）
-     */
     private fun getRemotePrefs(): android.content.SharedPreferences? {
         return runCatching {
             (HookEnv.base as XposedModule).getRemotePreferences(PREFS_GROUP)
@@ -112,31 +102,23 @@ object Settings {
     fun isMasterEnabled(): Boolean = isEnabled(KEY_MASTER, true)
 
     fun isEnabled(key: String, def: Boolean = true): Boolean {
-        // 优先：远程偏好
         val remote = getRemotePrefs()
         if (remote != null) {
             val value = remote.getBoolean(key, def)
             if (key.startsWith("mine_")) {
-                HookEnv.base.log(Log.INFO, TAG,
-                    "Settings.isEnabled($key)=$value (default=$def, source=remote)")
+                HookEnv.base.log(Log.INFO, TAG, "Settings.isEnabled($key)=$value (default=$def, source=remote)")
             }
             return value
         }
-
-        // 兜底：直接读目标 app SP 文件
         val raw = readFromTargetSp(key)
         if (raw != null) {
             val value = raw == "true"
             if (key.startsWith("mine_")) {
-                HookEnv.base.log(Log.INFO, TAG,
-                    "Settings.isEnabled($key)=$value (default=$def, source=target_sp)")
+                HookEnv.base.log(Log.INFO, TAG, "Settings.isEnabled($key)=$value (default=$def, source=target_sp)")
             }
             return value
         }
-
-        // 全部失败 → 默认 false（不隐藏，避免误伤）
-        HookEnv.base.log(Log.WARN, TAG,
-            "Settings.isEnabled($key): 远程+目标SP都不可用，默认 false")
+        HookEnv.base.log(Log.WARN, TAG, "Settings.isEnabled($key): 远程+目标SP都不可用，默认 false")
         return false
     }
 

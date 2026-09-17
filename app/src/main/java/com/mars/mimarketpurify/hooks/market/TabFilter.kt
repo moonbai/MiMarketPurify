@@ -1,7 +1,6 @@
 package com.mars.mimarketpurify.hooks.market
 
 import android.app.Fragment
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import com.mars.mimarketpurify.HookEnv
@@ -17,28 +16,22 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
+/**
+ * 底栏 tab 过滤 + 更新 Tab 注入。
+ * 仅控制底部主导航栏（首页/我的/榜单/更新）。
+ * 子 tab 过滤（顶栏推广位）由 SubTabFilter 负责。
+ */
 object TabFilter : BaseHook() {
 
     override val prefKey: String = Settings.KEY_TAB_FILTER
-    override val name: String get() = "筛选底部TAB标签与云控推广位"
+    override val name: String get() = "筛选底部TAB标签"
 
     private const val HOME_TAG = "native_market_home"
     private const val PURIFY_UPDATE = "purify_update"
 
-    private val homeSubTabWhitelist by lazy {
-        setOf("native_market_feature", "native_market_rank_software",
-            "must-have", "GOLDEN MI AWARD", "Classification",
-            "software_sub5", "minor")
-    }
-    private val subBlackTags by lazy {
-        setOf("xiaomishipin", "native_market_shortplay", "native_market_agent")
-    }
-    private val subBlackTitles by lazy { setOf("看剧", "短剧") }
-
     private var tabField: Field? = null
     private var cachedPageConfig: Any? = null
     private var purifyTabInfo: Any? = null
-    private var purifyTabIndex = -1
 
     private fun findMethod(clazz: Class<*>, name: String, paramCount: Int): Method? {
         return clazz.declaredMethods.firstOrNull { m ->
@@ -49,49 +42,59 @@ object TabFilter : BaseHook() {
     override fun init() {
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] init() 开始")
         hookTabInfoParse()
-        runCatching { hookPagerTabsInfo() }
         runCatching { hookPageConfig() }
-        // 关键：hook getFragmentInfo 注入 purify_update 的 FragmentInfo
         runCatching { hookGetFragmentInfo() }
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] init() 完成")
+    }
+
+    // = = = = hook initTabs (构造函数内部注入) = = = =
+
+    private fun hookInitTabs() {
+        val pageConfigClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.PageConfig") }.getOrNull() ?: return
+        val initTabsMethod = findMethod(pageConfigClz, "initTabs", 1) ?: return
+
+        initTabsMethod.hooked {
+            proceed()
+            val tabsField = runCatching { pageConfigClz.getDeclaredField("tabs") }.getOrNull() ?: return@hooked
+            tabsField.isAccessible = true
+            val tabs = tabsField.get(thisObject) as? MutableList<Any?> ?: return@hooked
+            val alreadyHas = tabs.any { item ->
+                item != null && runCatching { tabField?.get(item) as? String }.getOrNull() == PURIFY_UPDATE
+            }
+            if (!alreadyHas) {
+                val tabInfo = ensurePurifyTab() ?: return@hooked
+                tabs.add(tabInfo)
+                HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] initTabs: 注入 purify_update, tabs.size=${tabs.size}")
+            }
+        }
+        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.initTabs()")
     }
 
     // = = = = hook getFragmentInfo = = = =
 
     private fun hookGetFragmentInfo() {
         val pageConfigClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.PageConfig") }.getOrNull() ?: return
-        // getFragmentInfo(int, int, int, Bundle) → FragmentInfo
         val method = pageConfigClz.declaredMethods.firstOrNull {
             it.name == "getFragmentInfo" && it.parameterTypes.size == 4
         } ?: return
 
-        // FragmentInfo 构造器: (Class, Bundle, boolean)
         val fragmentInfoClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.ui.ITabActivity\$FragmentInfo") }.getOrNull()
         val fragmentInfoCtor = fragmentInfoClz?.declaredConstructors?.firstOrNull {
-            it.parameterTypes.size == 3 &&
-                it.parameterTypes[0] == Class::class.java
+            it.parameterTypes.size == 3 && it.parameterTypes[0] == Class::class.java
         }
-
-        // 找一个存在的 Fragment 类作为 dummy
-        val dummyFragmentClz = runCatching {
-            Class.forName("android.app.Fragment")
-        }.getOrNull() ?: runCatching {
-            Class.forName("androidx.fragment.app.Fragment")
-        }.getOrNull()
+        val dummyFragmentClz = runCatching { Class.forName("android.app.Fragment") }.getOrNull()
+            ?: runCatching { Class.forName("androidx.fragment.app.Fragment") }.getOrNull()
 
         if (fragmentInfoCtor == null || dummyFragmentClz == null) {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] 无法构造 FragmentInfo: ctor=${fragmentInfoCtor != null}, fragment=${dummyFragmentClz != null}")
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] 无法构造 FragmentInfo")
             return
         }
 
         method.hooked {
             val result = proceed()
             val index = args[0] as? Int ?: return@hooked result
-
-            // 已经有 FragmentInfo → 直接返回
             if (result != null) return@hooked result
 
-            // 检查这个 index 是否对应 purify_update tab
             val pc = cachedPageConfig ?: return@hooked result
             val tabs = runCatching { pc.getFieldValue("tabs") as? List<*> }.getOrNull() ?: return@hooked result
             if (index < 0 || index >= tabs.size) return@hooked result
@@ -100,15 +103,11 @@ object TabFilter : BaseHook() {
             val tag = runCatching { tabField?.get(tab) as? String ?: tab.invokeAs<String>("getTag") }.getOrNull()
             if (tag != PURIFY_UPDATE) return@hooked result
 
-            // 记录 purify_update 的 tab index（后续 hook 点击用）
-            purifyTabIndex = index
-
-            // 构造 dummy FragmentInfo
             val args = Bundle()
             args.putString("url", "market://update")
             args.putString("tab_tag", PURIFY_UPDATE)
             val fragInfo = fragmentInfoCtor.newInstance(dummyFragmentClz, args, false)
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] getFragmentInfo($index): 返回 dummy FragmentInfo for purify_update")
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] getFragmentInfo($index): dummy for purify_update")
             return@hooked fragInfo
         }
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.getFragmentInfo()")
@@ -141,7 +140,6 @@ object TabFilter : BaseHook() {
         val clazz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.PageConfig") }.getOrNull() ?: return
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] PageConfig 已加载")
 
-        // hook get()
         findMethod(clazz, "get", 0)?.let { m ->
             if (Modifier.isStatic(m.modifiers)) {
                 m.hooked {
@@ -149,15 +147,13 @@ object TabFilter : BaseHook() {
                     if (result != null && cachedPageConfig == null) {
                         cachedPageConfig = result
                         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] PageConfig 单例已缓存")
-                        ensurePurifyTab()
                     }
                     return@hooked result
                 }
                 HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.get()")
             }
-        } ?: HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PageConfig.get() 未找到")
+        }
 
-        // hook getTabInfo(int)
         findMethod(clazz, "getTabInfo", 1)?.let { m ->
             m.hooked {
                 val result = proceed()
@@ -176,59 +172,30 @@ object TabFilter : BaseHook() {
             HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.getTabInfo()")
         }
 
-        // hook getTabIndexFromTag(String)
-        runCatching {
-            findMethod(clazz, "getTabIndexFromTag", 1)?.hooked {
-                val tag = args[0] as? String
-                if (tag == PURIFY_UPDATE) return@hooked getTabsSize()
-                return@hooked proceed()
-            }
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.getTabIndexFromTag()")
-        }
+        runCatching { findMethod(clazz, "getTabIndexFromTag", 1)?.hooked {
+            val tag = args[0] as? String
+            if (tag == PURIFY_UPDATE) return@hooked getTabsSize()
+            return@hooked proceed()
+        } }
 
-        // hook isTabValid(int)
-        runCatching {
-            findMethod(clazz, "isTabValid", 1)?.hooked {
-                val index = args[0] as? Int ?: return@hooked proceed()
-                val tabsSize = getTabsSize()
-                if (tabsSize > 0 && index == tabsSize) return@hooked true
-                return@hooked proceed()
-            }
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.isTabValid()")
-        }
+        runCatching { findMethod(clazz, "isTabValid", 1)?.hooked {
+            val index = args[0] as? Int ?: return@hooked proceed()
+            if (getTabsSize() > 0 && index == getTabsSize()) return@hooked true
+            return@hooked proceed()
+        } }
 
-        // hook toValidTabIndex(int)
-        runCatching {
-            findMethod(clazz, "toValidTabIndex", 1)?.hooked {
-                val index = args[0] as? Int ?: return@hooked proceed()
-                val tabsSize = getTabsSize()
-                if (tabsSize > 0 && index == tabsSize) return@hooked index
-                return@hooked proceed()
-            }
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.toValidTabIndex()")
-        }
+        runCatching { findMethod(clazz, "toValidTabIndex", 1)?.hooked {
+            val index = args[0] as? Int ?: return@hooked proceed()
+            if (getTabsSize() > 0 && index == getTabsSize()) return@hooked index
+            return@hooked proceed()
+        } }
     }
 
-    // = = = = TabInfo.fromJSON = = = =
+    // = = = = TabInfo.fromJSON (底栏 tab 过滤) = = = =
 
     private fun tagOf(tab: Any): String? {
         tabField?.let { f -> runCatching { return f.get(tab) as? String } }
         return runCatching { tab.invokeAs<String>("getTag") }.getOrNull()
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun titlesOf(tab: Any): Map<String, String>? =
-        runCatching { tab.getFieldValue("titles") as? Map<String, String> }.getOrNull()
-
-    private fun isBlacklisted(tag: String?, titles: Map<String, String>?): Boolean =
-        (tag != null && subBlackTags.contains(tag)) ||
-            titles?.values?.any { subBlackTitles.contains(it) } == true
-
-    private fun deniedByWhitelist(parentTag: String?, siblings: List<String?>, tag: String?): Boolean {
-        if (parentTag != HOME_TAG) return false
-        val looksManaged = siblings.any { it != null && homeSubTabWhitelist.contains(it) }
-        val whitelisted = tag != null && homeSubTabWhitelist.contains(tag)
-        return looksManaged && !whitelisted
     }
 
     private fun hookTabInfoParse() {
@@ -254,82 +221,11 @@ object TabFilter : BaseHook() {
                     removed
                 }
                 if (beforeCount != list.size) debugLog("fromJSON: ${beforeCount} → ${list.size} tabs")
-                list.forEach { runCatching { sanitizeSubTabs(it, 0) } }
                 return@hooked list
             }
             HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked TabInfo.fromJSON")
         } catch (e: Exception) {
             HookEnv.base.log(Log.WARN, TAG, "[TabFilter] hook TabInfo 失败: ${e.message}")
         }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun sanitizeSubTabs(tab: Any?, depth: Int) {
-        if (tab == null || depth > 2) return
-        val parentTag = runCatching { tagOf(tab) }.getOrNull()
-        val subs = runCatching { tab.invokeAs<MutableList<Any>>("getSubTabs") }.getOrNull() ?: return
-        if (subs.isEmpty()) return
-        val subTags = subs.map { runCatching { tagOf(it) }.getOrNull() }
-        val removed = subs.filterIndexed { i, _ ->
-            val titles = runCatching { titlesOf(subs[i]) }.getOrNull()
-            val hit = isBlacklisted(subTags[i], titles) || deniedByWhitelist(parentTag, subTags, subTags[i])
-            if (hit) HookEnv.base.log(Log.INFO, TAG, "[TabFilter] removed subTab: ${subTags[i]} under $parentTag")
-            hit
-        }
-        if (removed.isNotEmpty()) subs.removeAll(removed.toSet())
-        subs.forEach { runCatching { sanitizeSubTabs(it, depth + 1) } }
-    }
-
-    // = = = = PagerTabsInfo = = = =
-
-    private fun hookPagerTabsInfo() {
-        try {
-            val clazz = ClassUtil.loadClass("com.xiaomi.market.ui.PagerTabsInfo")
-            val method = clazz.methodFinder().filterByName("fromTabInfo").firstOrNull()
-                ?: clazz.methodFinder().firstOrNull {
-                    Modifier.isStatic(modifiers) && parameterTypes.size == 1 &&
-                        parameterTypes[0].name.endsWith("TabInfo") && returnType.name.endsWith("PagerTabsInfo")
-                }
-            if (method == null) return
-            method.hooked {
-                val result = proceed()
-                if (result != null) {
-                    val parentTag = runCatching { args[0]?.let { a -> tagOf(a) } }.getOrNull()
-                    debugLog("PagerTabsInfo: parentTag=$parentTag")
-                    runCatching { filterPagerTabsInfo(result, parentTag) }
-                }
-                return@hooked result
-            }
-        } catch (e: Exception) { }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun filterPagerTabsInfo(info: Any, parentTag: String?) {
-        val tags = info.getFieldValue("tags") as? MutableList<String> ?: return
-        if (tags.isEmpty()) return
-        val urls = info.getFieldValue("urls") as? MutableList<String>
-        val titles = info.getFieldValue("titles") as? MutableList<Map<String, String>>
-        val abNormals = info.getFieldValue("abNormals") as? MutableList<Boolean>
-        val tabInfos = info.getFieldValue("tabInfos") as? MutableMap<String, Any>
-        val dropped = mutableListOf<String>()
-        val keepIdx = mutableListOf<Int>()
-        tags.forEachIndexed { i, tag ->
-            if (tag == PURIFY_UPDATE) { keepIdx += i; return@forEachIndexed }
-            val titleMap = titles?.getOrNull(i)
-            val whitelisted = parentTag == HOME_TAG && homeSubTabWhitelist.contains(tag)
-            val promoIcon = abNormals?.getOrNull(i) == true && !whitelisted
-            val hit = isBlacklisted(tag, titleMap) || promoIcon || deniedByWhitelist(parentTag, tags, tag)
-            if (hit) dropped += "$tag(${titleMap?.get("cn") ?: ""})" else keepIdx += i
-        }
-        if (dropped.isEmpty() || keepIdx.isEmpty()) return
-        replaceWith(tags, keepIdx)
-        urls?.let { replaceWith(it, keepIdx) }
-        titles?.let { replaceWith(it, keepIdx) }
-        abNormals?.let { replaceWith(it, keepIdx) }
-        tabInfos?.keys?.retainAll(tags.toSet())
-    }
-
-    private fun <T> replaceWith(list: MutableList<T>, keepIdx: List<Int>) {
-        val copy = keepIdx.map { list[it] }; list.clear(); list.addAll(copy)
     }
 }

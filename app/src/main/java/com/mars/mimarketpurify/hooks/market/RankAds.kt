@@ -27,7 +27,6 @@ object RankAds : BaseHook() {
         "getType", "getViewType", "getItemViewType", "getTemplateType", "getCardType",
         "getBizType", "getStyleType", "getStyle", "getComponentName")
 
-    /** ★ 修正：使用实际存在的广告标记方法 + 字段 */
     private val adFlags = listOf(
         "isAd", "isMarketAd", "isAdvertise", "isAdvertisement", "isAdItem",
         "isPromote", "isPromotion", "isPromotionItem", "isSponsor", "isSponsored",
@@ -48,7 +47,6 @@ object RankAds : BaseHook() {
 
     private val cnLabels = setOf("广告", "推广", "赞助", "热推", "游戏推荐", "精品推荐", "编辑推荐", "推荐安装")
     private val enLabels = setOf("ad", "ads", "sponsor", "sponsored", "promoted")
-    private val knownNormalTypes = setOf("nativeranklistapps", "ranklistapps", "rankapp")
 
     override fun init() {
         hookAdEngine()
@@ -90,8 +88,6 @@ object RankAds : BaseHook() {
         HookEnv.base.log(Log.WARN, TAG, "$name: 已挂载 $bound 个绑定点（候选 ${realRankClasses.size} + 扫描 ${discovered.size}）")
     }
 
-    // = = = = AI 广告引擎拦截 = = = =
-
     private fun hookAdEngine() {
         runCatching {
             val engineClz = ClassUtil.loadClass("com.xiaomi.market.ai.ClientAIAdReRankEngine")
@@ -112,8 +108,6 @@ object RankAds : BaseHook() {
         }
     }
 
-    // = = = = Bean 检测 = = = =
-
     private fun isCandidateBean(arg: Any?): Boolean {
         if (arg == null) return false
         if (arg is View || arg is Number || arg is Boolean || arg is CharSequence) return false
@@ -125,59 +119,58 @@ object RankAds : BaseHook() {
         val cls = bean.javaClass
         val simpleName = cls.simpleName
 
-        // 检查类名
         if (tokens(simpleName).any { it in adTokens }) return true
 
-        // ★ 检查 showAdTag 字段（boolean）
-        val showAdTagField = runCatching { cls.getDeclaredField("showAdTag") }.getOrNull()
-        if (showAdTagField != null) {
-            showAdTagField.isAccessible = true
-            val isAd = runCatching { showAdTagField.getBoolean(bean) }.getOrNull() ?: false
-            if (isAd) {
-                debugLog("isAdBean: showAdTag=true in $simpleName")
-                return true
+        // showAdTag 字段
+        runCatching {
+            val f = cls.getDeclaredField("showAdTag"); f.isAccessible = true
+            if (f.getBoolean(bean)) { debugLog("isAdBean: showAdTag=true $simpleName"); return true }
+        }
+
+        // isAd() 方法
+        runCatching {
+            val m = cls.getDeclaredMethod("isAd")
+            if (m.invoke(bean) == true) { debugLog("isAdBean: isAd()=true $simpleName"); return true }
+        }
+
+        // isMarketAd() 方法
+        runCatching {
+            val m = cls.getDeclaredMethod("isMarketAd")
+            if (m.invoke(bean) == true) { debugLog("isAdBean: isMarketAd()=true $simpleName"); return true }
+        }
+
+        // analyticParams.isAd()
+        runCatching {
+            val params = cls.getMethod("getAnalyticParams").invoke(bean) ?: return@runCatching
+            if (params.javaClass.getMethod("isAd").invoke(params) == true) {
+                debugLog("isAdBean: analyticParams.isAd()=true $simpleName"); return true
             }
         }
 
-        // 检查 isAd() 方法
-        val isAdMethod = runCatching { cls.getDeclaredMethod("isAd") }.getOrNull()
-        if (isAdMethod != null) {
-            val result = runCatching { isAdMethod.invoke(bean) as? Boolean }.getOrNull() ?: false
-            if (result) {
-                debugLog("isAdBean: isAd()=true in $simpleName")
-                return true
+        // extParams 中 ad 标记
+        runCatching {
+            val ext = cls.getMethod("getExtParams").invoke(bean) as? Map<*, *> ?: return@runCatching
+            if (ext.containsKey("ad_type") || ext.containsKey("adId") || ext.containsKey("ad_id")) {
+                debugLog("isAdBean: extParams ad marker $simpleName"); return true
             }
         }
 
-        // 检查 isMarketAd() 方法
-        val isMarketAdMethod = runCatching { cls.getDeclaredMethod("isMarketAd") }.getOrNull()
-        if (isMarketAdMethod != null) {
-            val result = runCatching { isMarketAdMethod.invoke(bean) as? Boolean }.getOrNull() ?: false
-            if (result) {
-                debugLog("isAdBean: isMarketAd()=true in $simpleName")
-                return true
-            }
-        }
-
-        // 检查各种 getter 返回值
+        // getter 文本匹配
         typeGetters.forEach { getter ->
             val text = runCatching { bean.invokeAs<Any?>(getter)?.toString() }.getOrNull() ?: return@forEach
             if (tokens(text).any { it in adTokens }) return true
         }
 
-        // 检查其他布尔标记
+        // 其他布尔标记
         adFlags.forEach { flag ->
             val method = runCatching { cls.getDeclaredMethod(flag) }.getOrNull() ?: return@forEach
             if (runCatching { method.invoke(bean) as? Boolean }.getOrNull() == true) {
-                debugLog("isAdBean: $flag=true in $simpleName")
-                return true
+                debugLog("isAdBean: $flag=true $simpleName"); return true
             }
         }
 
         return false
     }
-
-    // = = = = View 检测 = = = =
 
     private fun containsAdResourceNames(view: View, depth: Int = 0): Boolean {
         if (depth > 5) return false
@@ -189,8 +182,7 @@ object RankAds : BaseHook() {
         }
         if (view is ViewGroup) {
             for (i in 0 until view.childCount.coerceAtMost(16)) {
-                val child = view.getChildAt(i) ?: continue
-                if (containsAdResourceNames(child, depth + 1)) return true
+                if (containsAdResourceNames(view.getChildAt(i) ?: continue, depth + 1)) return true
             }
         }
         return false
@@ -207,14 +199,11 @@ object RankAds : BaseHook() {
         }
         if (view is ViewGroup) {
             for (i in 0 until view.childCount.coerceAtMost(16)) {
-                val child = view.getChildAt(i) ?: continue
-                if (containsAdLabels(child, depth + 1)) return true
+                if (containsAdLabels(view.getChildAt(i) ?: continue, depth + 1)) return true
             }
         }
         return false
     }
-
-    // = = = = 工具 = = = =
 
     private fun tokens(raw: String): List<String> =
         raw.replace(Regex("[^a-zA-Z0-9]+"), " ")
