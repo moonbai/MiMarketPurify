@@ -287,8 +287,8 @@ class MainActivity : SettingsBaseActivity() {
             summary = "仅移除桌面抽屉中的图标，仍可从 LSPosed 模块列表进入主页",
             checked = isLauncherIconHidden(), tag = "hide_launcher_icon", gated = false, remote = false
         ) { hide -> applyHideIcon(hide) }
-        addSwitchRow(group = moduleGroup, title = "榜单调试提示",
-            summary = "开启后进入榜单会输出未识别的视图树（logcat 前缀 [rank-tree]），用于反馈漏网的广告；用完请关掉",
+        addSwitchRow(group = moduleGroup, title = "调试模式",
+            summary = "用于控制调试模式开启，开启后将统一日志输出且进入榜单会主动提示相关信息，日常使用关闭即可",
             checked = readLocal(Settings.KEY_RANK_DEBUG, false), tag = Settings.KEY_RANK_DEBUG,
             gated = false
         ) { on -> writeRemote(Settings.KEY_RANK_DEBUG, on) }

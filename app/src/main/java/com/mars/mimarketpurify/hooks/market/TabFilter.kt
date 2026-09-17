@@ -23,6 +23,9 @@ object TabFilter : BaseHook() {
 
     private const val HOME_TAG = "native_market_home"
 
+    /** 本模块注入的 tag，永远不过滤 */
+    private const val PURIFY_UPDATE = "purify_update"
+
     private val homeSubTabWhitelist by lazy {
         setOf(
             "native_market_feature",
@@ -102,6 +105,8 @@ object TabFilter : BaseHook() {
                     list.removeAll { item ->
                         if (item == null) return@removeAll true
                         val tag = runCatching { tagOf(item) }.getOrNull()
+                        // ★ 永远保留本模块注入的 tab
+                        if (tag == PURIFY_UPDATE) return@removeAll false
                         val removed = tag == null || tag !in kept
                         if (removed) {
                             debugLog("fromJSON: removed tab ${tag ?: "(null)"}")
@@ -201,6 +206,8 @@ object TabFilter : BaseHook() {
         val dropped = mutableListOf<String>()
         val keepIdx = mutableListOf<Int>()
         tags.forEachIndexed { i, tag ->
+            // ★ 永远保留本模块注入的 tab
+            if (tag == PURIFY_UPDATE) { keepIdx += i; return@forEachIndexed }
             val titleMap = titles?.getOrNull(i)
             val whitelisted = parentTag == HOME_TAG && homeSubTabWhitelist.contains(tag)
             val promoIcon = abNormals?.getOrNull(i) == true && !whitelisted

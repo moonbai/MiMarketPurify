@@ -17,6 +17,11 @@ object UpdateTabEntry : BaseHook() {
 
     private const val PURIFY_UPDATE = "purify_update"
 
+    /** 缓存找到的字段名（首次 init 后不再重新发现） */
+    private var cachedIconField: String? = null
+    private var cachedIntentField: String? = null
+    private var fieldsDiscovered = false
+
     override fun init() {
         runCatching {
             val tabInfoClz = ClassUtil.loadClass("com.xiaomi.market.model.TabInfo")
@@ -27,6 +32,31 @@ object UpdateTabEntry : BaseHook() {
                     .filterByType(String::class.java)
                     .firstOrNull()
             }.getOrNull()
+
+            // 首次：打印所有字段，发现 icon 和 intent
+            if (!fieldsDiscovered) {
+                val allFields = tabInfoClz.declaredFields
+                debugLog("TabInfo declared fields (${allFields.size}):")
+                allFields.forEach { f ->
+                    debugLog("  ${f.name} → ${f.type.name}")
+                }
+
+                // 发现 icon 字段（Int 类型）
+                cachedIconField = allFields
+                    .firstOrNull { f ->
+                        f.type == Int::class.javaPrimitiveType &&
+                            f.name.contains("icon", ignoreCase = true)
+                    }?.name
+
+                // 发现 intent 字段（Intent 类型）
+                cachedIntentField = allFields
+                    .firstOrNull { f ->
+                        android.content.Intent::class.java.isAssignableFrom(f.type)
+                    }?.name
+
+                debugLog("discovered: iconField=$cachedIconField, intentField=$cachedIntentField")
+                fieldsDiscovered = true
+            }
 
             debugLog("init: tagField=${if (tagField != null) "found" else "null"}")
 
@@ -51,13 +81,13 @@ object UpdateTabEntry : BaseHook() {
                         }.getOrDefault(null) == PURIFY_UPDATE
                     }
                     if (already) {
-                        debugLog("fromJSON: 已存在 purify_update，跳过注入")
+                        debugLog("fromJSON: 已存在 purify_update，跳过")
                         return@hooked list
                     }
 
                     val tab = tabInfoClz.newInstance()
                     tagField?.set(tab, PURIFY_UPDATE)
-                    debugLog("fromJSON: 创建新 tab 实例")
+                    debugLog("fromJSON: tag 设置完成")
 
                     // titles
                     runCatching {
@@ -66,49 +96,57 @@ object UpdateTabEntry : BaseHook() {
                             .set(tab, mapOf("cn" to "更新", "en" to "Update"))
                         debugLog("fromJSON: titles 设置完成")
                     }.onFailure {
-                        HookEnv.base.log(Log.WARN, TAG,
-                            "[UpdateTabEntry] titles 设置失败: ${it.message}")
+                        debugLog("fromJSON: titles 失败: ${it.message}")
                     }
 
-                    // icon — 从模块自身 drawable 读取资源 ID
-                    runCatching {
-                        val iconField = tabInfoClz.fieldFinder()
-                            .filterByName("tab_view_icon").first()
-                        val activityThreadClz = Class.forName("android.app.ActivityThread")
-                        val appCtx = activityThreadClz
-                            .getMethod("currentApplication")
-                            .invoke(null) as? android.content.Context
-                            ?: return@runCatching
-                        val resId = appCtx.resources.getIdentifier(
-                            "ic_purify_update", "drawable", appCtx.packageName
-                        )
-                        if (resId != 0) {
-                            iconField.set(tab, resId)
-                            debugLog("fromJSON: icon resId=0x${resId.toString(16)}")
-                        } else {
-                            debugLog("fromJSON: ic_purify_update 资源未找到")
-                        }
-                    }.onFailure {
-                        HookEnv.base.log(Log.WARN, TAG,
-                            "[UpdateTabEntry] icon 设置失败: ${it.message}")
-                    }
-
-                    // intent → UpdateListActivity
-                    runCatching {
-                        val intentField = tabInfoClz.fieldFinder()
-                            .filterByName("intent").first()
-                        val intent = android.content.Intent().apply {
-                            setClassName(
-                                "com.xiaomi.market",
-                                "com.xiaomi.market.ui.UpdateListActivity"
+                    // icon — 用发现的字段名
+                    if (cachedIconField != null) {
+                        runCatching {
+                            val iconField = tabInfoClz.fieldFinder()
+                                .filterByName(cachedIconField!!).first()
+                            val activityThreadClz = Class.forName("android.app.ActivityThread")
+                            val appCtx = activityThreadClz
+                                .getMethod("currentApplication")
+                                .invoke(null) as? android.content.Context
+                            if (appCtx == null) {
+                                debugLog("fromJSON: appCtx 为 null")
+                                return@runCatching
+                            }
+                            val resId = appCtx.resources.getIdentifier(
+                                "ic_purify_update", "drawable", appCtx.packageName
                             )
-                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            if (resId != 0) {
+                                iconField.set(tab, resId)
+                                debugLog("fromJSON: icon[$cachedIconField] = 0x${resId.toString(16)}")
+                            } else {
+                                debugLog("fromJSON: ic_purify_update 资源未找到")
+                            }
+                        }.onFailure {
+                            debugLog("fromJSON: icon 异常: ${it.message}")
                         }
-                        intentField.set(tab, intent)
-                        debugLog("fromJSON: intent 设置完成 → UpdateListActivity")
-                    }.onFailure {
-                        HookEnv.base.log(Log.WARN, TAG,
-                            "[UpdateTabEntry] intent 设置失败: ${it.message}")
+                    } else {
+                        debugLog("fromJSON: 无 icon 字段，跳过")
+                    }
+
+                    // intent — 用发现的字段名
+                    if (cachedIntentField != null) {
+                        runCatching {
+                            val intentField = tabInfoClz.fieldFinder()
+                                .filterByName(cachedIntentField!!).first()
+                            val intent = android.content.Intent().apply {
+                                setClassName(
+                                    "com.xiaomi.market",
+                                    "com.xiaomi.market.ui.UpdateListActivity"
+                                )
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            intentField.set(tab, intent)
+                            debugLog("fromJSON: intent[$cachedIntentField] 设置完成")
+                        }.onFailure {
+                            debugLog("fromJSON: intent 异常: ${it.message}")
+                        }
+                    } else {
+                        debugLog("fromJSON: 无 intent 字段，跳过")
                     }
 
                     list.add(tab)
@@ -119,7 +157,7 @@ object UpdateTabEntry : BaseHook() {
             debugLog("hook 已安装")
         }.onFailure {
             HookEnv.base.log(Log.WARN, TAG,
-                "[UpdateTabEntry] hook 失败: ${it.message}", null)
+                "[UpdateTabEntry] hook 失败: ${it.message}", it)
         }
     }
 }
