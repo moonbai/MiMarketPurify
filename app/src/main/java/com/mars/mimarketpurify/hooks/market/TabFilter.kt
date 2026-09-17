@@ -14,27 +14,6 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
-/**
- * 底部标签栏过滤 + 首页顶栏“云控推广位”清理。
- *
- * ① 底部标签（数据层 `TabInfo.fromJSON`）：
- *    - 沿用本项目的“可勾选保留”策略：按用户在主页勾选的 tag 集合精确保留
- *      （见 [Settings.getKeptTabs]），空集合视为保留全部，避免误清空底栏。
- *
- * ② 首页顶栏 subTab 推广位清理（参考 lisrain/NewFuckMarketAds_Fork v1.3.7）：
- *    - 显式黑名单：已知云控推广 tag / 标题（如「看剧」「短剧」）始终剔除；
- *    - 默认拒绝：当同组 subTab 中存在白名单成员（说明是本盟合 ≥ 某版本的结构）时，
- *      不在白名单内的新增云控 tab 一律移除，可自动挡掉未来换的新马甲；
- *      带“命中白名单成员”校验是为了防止旧版本结构不同导致误杀。
- *
- * ③ 渲染层 `PagerTabsInfo.fromTabInfo`（顶栏最终数据源）收口：
- *    - 即使将来换了别的解析 / 注入路径，顶栏仍要经过这里；
- *    - 结构性启发式：abNormal（特殊字体图标）且不在白名单内 => 云控推广位，移除；
- *    - 若过滤后会导致顶栏被清空，则整体放弃本次修改（不允许清空顶栏）。
- *
- * 所有新增逻辑均以 runCatching / try-catch 兜底：即使字段名或结构因版本变化而取不到，
- * 也只是跳过清理，绝不影响原有的底部标签过滤与其他 hook。
- */
 object TabFilter : BaseHook() {
 
     override val prefKey: String = Settings.KEY_TAB_FILTER
@@ -44,25 +23,22 @@ object TabFilter : BaseHook() {
 
     private const val HOME_TAG = "native_market_home"
 
-    /** 首页顶栏常见正常 subTab（默认拒绝白名单） */
     private val homeSubTabWhitelist by lazy {
         setOf(
-            "native_market_feature",       // 推荐
-            "native_market_rank_software", // 榜单
-            "must-have",                   // 必备
-            "GOLDEN MI AWARD",             // 金米奖
-            "Classification",              // 分类
-            "software_sub5",               // 软件
-            "minor"                        // 未成年人模式占位
+            "native_market_feature",
+            "native_market_rank_software",
+            "must-have",
+            "GOLDEN MI AWARD",
+            "Classification",
+            "software_sub5",
+            "minor"
         )
     }
 
-    /** 已知云控推广位 tag（显式拒绝，优先级高于白名单） */
     private val subBlackTags by lazy {
         setOf("xiaomishipin", "native_market_shortplay", "native_market_agent")
     }
 
-    /** 已知云控推广位标题（显式拒绝） */
     private val subBlackTitles by lazy {
         setOf("看剧", "短剧")
     }
@@ -71,7 +47,6 @@ object TabFilter : BaseHook() {
 
     override fun init() {
         hookTabInfoParse()
-        // 渲染层收口为独立尝试，失败不影响数据层过滤
         runCatching { hookPagerTabsInfo() }.onFailure {
             HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PagerTabsInfo 收口不可用，跳过: ${it.message}", null)
         }
@@ -92,10 +67,6 @@ object TabFilter : BaseHook() {
         (tag != null && subBlackTags.contains(tag)) ||
             titles?.values?.any { subBlackTitles.contains(it) } == true
 
-    /**
-     * 仅当该组 tabs 里存在白名单成员时才启用默认拒绝，
-     * 防止旧版本结构不同导致的误杀。
-     */
     private fun deniedByWhitelist(parentTag: String?, siblings: List<String?>, tag: String?): Boolean {
         if (parentTag != HOME_TAG) return false
         val looksManaged = siblings.any { it != null && homeSubTabWhitelist.contains(it) }
@@ -117,19 +88,32 @@ object TabFilter : BaseHook() {
                 .filterByParamCount(1)
                 .first()
                 .hooked {
-                    // 用户勾选要保留的标签集合（按 tag 精确匹配），空集合 = 保留全部
                     val kept = Settings.getKeptTabs()
-                    if (kept.isEmpty()) return@hooked proceed()
+                    debugLog("fromJSON: kept=$kept")
+                    if (kept.isEmpty()) {
+                        debugLog("fromJSON: kept 为空，跳过过滤")
+                        return@hooked proceed()
+                    }
 
                     val result = proceed()
                     val list = (result as List<*>).toMutableList()
+                    val beforeCount = list.size
+
                     list.removeAll { item ->
                         if (item == null) return@removeAll true
                         val tag = runCatching { tagOf(item) }.getOrNull()
-                        // 取不到 tag 的项一律移除，避免残留无法识别的标签
-                        tag == null || tag !in kept
+                        val removed = tag == null || tag !in kept
+                        if (removed) {
+                            debugLog("fromJSON: removed tab ${tag ?: "(null)"}")
+                        }
+                        removed
                     }
-                    // 附加：清理保留下来的标签内部的云控推广 subTab（如「看剧」）
+
+                    val afterCount = list.size
+                    if (beforeCount != afterCount) {
+                        debugLog("fromJSON: ${beforeCount} → ${afterCount} tabs")
+                    }
+
                     list.forEach { runCatching { sanitizeSubTabs(it, 0) } }
                     return@hooked list
                 }
@@ -151,6 +135,12 @@ object TabFilter : BaseHook() {
             val hit = isBlacklisted(subTags[i], titles) ||
                 deniedByWhitelist(parentTag, subTags, subTags[i])
             if (hit) {
+                val reason = when {
+                    subBlackTags.contains(subTags[i]) -> "blacklisted tag"
+                    titles?.values?.any { subBlackTitles.contains(it) } == true -> "blacklisted title"
+                    else -> "denied by whitelist"
+                }
+                debugLog("subTab removed: ${subTags[i]}(${titles?.get("cn")}) under $parentTag reason=$reason")
                 HookEnv.base.log(
                     Log.INFO, TAG,
                     "[TabFilter] removed subTab: ${subTags[i]}(${titles?.get("cn")}) under $parentTag",
@@ -183,6 +173,7 @@ object TabFilter : BaseHook() {
                 val result = proceed()
                 if (result != null) {
                     val parentTag = runCatching { args[0]?.let { tagOf(it) } }.getOrNull()
+                    debugLog("PagerTabsInfo: parentTag=$parentTag, processing...")
                     runCatching { filterPagerTabsInfo(result, parentTag) }
                         .onFailure {
                             HookEnv.base.log(Log.WARN, TAG, "[TabFilter] filterPagerTabsInfo: ${it.message}", null)
@@ -205,19 +196,30 @@ object TabFilter : BaseHook() {
         val abNormals = info.getFieldValue("abNormals") as? MutableList<Boolean>
         val tabInfos = info.getFieldValue("tabInfos") as? MutableMap<String, Any>
 
+        debugLog("PagerTabsInfo filter: ${tags.size} tabs, tags=${tags}")
+
         val dropped = mutableListOf<String>()
         val keepIdx = mutableListOf<Int>()
         tags.forEachIndexed { i, tag ->
             val titleMap = titles?.getOrNull(i)
             val whitelisted = parentTag == HOME_TAG && homeSubTabWhitelist.contains(tag)
-            // 特殊字体图标 = 云控推广位的结构性特征
             val promoIcon = abNormals?.getOrNull(i) == true && !whitelisted
             val hit = isBlacklisted(tag, titleMap) || promoIcon ||
                 deniedByWhitelist(parentTag, tags, tag)
-            if (hit) dropped += "$tag(${titleMap?.get("cn") ?: ""})" else keepIdx += i
+            if (hit) {
+                val reason = when {
+                    subBlackTags.contains(tag) -> "blacklisted"
+                    promoIcon -> "abNormal promo"
+                    else -> "not in whitelist"
+                }
+                dropped += "$tag(${titleMap?.get("cn") ?: ""})"
+                debugLog("PagerTabsInfo drop: $tag reason=$reason")
+            } else {
+                keepIdx += i
+            }
         }
-        // 不允许把顶栏清空
         if (dropped.isEmpty() || keepIdx.isEmpty()) return
+        debugLog("PagerTabsInfo: dropped ${dropped.size}, kept ${keepIdx.size}")
         dropped.forEach {
             HookEnv.base.log(Log.INFO, TAG, "[TabFilter] dropped pager tab: $it under $parentTag", null)
         }

@@ -1,7 +1,9 @@
 package com.mars.mimarketpurify.init
 
+import android.util.Log
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
+import com.mars.mimarketpurify.TAG
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModuleInterface
 import java.lang.reflect.Executable
@@ -55,7 +57,7 @@ abstract class BaseHook {
     }
 
     /**
-     * 安装一个“受开关控制”的方法 / 构造 hook。
+     * 安装一个"受开关控制"的方法 / 构造 hook。
      *
      * 每次被调用时先检查 [enabled]：
      *  - 开关开启 → 执行 [block]；
@@ -65,6 +67,21 @@ abstract class BaseHook {
         HookEnv.base.hook(this).intercept { param ->
             if (!enabled()) return@intercept param.proceed()
             param.block()
+        }
+    }
+
+    // ═══════════════ 调试日志 ═══════════════
+
+    /** 调试开关是否开启（统一受 KEY_RANK_DEBUG 控制） */
+    protected fun isDebug(): Boolean = Settings.isEnabled(Settings.KEY_RANK_DEBUG, false)
+
+    /**
+     * 调试日志：仅在调试开关开启时输出。
+     * 用法：debugLog("filtered 3 tabs, kept 2")
+     */
+    protected fun debugLog(msg: String) {
+        if (isDebug()) {
+            HookEnv.base.log(Log.DEBUG, TAG, "[$name] $msg")
         }
     }
 }

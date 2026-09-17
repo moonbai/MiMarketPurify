@@ -10,12 +10,6 @@ import io.github.kyuubiran.ezxhelper.core.finder.FieldFinder.`-Static`.fieldFind
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
-/**
- * 移花接木：在底栏注入「更新」标签，点击直达 UpdateListActivity。
- *
- * 只需 Hook 数据层——在 TabInfo.fromJSON() 返回的列表末尾追加一个自定义 TabInfo，
- * 其 intent 指向 UpdateListActivity。市场框架会自动处理点击跳转和 UI 渲染。
- */
 object UpdateTabEntry : BaseHook() {
 
     override val prefKey: String = Settings.KEY_UPDATE_TAB
@@ -34,6 +28,8 @@ object UpdateTabEntry : BaseHook() {
                     .firstOrNull()
             }.getOrNull()
 
+            debugLog("init: tagField=${if (tagField != null) "found" else "null"}")
+
             tabInfoClz.methodFinder()
                 .filterByName("fromJSON")
                 .filterByParamCount(1)
@@ -46,22 +42,29 @@ object UpdateTabEntry : BaseHook() {
                         ?: return@hooked raw
                     val list = origList.toMutableList<Any?>()
 
+                    debugLog("fromJSON: origList.size=${origList.size}")
+
                     val already = list.any { item ->
                         runCatching {
                             tagField?.get(item) as? String
                                 ?: (item as? Any?)?.invokeAs("getTag") as? String
                         }.getOrDefault(null) == PURIFY_UPDATE
                     }
-                    if (already) return@hooked list
+                    if (already) {
+                        debugLog("fromJSON: 已存在 purify_update，跳过注入")
+                        return@hooked list
+                    }
 
                     val tab = tabInfoClz.newInstance()
                     tagField?.set(tab, PURIFY_UPDATE)
+                    debugLog("fromJSON: 创建新 tab 实例")
 
                     // titles
                     runCatching {
                         tabInfoClz.fieldFinder()
                             .filterByName("titles").first()
                             .set(tab, mapOf("cn" to "更新", "en" to "Update"))
+                        debugLog("fromJSON: titles 设置完成")
                     }.onFailure {
                         HookEnv.base.log(Log.WARN, TAG,
                             "[UpdateTabEntry] titles 设置失败: ${it.message}")
@@ -81,11 +84,9 @@ object UpdateTabEntry : BaseHook() {
                         )
                         if (resId != 0) {
                             iconField.set(tab, resId)
-                            HookEnv.base.log(Log.DEBUG, TAG,
-                                "[UpdateTabEntry] icon resId=0x${resId.toString(16)} (module resource)")
+                            debugLog("fromJSON: icon resId=0x${resId.toString(16)}")
                         } else {
-                            HookEnv.base.log(Log.WARN, TAG,
-                                "[UpdateTabEntry] ic_purify_update 资源未找到")
+                            debugLog("fromJSON: ic_purify_update 资源未找到")
                         }
                     }.onFailure {
                         HookEnv.base.log(Log.WARN, TAG,
@@ -104,20 +105,18 @@ object UpdateTabEntry : BaseHook() {
                             addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
                         intentField.set(tab, intent)
-                        HookEnv.base.log(Log.DEBUG, TAG,
-                            "[UpdateTabEntry] intent 设置完成")
+                        debugLog("fromJSON: intent 设置完成 → UpdateListActivity")
                     }.onFailure {
                         HookEnv.base.log(Log.WARN, TAG,
                             "[UpdateTabEntry] intent 设置失败: ${it.message}")
                     }
 
                     list.add(tab)
-                    HookEnv.base.log(Log.INFO, TAG,
-                        "[UpdateTabEntry] 注入 tab: $PURIFY_UPDATE (共 ${list.size} 个)")
+                    debugLog("fromJSON: 注入完成, total=${list.size}")
                     return@hooked list
                 }
 
-            HookEnv.base.log(Log.DEBUG, TAG, "[UpdateTabEntry] hook 已安装")
+            debugLog("hook 已安装")
         }.onFailure {
             HookEnv.base.log(Log.WARN, TAG,
                 "[UpdateTabEntry] hook 失败: ${it.message}", null)
