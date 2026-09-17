@@ -10,12 +10,6 @@ import io.github.kyuubiran.ezxhelper.core.finder.FieldFinder.`-Static`.fieldFind
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
-/**
- * 移花接木：在底栏注入「更新」标签，点击直达 UpdateListActivity。
- *
- * 只需 Hook 数据层——在 TabInfo.fromJSON() 返回的列表末尾追加一个自定义 TabInfo，
- * 其 intent 指向 UpdateListActivity。市场框架会自动处理点击跳转和 UI 渲染。
- */
 object UpdateTabEntry : BaseHook() {
 
     override val prefKey: String = Settings.KEY_UPDATE_TAB
@@ -76,11 +70,12 @@ object UpdateTabEntry : BaseHook() {
                             ?: return@runCatching
                         val pkgRes = appCtx.packageManager
                             .getResourcesForApplication("com.xiaomi.market")
-                        val iconId = pkgRes.resources.getIdentifier(
+                        var iconId = pkgRes.getIdentifier(
                             "ongoing_notification_update_icon",
                             "drawable",
                             "com.xiaomi.market"
-                        ).let { id: Int -> if (id != 0) id else 0x7f080d1f }
+                        )
+                        if (iconId == 0) iconId = 0x7f080d1f
                         iconField.set(tab, iconId)
                         HookEnv.base.log(Log.DEBUG, TAG,
                             "[UpdateTabEntry] icon resId=0x${iconId.toString(16)}")
