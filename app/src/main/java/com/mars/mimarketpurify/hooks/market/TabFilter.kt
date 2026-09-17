@@ -8,6 +8,8 @@ import com.mars.mimarketpurify.init.BaseHook
 import com.mars.mimarketpurify.util.getFieldValue
 import com.mars.mimarketpurify.util.invokeAs
 import com.mars.mimarketpurify.util.setFieldValue
+import de.robv.android.xposed.XC_MethodHook
+import de.robv.android.xposed.XposedBridge
 import io.github.kyuubiran.ezxhelper.core.finder.FieldFinder.`-Static`.fieldFinder
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
@@ -50,20 +52,23 @@ object TabFilter : BaseHook() {
 
     // ====== UpdateTabEntry 合并字段 ======
     private var tabInfoClz: Class<*>? = null
-    private var titlesField: Field? = null
-    private var urlField: Field? = null
+    private var tagFieldForInject: Field? = null
+    private var titlesFieldForInject: Field? = null
+    private var urlFieldForInject: Field? = null
 
     override fun init() {
         // 预加载 UpdateTabEntry 所需字段
         runCatching {
             tabInfoClz = ClassUtil.loadClass("com.xiaomi.market.model.TabInfo")
-            titlesField = tabInfoClz?.fieldFinder()
+            tagFieldForInject = tabInfoClz?.fieldFinder()
+                ?.filterByName("tag")?.filterByType(String::class.java)?.firstOrNull()
+            titlesFieldForInject = tabInfoClz?.fieldFinder()
                 ?.filterByName("titles")?.firstOrNull()
-            urlField = tabInfoClz?.fieldFinder()
+            urlFieldForInject = tabInfoClz?.fieldFinder()
                 ?.filterByName("url")?.firstOrNull()
-            debugLog("UpdateTabEntry fields: titles=${titlesField != null}, url=${urlField != null}")
+            debugLog("inject fields: tag=${tagFieldForInject != null}, titles=${titlesFieldForInject != null}, url=${urlFieldForInject != null}")
         }.onFailure {
-            debugLog("UpdateTabEntry fields 加载失败: ${it.message}")
+            debugLog("inject fields 加载失败: ${it.message}")
         }
 
         hookTabInfoParse()
@@ -103,33 +108,46 @@ object TabFilter : BaseHook() {
                 clazz.fieldFinder().filterByName("tag").filterByType(String::class.java).firstOrNull()
             }.getOrNull()
 
-            clazz.methodFinder()
+            val method = clazz.methodFinder()
                 .filterByName("fromJSON")
                 .filterByParamCount(1)
-                .first()
-                .hooked {
+                .firstOrNull()
+
+            if (method == null) {
+                HookEnv.base.log(Log.WARN, TAG, "[TabFilter] fromJSON 方法未找到", null)
+                return
+            }
+
+            // 使用标准 Xposed hook，避免 hooked 扩展函数的 lambda 捕获问题
+            XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    if (!enabled()) return
+
                     val kept = Settings.getKeptTabs()
                     debugLog("fromJSON: kept=$kept")
                     if (kept.isEmpty()) {
                         debugLog("fromJSON: kept 为空，跳过过滤")
-                        return@hooked proceed()
+                        return
                     }
 
-                    val result = proceed()
-                    val list = (result as List<*>).toMutableList()
+                    @Suppress("UNCHECKED_CAST")
+                    val result = param.result as? List<*> ?: return
+                    val list = result.toMutableList()
                     val beforeCount = list.size
 
-                    // ====== Step 1: 过滤 unwanted tabs ======
-                    list.removeAll { item ->
-                        if (item == null) return@removeAll true
+                    // Step 1: 过滤
+                    val toRemove = mutableListOf<Any>()
+                    for (item in list) {
+                        if (item == null) { toRemove.add(item); continue }
                         val tag = runCatching { tagOf(item) }.getOrNull()
-                        if (tag == PURIFY_UPDATE) return@removeAll false
+                        if (tag == PURIFY_UPDATE) continue
                         val removed = tag == null || tag !in kept
                         if (removed) {
                             debugLog("fromJSON: removed tab ${tag ?: "(null)"}")
+                            toRemove.add(item)
                         }
-                        removed
                     }
+                    list.removeAll(toRemove.toSet())
 
                     val afterCount = list.size
                     if (beforeCount != afterCount) {
@@ -138,18 +156,18 @@ object TabFilter : BaseHook() {
 
                     list.forEach { runCatching { sanitizeSubTabs(it, 0) } }
 
-                    // ====== Step 2: 注入 purify_update ======
+                    // Step 2: 注入 purify_update
                     val alreadyHas = list.any { item ->
                         item != null && runCatching {
-                            tagField?.get(item) as? String
+                            tagFieldForInject?.get(item) as? String
                         }.getOrNull() == PURIFY_UPDATE
                     }
                     if (!alreadyHas && tabInfoClz != null) {
                         val tab = runCatching { tabInfoClz!!.newInstance() }.getOrNull()
                         if (tab != null) {
-                            runCatching { tabField?.set(tab, PURIFY_UPDATE) }
-                            runCatching { titlesField?.set(tab, mapOf("cn" to "更新", "en" to "Update")) }
-                            runCatching { urlField?.set(tab, "market://update") }
+                            runCatching { tagFieldForInject?.set(tab, PURIFY_UPDATE) }
+                            runCatching { titlesFieldForInject?.set(tab, mapOf("cn" to "更新", "en" to "Update")) }
+                            runCatching { urlFieldForInject?.set(tab, "market://update") }
                             list.add(tab)
                             debugLog("fromJSON: 注入 purify_update, total=${list.size}")
                         } else {
@@ -159,9 +177,10 @@ object TabFilter : BaseHook() {
                         debugLog("fromJSON: purify_update 已存在，跳过注入")
                     }
 
-                    return@hooked list
+                    param.result = list
                 }
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked TabInfo.fromJSON", null)
+            })
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked TabInfo.fromJSON (XposedBridge)", null)
         } catch (e: Exception) {
             HookEnv.base.log(Log.WARN, TAG, "[TabFilter] hook TabInfo 失败: ${e.message}", null)
         }
@@ -213,9 +232,9 @@ object TabFilter : BaseHook() {
                 HookEnv.base.log(Log.VERBOSE, TAG, "[TabFilter] PagerTabsInfo.fromTabInfo 不存在，跳过", null)
                 return
             }
-            method.hooked {
-                val result = proceed()
-                if (result != null) {
+            XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val result = param.result ?: return
                     val parentTag = runCatching { args[0]?.let { tagOf(it) } }.getOrNull()
                     debugLog("PagerTabsInfo: parentTag=$parentTag, processing...")
                     runCatching { filterPagerTabsInfo(result, parentTag) }
@@ -223,8 +242,7 @@ object TabFilter : BaseHook() {
                             HookEnv.base.log(Log.WARN, TAG, "[TabFilter] filterPagerTabsInfo: ${it.message}", null)
                         }
                 }
-                return@hooked result
-            }
+            })
             HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PagerTabsInfo.fromTabInfo(${method.name})", null)
         } catch (e: Exception) {
             HookEnv.base.log(Log.WARN, TAG, "[TabFilter] hook PagerTabsInfo 失败: ${e.message}", null)
