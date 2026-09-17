@@ -34,24 +34,27 @@ object TabFilter : BaseHook() {
 
     private var tabField: Field? = null
 
+    // PageConfig 单例缓存
     private var cachedPageConfig: Any? = null
     private var purifyTabInfo: Any? = null
 
-    /** Java 反射查找方法，避免 ezxHelper Finder 的 lambda 类型推断问题 */
-    private fun findMethod(clazz: Class<*>, name: String, paramCount: Int,
-                           predicate: ((Method) -> Boolean)? = null): Method? {
-        return clazz.declaredMethods.firstOrNull {
-            it.name == name && it.parameterTypes.size == paramCount &&
-                (predicate == null || predicate(it))
+    /** Java 反射查找方法 */
+    private fun findMethod(clazz: Class<*>, name: String, paramCount: Int): Method? {
+        return clazz.declaredMethods.firstOrNull { m ->
+            m.name == name && m.parameterTypes.size == paramCount
         }
     }
 
     override fun init() {
+        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] init() 开始")
         hookTabInfoParse()
         runCatching { hookPagerTabsInfo() }.onFailure {
             HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PagerTabsInfo 跳过: ${it.message}", null)
         }
-        runCatching { hookPageConfig() }
+        runCatching { hookPageConfig() }.onFailure {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PageConfig hook 失败: ${it.message}", null)
+        }
+        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] init() 完成")
     }
 
     // = = = = PageConfig hook = = = =
@@ -67,7 +70,7 @@ object TabFilter : BaseHook() {
         runCatching { titlesF?.set(tab, mapOf("cn" to "更新", "en" to "Update")) }
         runCatching { urlF?.set(tab, "market://update") }
         purifyTabInfo = tab
-        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] purify TabInfo created")
+        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] purify TabInfo 已创建")
         return tab
     }
 
@@ -78,11 +81,17 @@ object TabFilter : BaseHook() {
     }
 
     private fun hookPageConfig() {
-        try {
-            val clazz = ClassUtil.loadClass("com.xiaomi.market.model.PageConfig")
+        val clazz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.PageConfig") }.getOrNull()
+        if (clazz == null) {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PageConfig 类未找到")
+            return
+        }
+        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] PageConfig 类已加载, methods=${clazz.declaredMethods.size}")
 
-            // 1. hook PageConfig.get() 存单例
-            findMethod(clazz, "get", 0) { Modifier.isStatic(it.modifiers) }?.hooked {
+        // 1. hook get() 静态方法，缓存单例
+        val getMethod = findMethod(clazz, "get", 0)
+        if (getMethod != null && Modifier.isStatic(getMethod.modifiers)) {
+            getMethod.hooked {
                 val result = proceed()
                 if (result != null && cachedPageConfig == null) {
                     cachedPageConfig = result
@@ -91,12 +100,15 @@ object TabFilter : BaseHook() {
                 }
                 return@hooked result
             }
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.get()")
+        } else {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PageConfig.get() 未找到或非静态")
+        }
 
-            // 2. hook getTabInfo(int) → index == tabs.size 时返回 purify_update
-            findMethod(clazz, "getTabInfo", 1) {
-                it.parameterTypes[0] == Int::class.javaPrimitiveType ||
-                    it.parameterTypes[0] == Int::class.java
-            }?.hooked {
+        // 2. hook getTabInfo(int)
+        val getTabInfoMethod = findMethod(clazz, "getTabInfo", 1)
+        if (getTabInfoMethod != null) {
+            getTabInfoMethod.hooked {
                 val result = proceed()
                 val index = args[0] as? Int ?: return@hooked result
                 val resultTag = if (result != null) runCatching {
@@ -110,55 +122,60 @@ object TabFilter : BaseHook() {
                 }
                 return@hooked result
             }
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.getTabInfo()")
+        } else {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] PageConfig.getTabInfo() 未找到")
+        }
 
-            // 3. hook getTabIndexFromTag(String) → purify_update 返回 tabs.size
-            runCatching {
-                findMethod(clazz, "getTabIndexFromTag", 1)?.hooked {
-                    val tag = args[0] as? String
-                    if (tag == PURIFY_UPDATE) {
-                        val size = getTabsSize()
-                        debugLog("getTabIndexFromTag(purify_update): 返回 $size")
-                        return@hooked size
-                    }
-                    return@hooked proceed()
+        // 3. hook getTabIndexFromTag(String)
+        runCatching {
+            val m = findMethod(clazz, "getTabIndexFromTag", 1) ?: return@runCatching
+            m.hooked {
+                val tag = args[0] as? String
+                if (tag == PURIFY_UPDATE) {
+                    val size = getTabsSize()
+                    debugLog("getTabIndexFromTag(purify_update): 返回 $size")
+                    return@hooked size
                 }
+                return@hooked proceed()
             }
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.getTabIndexFromTag()")
+        }.onFailure {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] getTabIndexFromTag hook 失败: ${it.message}")
+        }
 
-            // 4. hook isTabValid(int) → purify_update 的 index 返回 true
-            runCatching {
-                findMethod(clazz, "isTabValid", 1) {
-                    it.parameterTypes[0] == Int::class.javaPrimitiveType ||
-                        it.parameterTypes[0] == Int::class.java
-                }?.hooked {
-                    val index = args[0] as? Int ?: return@hooked proceed()
-                    val tabsSize = getTabsSize()
-                    if (tabsSize > 0 && index == tabsSize) {
-                        debugLog("isTabValid($index): purify_update → true")
-                        return@hooked true
-                    }
-                    return@hooked proceed()
+        // 4. hook isTabValid(int)
+        runCatching {
+            val m = findMethod(clazz, "isTabValid", 1) ?: return@runCatching
+            m.hooked {
+                val index = args[0] as? Int ?: return@hooked proceed()
+                val tabsSize = getTabsSize()
+                if (tabsSize > 0 && index == tabsSize) {
+                    debugLog("isTabValid($index): purify_update → true")
+                    return@hooked true
                 }
+                return@hooked proceed()
             }
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.isTabValid()")
+        }.onFailure {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] isTabValid hook 失败: ${it.message}")
+        }
 
-            // 5. hook toValidTabIndex(int) → purify_update 的 index 不被 clamp
-            runCatching {
-                findMethod(clazz, "toValidTabIndex", 1) {
-                    it.parameterTypes[0] == Int::class.javaPrimitiveType ||
-                        it.parameterTypes[0] == Int::class.java
-                }?.hooked {
-                    val index = args[0] as? Int ?: return@hooked proceed()
-                    val tabsSize = getTabsSize()
-                    if (tabsSize > 0 && index == tabsSize) {
-                        debugLog("toValidTabIndex($index): purify_update → $index")
-                        return@hooked index
-                    }
-                    return@hooked proceed()
+        // 5. hook toValidTabIndex(int)
+        runCatching {
+            val m = findMethod(clazz, "toValidTabIndex", 1) ?: return@runCatching
+            m.hooked {
+                val index = args[0] as? Int ?: return@hooked proceed()
+                val tabsSize = getTabsSize()
+                if (tabsSize > 0 && index == tabsSize) {
+                    debugLog("toValidTabIndex($index): purify_update → $index")
+                    return@hooked index
                 }
+                return@hooked proceed()
             }
-
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig")
-        } catch (e: Exception) {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] hook PageConfig 失败: ${e.message}", null)
+            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.toValidTabIndex()")
+        }.onFailure {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] toValidTabIndex hook 失败: ${it.message}")
         }
     }
 
@@ -214,9 +231,7 @@ object TabFilter : BaseHook() {
                     }
 
                     if (beforeCount != list.size) debugLog("fromJSON: ${beforeCount} → ${list.size} tabs")
-
                     list.forEach { runCatching { sanitizeSubTabs(it, 0) } }
-
                     return@hooked list
                 }
             HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked TabInfo.fromJSON", null)
