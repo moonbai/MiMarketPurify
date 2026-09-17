@@ -1,7 +1,5 @@
 package com.mars.mimarketpurify.hooks.market
 
-import android.app.Fragment
-import android.os.Bundle
 import android.util.Log
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
@@ -16,11 +14,6 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
-/**
- * 底栏 tab 过滤 + 更新 Tab 注入。
- * 仅控制底部主导航栏（首页/我的/榜单/更新）。
- * 子 tab 过滤（顶栏推广位）由 SubTabFilter 负责。
- */
 object TabFilter : BaseHook() {
 
     override val prefKey: String = Settings.KEY_TAB_FILTER
@@ -54,18 +47,23 @@ object TabFilter : BaseHook() {
         val initTabsMethod = findMethod(pageConfigClz, "initTabs", 1) ?: return
 
         initTabsMethod.hooked {
-            proceed()
-            val tabsField = runCatching { pageConfigClz.getDeclaredField("tabs") }.getOrNull() ?: return@hooked
-            tabsField.isAccessible = true
-            val tabs = tabsField.get(thisObject) as? MutableList<Any?> ?: return@hooked
-            val alreadyHas = tabs.any { item ->
-                item != null && runCatching { tabField?.get(item) as? String }.getOrNull() == PURIFY_UPDATE
+            val result = proceed()
+            val tabsField = runCatching { pageConfigClz.getDeclaredField("tabs") }.getOrNull()
+            if (tabsField != null) {
+                tabsField.isAccessible = true
+                val tabs = tabsField.get(thisObject) as? MutableList<Any?> ?: return@hooked result
+                val alreadyHas = tabs.any { item ->
+                    item != null && runCatching { tabField?.get(item) as? String }.getOrNull() == PURIFY_UPDATE
+                }
+                if (!alreadyHas) {
+                    val tabInfo = ensurePurifyTab()
+                    if (tabInfo != null) {
+                        tabs.add(tabInfo)
+                        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] initTabs: 注入 purify_update, tabs.size=${tabs.size}")
+                    }
+                }
             }
-            if (!alreadyHas) {
-                val tabInfo = ensurePurifyTab() ?: return@hooked
-                tabs.add(tabInfo)
-                HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] initTabs: 注入 purify_update, tabs.size=${tabs.size}")
-            }
+            return@hooked result
         }
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.initTabs()")
     }
@@ -103,7 +101,7 @@ object TabFilter : BaseHook() {
             val tag = runCatching { tabField?.get(tab) as? String ?: tab.invokeAs<String>("getTag") }.getOrNull()
             if (tag != PURIFY_UPDATE) return@hooked result
 
-            val args = Bundle()
+            val args = android.os.Bundle()
             args.putString("url", "market://update")
             args.putString("tab_tag", PURIFY_UPDATE)
             val fragInfo = fragmentInfoCtor.newInstance(dummyFragmentClz, args, false)
@@ -191,7 +189,7 @@ object TabFilter : BaseHook() {
         } }
     }
 
-    // = = = = TabInfo.fromJSON (底栏 tab 过滤) = = = =
+    // = = = = TabInfo.fromJSON = = = =
 
     private fun tagOf(tab: Any): String? {
         tabField?.let { f -> runCatching { return f.get(tab) as? String } }
