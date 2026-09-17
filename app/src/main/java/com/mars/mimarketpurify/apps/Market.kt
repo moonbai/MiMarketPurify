@@ -23,6 +23,7 @@ import com.mars.mimarketpurify.hooks.market.UiCleanup
 import com.mars.mimarketpurify.hooks.market.UpdateDownloadAds
 import com.mars.mimarketpurify.init.AppPackage
 import com.mars.mimarketpurify.init.AppRegister
+import com.mars.mimarketpurify.hooks.market.UpdateTabEntry
 import io.github.libxposed.api.XposedModuleInterface
 
 object Market : AppRegister() {
@@ -56,6 +57,7 @@ object Market : AppRegister() {
             // 以下为稳定性增强（参考 lisrain/NewFuckMarketAds_Fork）：
             // 纯保护性安全网，不受单个功能开关控制，由总开关统一门控。
             AntiSelfDestruct,
+            UpdateTabEntry,  // ← 添加
             ConfigBackupRestore
         )
     }

@@ -58,9 +58,6 @@ object Settings {
     const val KEY_RANK_DEBUG = "rank_debug"
     const val KEY_ISLAND = "super_island"
 
-    // ═══════════════ 移花接木 ═══════════════
-    const val KEY_UPDATE_TAB = "update_tab_entry"
-    
     // ═══════════════ 读取 ═══════════════
 
     /**

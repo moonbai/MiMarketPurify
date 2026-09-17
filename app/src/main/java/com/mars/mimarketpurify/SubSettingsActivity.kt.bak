@@ -151,13 +151,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "关闭后底部标签与顶栏推广位均保持原样",
             checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
-     
-        addSwitchRow(group = group, title = "底栏「更新」入口",
-            summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口",
-            checked = readLocal(Settings.KEY_UPDATE_TAB, false),
-            tag = Settings.KEY_UPDATE_TAB
-        ) { on -> writeRemote(Settings.KEY_UPDATE_TAB, on) }
-    
         buildTabSelectBlock(group)
         content.addView(group)
         addFooter("隐藏标签后需重启一次应用商店才会重建底栏。")

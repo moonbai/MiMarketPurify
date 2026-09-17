@@ -233,7 +233,7 @@ class MainActivity : SettingsBaseActivity() {
     
         addNavRow(
             group = uiGroup,
-            title = "首页与标签栏",
+            title = "底栏自定义",
             summary = "自定义管理底部标签",
             value = { tabsText() }
         ) { openPage(SubSettingsActivity.PAGE_TABS) }
