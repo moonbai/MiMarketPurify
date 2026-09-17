@@ -1,5 +1,7 @@
 package com.mars.mimarketpurify.hooks.market
 
+import android.graphics.BitmapFactory
+import android.graphics.drawable.BitmapDrawable
 import android.util.Log
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
@@ -17,11 +19,6 @@ object UpdateTabEntry : BaseHook() {
 
     private const val PURIFY_UPDATE = "purify_update"
 
-    /** 缓存找到的字段名（首次 init 后不再重新发现） */
-    private var cachedIconField: String? = null
-    private var cachedIntentField: String? = null
-    private var fieldsDiscovered = false
-
     override fun init() {
         runCatching {
             val tabInfoClz = ClassUtil.loadClass("com.xiaomi.market.model.TabInfo")
@@ -33,32 +30,18 @@ object UpdateTabEntry : BaseHook() {
                     .firstOrNull()
             }.getOrNull()
 
-            // 首次：打印所有字段，发现 icon 和 intent
-            if (!fieldsDiscovered) {
-                val allFields = tabInfoClz.declaredFields
-                debugLog("TabInfo declared fields (${allFields.size}):")
-                allFields.forEach { f ->
-                    debugLog("  ${f.name} → ${f.type.name}")
+            // 打印 sDefaultTabIconResource 内容，了解默认图标结构
+            runCatching {
+                val mapField = tabInfoClz.fieldFinder()
+                    .filterByName("sDefaultTabIconResource").first()
+                val map = mapField.get(null) as? Map<*, *>
+                debugLog("sDefaultTabIconResource keys: ${map?.keys}")
+                map?.forEach { (k, v) ->
+                    debugLog("  $k → ${v?.let { it::class.java.simpleName }} = $v")
                 }
-
-                // 发现 icon 字段（Int 类型）
-                cachedIconField = allFields
-                    .firstOrNull { f ->
-                        f.type == Int::class.javaPrimitiveType &&
-                            f.name.contains("icon", ignoreCase = true)
-                    }?.name
-
-                // 发现 intent 字段（Intent 类型）
-                cachedIntentField = allFields
-                    .firstOrNull { f ->
-                        android.content.Intent::class.java.isAssignableFrom(f.type)
-                    }?.name
-
-                debugLog("discovered: iconField=$cachedIconField, intentField=$cachedIntentField")
-                fieldsDiscovered = true
+            }.onFailure {
+                debugLog("sDefaultTabIconResource 读取失败: ${it.message}")
             }
-
-            debugLog("init: tagField=${if (tagField != null) "found" else "null"}")
 
             tabInfoClz.methodFinder()
                 .filterByName("fromJSON")
@@ -81,7 +64,7 @@ object UpdateTabEntry : BaseHook() {
                         }.getOrDefault(null) == PURIFY_UPDATE
                     }
                     if (already) {
-                        debugLog("fromJSON: 已存在 purify_update，跳过")
+                        debugLog("fromJSON: 已存在，跳过")
                         return@hooked list
                     }
 
@@ -99,54 +82,89 @@ object UpdateTabEntry : BaseHook() {
                         debugLog("fromJSON: titles 失败: ${it.message}")
                     }
 
-                    // icon — 用发现的字段名
-                    if (cachedIconField != null) {
-                        runCatching {
-                            val iconField = tabInfoClz.fieldFinder()
-                                .filterByName(cachedIconField!!).first()
-                            val activityThreadClz = Class.forName("android.app.ActivityThread")
-                            val appCtx = activityThreadClz
-                                .getMethod("currentApplication")
-                                .invoke(null) as? android.content.Context
-                            if (appCtx == null) {
-                                debugLog("fromJSON: appCtx 为 null")
-                                return@runCatching
-                            }
-                            val resId = appCtx.resources.getIdentifier(
-                                "ic_purify_update", "drawable", appCtx.packageName
-                            )
-                            if (resId != 0) {
-                                iconField.set(tab, resId)
-                                debugLog("fromJSON: icon[$cachedIconField] = 0x${resId.toString(16)}")
-                            } else {
-                                debugLog("fromJSON: ic_purify_update 资源未找到")
-                            }
-                        }.onFailure {
-                            debugLog("fromJSON: icon 异常: ${it.message}")
-                        }
-                    } else {
-                        debugLog("fromJSON: 无 icon 字段，跳过")
+                    // showTitle
+                    runCatching {
+                        tabInfoClz.fieldFinder()
+                            .filterByName("showTitle").first()
+                            .set(tab, false)
                     }
 
-                    // intent — 用发现的字段名
-                    if (cachedIntentField != null) {
-                        runCatching {
-                            val intentField = tabInfoClz.fieldFinder()
-                                .filterByName(cachedIntentField!!).first()
-                            val intent = android.content.Intent().apply {
-                                setClassName(
-                                    "com.xiaomi.market",
-                                    "com.xiaomi.market.ui.UpdateListActivity"
-                                )
-                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    // ========== 图标方案 ==========
+                    // 方案1: 从 sDefaultTabIconResource 读取 purify_update 对应的资源 ID
+                    var iconSet = false
+                    runCatching {
+                        val mapField = tabInfoClz.fieldFinder()
+                            .filterByName("sDefaultTabIconResource").first()
+                        val map = mapField.get(null) as? Map<*, *>
+                        val resId = map?.get(PURIFY_UPDATE) as? Int
+                        if (resId != null && resId != 0) {
+                            debugLog("fromJSON: 从 sDefaultTabIconResource 获取 resId=0x${resId.toString(16)}")
+                            // 设到 mNormalIconBg
+                            val ctx = getAppContext()
+                            if (ctx != null) {
+                                val drawable = ctx.getDrawable(resId)
+                                if (drawable is BitmapDrawable) {
+                                    tabInfoClz.fieldFinder()
+                                        .filterByName("mNormalIconBg").first()
+                                        .set(tab, drawable.bitmap)
+                                    iconSet = true
+                                    debugLog("fromJSON: icon from sDefaultTabIconResource OK")
+                                }
                             }
-                            intentField.set(tab, intent)
-                            debugLog("fromJSON: intent[$cachedIntentField] 设置完成")
-                        }.onFailure {
-                            debugLog("fromJSON: intent 异常: ${it.message}")
                         }
-                    } else {
-                        debugLog("fromJSON: 无 intent 字段，跳过")
+                    }.onFailure {
+                        debugLog("fromJSON: sDefaultTabIconResource 读取失败: ${it.message}")
+                    }
+
+                    // 方案2: 从 ic_purify_update drawable 资源
+                    if (!iconSet) {
+                        runCatching {
+                            val ctx = getAppContext()
+                            if (ctx == null) {
+                                debugLog("fromJSON: appCtx null, icon 方案2 跳过")
+                                return@runCatching
+                            }
+                            val resId = ctx.resources.getIdentifier(
+                                "ic_purify_update", "drawable", ctx.packageName
+                            )
+                            debugLog("fromJSON: ic_purify_update resId=0x${resId.toString(16)}")
+                            if (resId != 0) {
+                                val drawable = ctx.getDrawable(resId)
+                                if (drawable is BitmapDrawable) {
+                                    tabInfoClz.fieldFinder()
+                                        .filterByName("mNormalIconBg").first()
+                                        .set(tab, drawable.bitmap)
+                                    iconSet = true
+                                    debugLog("fromJSON: icon from ic_purify_update OK")
+                                }
+                            }
+                        }.onFailure {
+                            debugLog("fromJSON: icon 方案2 异常: ${it.message}")
+                        }
+                    }
+
+                    // 方案3: 用默认图标（下载管理器图标）兜底
+                    if (!iconSet) {
+                        runCatching {
+                            val ctx = getAppContext()
+                            if (ctx == null) return@runCatching
+                            // android.R.drawable.stat_sys_download 作为默认图标
+                            val defaultResId = android.R.drawable.stat_sys_download
+                            val drawable = ctx.getDrawable(defaultResId)
+                            if (drawable is BitmapDrawable) {
+                                tabInfoClz.fieldFinder()
+                                    .filterByName("mNormalIconBg").first()
+                                    .set(tab, drawable.bitmap)
+                                iconSet = true
+                                debugLog("fromJSON: icon 兜底 stat_sys_download")
+                            }
+                        }.onFailure {
+                            debugLog("fromJSON: icon 兜底失败: ${it.message}")
+                        }
+                    }
+
+                    if (!iconSet) {
+                        debugLog("fromJSON: 所有图标方案均失败")
                     }
 
                     list.add(tab)
@@ -159,5 +177,54 @@ object UpdateTabEntry : BaseHook() {
             HookEnv.base.log(Log.WARN, TAG,
                 "[UpdateTabEntry] hook 失败: ${it.message}", it)
         }
+    }
+
+    /** 多种方式尝试获取 Application Context */
+    private fun getAppContext(): android.content.Context? {
+        // 方案1: ActivityThread.currentApplication()
+        runCatching {
+            val app = Class.forName("android.app.ActivityThread")
+                .getMethod("currentApplication")
+                .invoke(null) as? android.content.Context
+            if (app != null) return app
+        }
+
+        // 方案2: 通过当前类的 ClassLoader 找到已加载的 ActivityThread
+        runCatching {
+            val atClass = Class.forName("android.app.ActivityThread")
+            // 反射获取 sCurrentActivityThread
+            val field = atClass.getDeclaredField("sCurrentActivityThread")
+            field.isAccessible = true
+            val at = field.get(null)
+            if (at != null) {
+                val getApplication = atClass.getMethod("getApplication")
+                val app = getApplication.invoke(at) as? android.content.Context
+                if (app != null) return app
+            }
+        }
+
+        // 方案3: 通过 LoadedApk 获取
+        runCatching {
+            val activityThread = Class.forName("android.app.ActivityThread")
+            val currentThread = activityThread.getMethod("currentActivityThread").invoke(null)
+            if (currentThread != null) {
+                val mBoundApplication = activityThread
+                    .getDeclaredField("mBoundApplication")
+                mBoundApplication.isAccessible = true
+                val data = mBoundApplication.get(currentThread)
+                if (data != null) {
+                    val infoField = data.javaClass.getDeclaredField("info")
+                    infoField.isAccessible = true
+                    val loadedApk = infoField.get(data)
+                    if (loadedApk != null) {
+                        val getApplication = loadedApk.javaClass.getMethod("getApplication")
+                        val app = getApplication.invoke(loadedApk) as? android.content.Context
+                        if (app != null) return app
+                    }
+                }
+            }
+        }
+
+        return null
     }
 }
