@@ -3,14 +3,10 @@ package com.mars.mimarketpurify
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Typeface
-import android.graphics.drawable.ShapeDrawable
-import android.graphics.drawable.shapes.RoundRectShape
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -18,12 +14,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import kotlin.math.roundToInt
 
 class AboutActivity : Activity() {
 
     private lateinit var content: LinearLayout
-    private val avatarRadiusDp = 22f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,12 +81,10 @@ class AboutActivity : Activity() {
         addSection("功能")
         buildFeatureCards()
 
-        addSection("作者")
-        buildAuthor()
-
         addSection("参考项目")
         buildReferenceProjects()
 
+        // 底部文字
         content.addView(TextView(this).apply {
             text = "不乱拉屎的应用商店才是好的应用商店@Mars"
             textSize = Ui.MICRO
@@ -101,16 +93,6 @@ class AboutActivity : Activity() {
             setPadding(dp(8), dp(16), dp(8), dp(8))
             gravity = Gravity.CENTER_HORIZONTAL
         })
-    }
-
-    private fun setFixedIconRounded(iv: ImageView, radiusDp: Float) {
-        val rPx = dp(radiusDp).toFloat()
-        val radii = floatArrayOf(rPx, rPx, rPx, rPx, rPx, rPx, rPx, rPx)
-        val shape = ShapeDrawable(RoundRectShape(radii, null, null))
-        iv.background = shape
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            iv.clipToOutline = true
-        }
     }
 
     private fun buildTopBar(header: LinearLayout) {
@@ -156,14 +138,13 @@ class AboutActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(6), dp(8), dp(6))
+            setPadding(dp(14), dp(14), dp(14), dp(14))
         }
 
         val appIcon = ImageView(this).apply {
             setImageResource(R.mipmap.ic_launcher)
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            setFixedIconRounded(this, avatarRadiusDp)
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
         }
 
         val info = LinearLayout(this).apply {
@@ -186,7 +167,7 @@ class AboutActivity : Activity() {
             setPadding(0, dp(3), 0, 0)
         })
         info.addView(TextView(this).apply {
-            text = "小米应用商店净化与增强"
+            text = "移除小米应用商店广告与推荐信息"
             textSize = Ui.MICRO
             setTextColor(Ui.TEXT_TERTIARY)
             setPadding(0, dp(3), 0, 0)
@@ -215,11 +196,11 @@ class AboutActivity : Activity() {
             "功能增强" to "下载超级岛、非正版APP显示、被隐藏更新显示、升级弹窗拦截"
         )
 
-        features.forEachIndexed { idx, (title, desc) ->
+        features.forEachIndexed { index, (title, desc) ->
             val card = card()
             card.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(8), dp(6), dp(8), dp(6))
+                setPadding(dp(14), dp(12), dp(14), dp(12))
                 addView(cardTitle(title))
                 addView(TextView(this@AboutActivity).apply {
                     text = desc
@@ -230,79 +211,17 @@ class AboutActivity : Activity() {
                 })
             })
 
+            // 原逻辑完全保留：addView前分配LP，合法
             card.layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also {
-                if (idx > 0) {
+                if (index > 0) {
                     it.topMargin = dp(8)
                 }
             }
             content.addView(card)
         }
-    }
-
-    private fun buildAuthor() {
-        val weiboUrl = "https://weibo.com/u/3963594403"
-        val authorName = "Mars"
-        val authorSubtitle = "点此访问作者主页，点点关注"
-
-        val card = card()
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(6), dp(8), dp(6))
-        }
-
-        val authorAvatar = ImageView(this).apply {
-            setImageResource(R.drawable.avatar_mars)
-            layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            isHardwareAccelerated = true
-            setFixedIconRounded(this, avatarRadiusDp)
-        }
-
-        val info = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
-            ).also {
-                it.marginStart = dp(12)
-                it.marginEnd = dp(8)
-            }
-        }
-
-        info.addView(cardTitle(authorName))
-        info.addView(TextView(this).apply {
-            text = authorSubtitle
-            textSize = Ui.ROW_SUMMARY
-            setTextColor(Ui.TEXT_SECONDARY)
-            setPadding(0, dp(3), 0, 0)
-        })
-
-        val arrowTv = TextView(this).apply {
-            text = "›"
-            textSize = 20f
-            setTextColor(Ui.TEXT_TERTIARY)
-        }
-
-        row.addView(authorAvatar)
-        row.addView(info)
-        row.addView(arrowTv)
-        card.addView(row)
-
-        card.tappable(this, R.drawable.bg_card_ripple)
-        card.setOnClickListener {
-            runCatching {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(weiboUrl)))
-            }.onFailure {
-                Toast.makeText(this, "无法打开微博链接", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        content.addView(card)
     }
 
     private fun buildReferenceProjects() {
@@ -324,14 +243,22 @@ class AboutActivity : Activity() {
             setPadding(dp(2), dp(2), dp(2), dp(2))
         }
 
-        references.forEachIndexed { idx, item ->
-            val itemRow = LinearLayout(this@AboutActivity).apply {
+        references.forEachIndexed { index, item ->
+            // ✅ 修复点1：提前构造 itemRow，先给合法 LP，不在 apply 里嵌套 addView 时序混乱
+            val itemRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(8), dp(6), dp(8), dp(6))
+                setPadding(dp(12), dp(12), dp(12), dp(12))
                 isClickable = true
                 isFocusable = true
                 setBackgroundResource(R.drawable.bg_card_ripple)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).also {
+                    // index>0 才加上间距；这里是 LinearLayout.LayoutParams，可以安全点 topMargin
+                    if (index > 0) it.topMargin = dp(4)
+                }
                 setOnClickListener {
                     runCatching {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.url)))
@@ -343,46 +270,39 @@ class AboutActivity : Activity() {
                         ).show()
                     }
                 }
-
-                val textLayout = LinearLayout(this@AboutActivity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    layoutParams = LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                    )
-                }
-                textLayout.addView(TextView(this@AboutActivity).apply {
-                    text = item.repoName
-                    textSize = Ui.ROW_SUMMARY
-                    setTypeface(null, Typeface.BOLD)
-                    setTextColor(Ui.TEXT_PRIMARY)
-                })
-                textLayout.addView(TextView(this@AboutActivity).apply {
-                    text = item.label
-                    textSize = Ui.MICRO
-                    setTextColor(Ui.TEXT_SECONDARY)
-                    setPadding(0, dp(3), 0, 0)
-                })
-
-                val arrow = TextView(this@AboutActivity).apply {
-                    text = "›"
-                    textSize = 20f
-                    setTextColor(Ui.TEXT_TERTIARY)
-                }
-
-                addView(textLayout)
-                addView(arrow)
             }
-            // ✅ 修复点：不再复用/覆盖循环变量，直接用 idx 控制间距
-            if (idx > 0) {
-                itemRow.layoutParams = (itemRow.layoutParams ?: LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )).apply {
-                    topMargin = dp(4)
-                }
+
+            // ✅ 修复点2：移出 apply 块，不要在 itemRow.apply {} 内部 addView(this)，this 指向歧义
+            val textLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
             }
+            textLayout.addView(TextView(this).apply {
+                text = item.repoName
+                textSize = Ui.ROW_SUMMARY
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(Ui.TEXT_PRIMARY)
+            })
+            textLayout.addView(TextView(this).apply {
+                text = item.label
+                textSize = Ui.MICRO
+                setTextColor(Ui.TEXT_SECONDARY)
+                setPadding(0, dp(3), 0, 0)
+            })
+
+            val arrow = TextView(this).apply {
+                text = "›"
+                textSize = 20f
+                setTextColor(Ui.TEXT_TERTIARY)
+            }
+
+            itemRow.addView(textLayout)
+            itemRow.addView(arrow)
+
             listLayout.addView(itemRow)
         }
 
@@ -408,30 +328,5 @@ class AboutActivity : Activity() {
             it.bottomMargin = dp(8)
         }
         content.addView(titleView)
-    }
-
-    private fun dp(value: Float): Int = (resources.displayMetrics.density * value).roundToInt()
-    private fun dp(value: Int): Int = dp(value.toFloat())
-
-    private fun card(): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-    }
-    private fun cardTitle(text: String): TextView = TextView(this).apply {
-        this.text = text
-        textSize = Ui.ROW_TITLE
-        setTypeface(null, Typeface.BOLD)
-        setTextColor(Ui.TEXT_PRIMARY)
-    }
-    // ✅ 修复点：移除不存在的 Ui.SECTION_TITLE，改用已存在 Ui.ROW_TITLE
-    private fun sectionTitle(text: String): TextView = TextView(this).apply {
-        this.text = text
-        textSize = Ui.ROW_TITLE
-        setTextColor(Ui.TEXT_SECONDARY)
-    }
-    private fun View.tappable(activity: Activity, bgRes: Int) {
-        background = activity.resources.getDrawable(bgRes, theme)
-        isClickable = true
-        isFocusable = true
     }
 }
