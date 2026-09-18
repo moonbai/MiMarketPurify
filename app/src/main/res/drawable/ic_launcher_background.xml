@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 优化后径向渐变：降低高光偏移、柔和过渡，不会太炸眼 -->
+    <!-- 兜底填充：阻止圆角外透出黑色；深色模式改成 #FF1A1A1A -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFFFF" />
+        </shape>
+    </item>
     <item>
         <shape android:shape="oval">
             <gradient
@@ -12,6 +17,5 @@
                 android:endColor="#D82854" />
         </shape>
     </item>
-    <!-- 前景图形 -->
     <item android:drawable="@drawable/ic_launcher_foreground" />
 </layer-list>

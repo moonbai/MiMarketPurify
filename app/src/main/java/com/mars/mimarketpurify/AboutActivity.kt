@@ -105,20 +105,27 @@ class AboutActivity : Activity() {
         })
     }
 
-    // ✅ 修复：删掉不存在的 setClipToOutline、删掉不可写 isHardwareAccelerated
     private fun setFixedIconRounded(iv: ImageView, radiusDp: Float) {
         val rPx = dp(radiusDp).toFloat()
-        val radii = floatArrayOf(rPx, rPx, rPx, rPx, rPx, rPx, rPx, rPx)
-        val shape = ShapeDrawable(RoundRectShape(radii, null, null))
-        iv.background = shape
+        // 关键：垫一层页面底色，挡住圆角缝隙漏黑；移除冲突的空 ShapeDrawable
+        iv.setBackgroundColor(Ui.BG)
         iv.outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, rPx)
+                // inset 0.5px 向内收缩裁切区域，避开边缘亚像素黑线
+                outline.setRoundRect(
+                    0.5f,
+                    0.5f,
+                    view.width - 0.5f,
+                    view.height - 0.5f,
+                    rPx
+                )
             }
         }
         iv.clipToOutline = true
+        // 开启硬件层改善圆角抗锯齿
+        iv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
     }
-
+    
     private fun buildTopBar(header: LinearLayout) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
