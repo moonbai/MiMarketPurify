@@ -80,7 +80,7 @@ class AboutActivity : Activity() {
 
         addSection("功能")
         buildFeatureCards()
-        
+
         addSection("作者")
         buildAuthor()
 
@@ -141,7 +141,8 @@ class AboutActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(14), dp(14), dp(14), dp(14))
+            // ←【App卡片内边距：左、上、右、下】现在上下16，左右14；改这四个数字
+            setPadding(dp(12), dp(8), dp(12), dp(8))
         }
 
         val appIcon = ImageView(this).apply {
@@ -203,7 +204,8 @@ class AboutActivity : Activity() {
             val card = card()
             card.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(14), dp(12), dp(14), dp(12))
+                // ←【功能卡片内边距】上下16、左右14；控制文字距离卡片边缘
+                setPadding(dp(12), dp(8), dp(12), dp(8))
                 addView(cardTitle(title))
                 addView(TextView(this@AboutActivity).apply {
                     text = desc
@@ -219,47 +221,35 @@ class AboutActivity : Activity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also {
                 if (index > 0) {
-                    it.topMargin = dp(8)
+                    it.topMargin = dp(8) // ← 这是卡片之间的外边距，不是卡片内边距
                 }
             }
             content.addView(card)
         }
     }
-    
-    
-     private fun buildAuthor() {
+
+
+    private fun buildAuthor() {
         val weiboUrl = "https://weibo.com/u/3963594403"
-        // 从微博个人头像右键复制「原图直链」(sinaimg.cn 结尾)，填入这里
         val avatarUrl = "https://tvax2.sinaimg.cn/crop.0.0.330.330.180/ec3fa6a3ly8hzi0yx1iuaj2096096dg0.jpg?KID=imgbed,tva&Expires=1789720896&ssig=uam475w+hB"
         val authorName = "Mars"
         val authorSubtitle = "点此访问作者主页，点点关注"
-    
+
         val card = card()
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(14), dp(14), dp(14), dp(14))
+            // ←【作者卡片内边距】上下16，左右14
+            setPadding(dp(12), dp(8), dp(12), dp(8))
         }
-    
+
         val authorAvatar = ImageView(this).apply {
-            // 默认占位先用应用图标；有图片库后替换为网络加载
             setImageResource(R.mipmap.ic_launcher)
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
             scaleType = ImageView.ScaleType.CENTER_CROP
             clipToOutline = true
-            // 圆形需要 drawable‑shape 或者图片库 transform；这里先预留，不新增依赖
         }
-    
-        // ———— 【可选、无新增依赖的异步加载占位示意】
-        // 若之后加入 Coil / Glide：
-        //   Coil.imageLoader(context).enqueue(
-        //       ImageRequest.Builder(context)
-        //           .data(avatarUrl)
-        //           .target(authorAvatar)
-        //           .build()
-        //   )
-        // ————
-    
+
         val info = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -271,7 +261,7 @@ class AboutActivity : Activity() {
                 it.marginEnd = dp(8)
             }
         }
-    
+
         info.addView(cardTitle(authorName))
         info.addView(TextView(this).apply {
             text = authorSubtitle
@@ -287,18 +277,18 @@ class AboutActivity : Activity() {
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
         })
-    
+
         val arrowTv = TextView(this).apply {
             text = "›"
             textSize = 20f
             setTextColor(Ui.TEXT_TERTIARY)
         }
-    
+
         row.addView(authorAvatar)
         row.addView(info)
         row.addView(arrowTv)
         card.addView(row)
-    
+
         card.tappable(this, R.drawable.bg_card_ripple)
         card.setOnClickListener {
             runCatching {
@@ -307,10 +297,10 @@ class AboutActivity : Activity() {
                 Toast.makeText(this, "无法打开微博链接", Toast.LENGTH_SHORT).show()
             }
         }
-    
+
         content.addView(card)
     }
-    
+
 
     private fun buildReferenceProjects() {
         data class RefProject(
@@ -335,7 +325,8 @@ class AboutActivity : Activity() {
             val itemRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(12), dp(12), dp(12), dp(12))
+                // ←【参考项目每一行的内边距】上下14，左右12
+                setPadding(dp(12), dp(8), dp(12), dp(8))
                 isClickable = true
                 isFocusable = true
                 setBackgroundResource(R.drawable.bg_card_ripple)
@@ -366,7 +357,7 @@ class AboutActivity : Activity() {
                     setTextColor(Ui.TEXT_PRIMARY)
                 })
                 textLayout.addView(TextView(this@AboutActivity).apply {
-                    text = item.label          // ← 自定义值
+                    text = item.label
                     textSize = Ui.MICRO
                     setTextColor(Ui.TEXT_SECONDARY)
                     setPadding(0, dp(3), 0, 0)
@@ -383,7 +374,6 @@ class AboutActivity : Activity() {
             }
 
             listLayout.addView(itemRow)
-
         }
 
         card.addView(listLayout)
