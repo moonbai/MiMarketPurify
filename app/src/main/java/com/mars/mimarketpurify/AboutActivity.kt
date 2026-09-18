@@ -107,24 +107,24 @@ class AboutActivity : Activity() {
 
     private fun setFixedIconRounded(iv: ImageView, radiusDp: Float) {
         val rPx = dp(radiusDp).toFloat()
-        // 关键：垫一层页面底色，挡住圆角缝隙漏黑；移除冲突的空 ShapeDrawable
+        // 垫页面底色兜底漏黑
         iv.setBackgroundColor(Ui.BG)
         iv.outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
-                // inset 0.5px 向内收缩裁切区域，避开边缘亚像素黑线
+                // ✅ 全部用 Int，向内缩1px避开亚像素缝隙
                 outline.setRoundRect(
-                    0.5f,
-                    0.5f,
-                    view.width - 0.5f,
-                    view.height - 0.5f,
+                    1,
+                    1,
+                    view.width - 1,
+                    view.height - 1,
                     rPx
                 )
             }
         }
         iv.clipToOutline = true
-        // 开启硬件层改善圆角抗锯齿
         iv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
     }
+    
     
     private fun buildTopBar(header: LinearLayout) {
         val row = LinearLayout(this).apply {
