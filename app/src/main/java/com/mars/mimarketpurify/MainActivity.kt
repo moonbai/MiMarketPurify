@@ -187,7 +187,7 @@ class MainActivity : SettingsBaseActivity() {
         statusTitle.text = "已激活 · ${service.frameworkName} ${service.frameworkVersion}"
         statusTitle.setTextColor(Ui.STATE_ACTIVE)
         statusBody.text = if (remote) {
-            "支持远程偏好：开关改动实时生效，一般无需重启应用商店。"
+            "支持远程偏好：开关改动实时生效，一般无需重启应用商店。\n\n插件调试基于应用商店版本：4.126.s.2，其余版本不保证适用性"
         } else {
             "当前框架不支持远程偏好，开关可能不会立即生效，建议重启一次应用商店。"
         }

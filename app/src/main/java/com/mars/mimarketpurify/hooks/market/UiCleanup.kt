@@ -22,10 +22,11 @@ object UiCleanup : BaseHook() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    // ═══════════════ 五组开关 ID ═══════════════
+    // ═══════════════ ID分组（新增 phone_clear_title 用于特征兜底） ═══════════════
     private val mineRecommendIds = listOf("mine_ad_container")
     private val mineTabIds = listOf("mine_middle_menu_container")
-    private val mineCleanupIds = listOf("phone_clear_layout", "mine_uninstall_app_layout")
+    private val mineCleanupIds = listOf("phone_clear_layout")
+    private val mineCleanupTitleIds = listOf("phone_clear_title") // 标题特征兜底
     private val mineSummaryIds = listOf(
         "mine_avatar", "mine_nickname", "mine_message", "mine_message_layout",
         "mine_favorites", "mine_favorites_count", "mine_favorites_layout",
@@ -35,31 +36,39 @@ object UiCleanup : BaseHook() {
     private val featuredTexts = setOf("精选")
 
     private val resolved = Collections.synchronizedMap(mutableMapOf<String, Set<Int>>())
-    private fun getCleanupIdSet(v: View): Set<Int> = resolve(v, mineCleanupIds)
+
+    private fun getCleanupIdSet(v: View): Set<Int> = idSet(v, "cleanup", mineCleanupIds)
+    private fun getCleanupTitleIdSet(v: View): Set<Int> = idSet(v, "cleanup_title", mineCleanupTitleIds)
+    private fun getRecommendIdSet(v: View): Set<Int> = idSet(v, "recommend", mineRecommendIds)
+    private fun getTabIdSet(v: View): Set<Int> = idSet(v, "tab", mineTabIds)
+    private fun getSummaryIdSet(v: View): Set<Int> = idSet(v, "summary", mineSummaryIds)
+    private fun getSecurityIdSet(v: View): Set<Int> = idSet(v, "security", mineSecurityIds)
 
     // ═══════════════ init ═══════════════
     override fun init() {
-        // ── setVisibility 拦截 ──
-        if (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
-            runCatching {
-                ClassUtil.loadClass("android.view.View")
-                    .methodFinder()
-                    .filterByName("setVisibility")
-                    .first()
-                    .hooked {
-                        val view = thisObject as? View ?: return@hooked proceed()
-                        val result = proceed()
-                        if (view.visibility == View.VISIBLE) {
-                            val id = view.id
-                            if (id > 0 && id in getCleanupIdSet(view)) {
-                                view.post { hide(view) }
-                            }
-                        }
-                        result
+        // ── setVisibility：无条件挂载，内部实时读全部开关，前置拦截（不再只绑 KEY_MINE_CLEANUP） ──
+        runCatching {
+            ClassUtil.loadClass("android.view.View")
+                .methodFinder()
+                .filterByName("setVisibility")
+                .first()
+                .hooked {
+                    val view = thisObject as? View ?: return@hooked proceed()
+                    val targetVis = args[0] as? Int ?: return@hooked proceed()
+
+                    val shouldHide = runCatching { isMineTarget(view) || isFeaturedTarget(view) }.getOrDefault(false)
+                    if (shouldHide && targetVis == View.VISIBLE) {
+                        args[0] = View.GONE
                     }
-            }.onFailure {
-                HookEnv.base.log(Log.ERROR, TAG, "$name: setVisibility 挂钩失败", it)
-            }
+                    val result = proceed()
+                    // 兜底防商店强制刷回
+                    if (shouldHide && view.visibility == View.VISIBLE) {
+                        view.post { hide(view) }
+                    }
+                    result
+                }
+        }.onFailure {
+            HookEnv.base.log(Log.ERROR, TAG, "$name: setVisibility 挂钩失败", it)
         }
 
         // ── onAttachedToWindow ──
@@ -86,32 +95,29 @@ object UiCleanup : BaseHook() {
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
 
-        // ── 果园皮肤 ──
-        if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)
-            && !Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
-            hookOrchardSkin()
-        }
+        // ✅【修复果园互斥】不再这里提前判断开关！无条件挂方法Hook，内部实时读取
+        hookOrchardSkin()
     }
 
     // ═══════════════ 升级卡片展开 ═══════════════
     private fun hookCardExpand() {
         runCatching {
-            val cls = ClassUtil.loadClass(
-                "com.xiaomi.market.business_ui.main.mine.view.MineUpdateView")
+            val cls = ClassUtil.loadClass("com.xiaomi.market.business_ui.main.mine.view.MineUpdateView")
             cls.methodFinder()
                 .filterByName("onFinishInflate")
                 .forEach { m ->
                     m.hooked {
                         val result = proceed()
-                        // onFinishInflate 后，找到折叠按钮并模拟展开
                         (thisObject as? View)?.let { view ->
                             view.post {
                                 runCatching {
-                                    // 查找 expand_collapse_header 区域内的展开按钮
                                     val header = findViewByResName(view, "expand_collapse_header")
                                     val arrow = findViewByResName(view, "expand_arrow")
-                                    // 如果有展开按钮，点击它
-                                    (arrow ?: header)?.performClick()
+                                    // 简单防重复点击：已经展开就跳过（用tag标记）
+                                    if (view.getTag(R.id.auto_tag_mark) == null) {
+                                        (arrow ?: header)?.performClick()
+                                        view.setTag(R.id.auto_tag_mark, true)
+                                    }
                                 }
                             }
                         }
@@ -123,6 +129,9 @@ object UiCleanup : BaseHook() {
         }
     }
 
+    // 临时TagId（内联避免新增资源，用一个安全高位值）
+    private val R.auto_tag_mark: Int get() = 0x7fffffff
+
     private fun findViewByResName(root: View, resName: String): View? {
         val targetId = runCatching {
             root.resources.getIdentifier(resName, "id", "com.xiaomi.market")
@@ -131,7 +140,7 @@ object UiCleanup : BaseHook() {
         return findViewById(root, targetId)
     }
 
-    // ═══════════════ 果园皮肤 ═══════════════
+    // ═══════════════ ✅【修复果园皮肤】移除静态互斥，运行时实时判断开关 ──
     private val orchardMethods = listOf(
         "applyUpdateViewOrchardStyle",
         "applyViewOrchardState",
@@ -150,7 +159,10 @@ object UiCleanup : BaseHook() {
                     cls.methodFinder().filterByName(method).forEach { m ->
                         m.hooked {
                             val result = proceed()
-                            (thisObject as? View)?.let { view -> view.background = null }
+                            // 👉 这里实时读：不再和 KEY_MINE_CLEANUP 硬绑定
+                            if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
+                                (thisObject as? View)?.let { view -> view.background = null }
+                            }
                             result
                         }
                     }
@@ -170,8 +182,7 @@ object UiCleanup : BaseHook() {
                 .forEach { m ->
                     m.hooked {
                         val result = proceed()
-                        val decor = (thisObject as? Activity)
-                            ?.window?.decorView ?: return@hooked result
+                        val decor = (thisObject as? Activity)?.window?.decorView ?: return@hooked result
 
                         val cleanupOn = Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
                         val recommendOn = Settings.isEnabled(Settings.KEY_MINE_RECOMMEND, true)
@@ -197,8 +208,7 @@ object UiCleanup : BaseHook() {
                                     getCleanupIdSet(decor).forEach { targetId ->
                                         val v = findViewById(decor, targetId) ?: return@forEach
                                         if (v.visibility == View.VISIBLE) {
-                                            HookEnv.base.log(Log.WARN, TAG,
-                                                "$name: ★ 精确 hide ${getResourceName(v)}")
+                                            HookEnv.base.log(Log.WARN, TAG, "$name: ★ 精确 hide ${getResourceName(v)}")
                                             hide(v)
                                         }
                                     }
@@ -209,15 +219,13 @@ object UiCleanup : BaseHook() {
                                     getCleanupIdSet(decor).forEach { targetId ->
                                         val v = findViewById(decor, targetId) ?: return@forEach
                                         if (v.visibility == View.VISIBLE) {
-                                            HookEnv.base.log(Log.WARN, TAG,
-                                                "$name: ⚠ 恢复了! 重新 hide ${getResourceName(v)}")
+                                            HookEnv.base.log(Log.WARN, TAG, "$name: ⚠ 恢复了! 重新 hide ${getResourceName(v)}")
                                             hide(v)
                                         }
                                     }
                                 }
                             }, 3000L)
                         }
-
                         result
                     }
                 }
@@ -240,16 +248,16 @@ object UiCleanup : BaseHook() {
 
     // ═══════════════ 遍历 ═══════════════
     private fun scanTree(v: View, depth: Int) {
-        if (depth > 8) return
+        if (depth > 10) return // 适度放宽深度应对新版嵌套
         inspect(v)
         if (v !is ViewGroup) return
-        val count = v.childCount.coerceAtLeast(0).coerceAtMost(32)
+        val count = v.childCount.coerceAtLeast(0).coerceAtMost(40)
         for (i in 0 until count) {
             scanTree(v.getChildAt(i) ?: continue, depth + 1)
         }
     }
 
-    // ═══════════════ 判断 & 隐藏 ═══════════════
+    // ═══════════════ 判断 & 隐藏（✅ 新增：phone_clear_title 向上回溯兼容逻辑） ═══════════════
     private fun inspect(v: View) {
         if (v.visibility != View.VISIBLE) return
         runCatching {
@@ -263,18 +271,31 @@ object UiCleanup : BaseHook() {
         val id = v.id
         if (id == View.NO_ID || id <= 0) return false
 
-        if (Settings.isEnabled(Settings.KEY_MINE_RECOMMEND, true)
-            && id in idSet(v, "recommend", mineRecommendIds)) return true
-        if (Settings.isEnabled(Settings.KEY_MINE_OFFICIAL_TAB, true)
-            && id in idSet(v, "tab", mineTabIds)) return true
-        if (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
-            && id in getCleanupIdSet(v)) return true
-        if (Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)
-            && id in idSet(v, "summary", mineSummaryIds)) return true
-        if (Settings.isEnabled(Settings.KEY_MINE_SECURITY, true)
-            && id in idSet(v, "security", mineSecurityIds)) return true
+        if (Settings.isEnabled(Settings.KEY_MINE_RECOMMEND, true) && id in getRecommendIdSet(v)) return true
+        if (Settings.isEnabled(Settings.KEY_MINE_OFFICIAL_TAB, true) && id in getTabIdSet(v)) return true
+        if (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
+            // 命中主布局ID → 直接隐藏
+            if (id in getCleanupIdSet(v)) return true
+            // ✅ 兼容方案：命中 phone_clear_title → 向上最多3层找父容器并标记为目标
+            if (id in getCleanupTitleIdSet(v)) {
+                val rootCandidate = findParentByStep(v, 3)
+                rootCandidate?.let { hide(it) }
+                return true
+            }
+        }
+        if (Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false) && id in getSummaryIdSet(v)) return true
+        if (Settings.isEnabled(Settings.KEY_MINE_SECURITY, true) && id in getSecurityIdSet(v)) return true
 
         return false
+    }
+
+    // 向上回溯N层父View，用于标题残留兜底
+    private fun findParentByStep(view: View, step: Int): View? {
+        var curr: View? = view
+        repeat(step) {
+            curr = (curr?.parent as? View) ?: return@repeat
+        }
+        return curr
     }
 
     private fun isFeaturedTarget(v: View): Boolean {
