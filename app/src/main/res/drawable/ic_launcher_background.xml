@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <gradient
-        android:type="linear"
-        android:angle="135"
-        android:startColor="#FF7A3D"
-        android:endColor="#F5365C" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 渐变圆角底 -->
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="120dp"
+                android:centerX="0.4"
+                android:centerY="0.3"
+                android:startColor="#FF8A3D"
+                android:endColor="#E62E5C" />
+        </shape>
+    </item>
+
+    <!-- 图标内容层 -->
+    <item android:drawable="@drawable/ic_launcher_foreground" />
+
+</layer-list>

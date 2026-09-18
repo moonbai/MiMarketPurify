@@ -3,10 +3,13 @@ package com.mars.mimarketpurify
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Typeface
+import android.graphics.drawable.ShapeDrawable
+import android.graphics.drawable.shapes.RoundRectShape
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -14,10 +17,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import kotlin.math.roundToInt
 
 class AboutActivity : Activity() {
 
     private lateinit var content: LinearLayout
+    private val avatarRadiusDp = 22f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,7 +92,6 @@ class AboutActivity : Activity() {
         addSection("参考项目")
         buildReferenceProjects()
 
-        // 底部文字
         content.addView(TextView(this).apply {
             text = "不乱拉屎的应用商店才是好的应用商店@Mars"
             textSize = Ui.MICRO
@@ -96,6 +100,15 @@ class AboutActivity : Activity() {
             setPadding(dp(8), dp(16), dp(8), dp(8))
             gravity = Gravity.CENTER_HORIZONTAL
         })
+    }
+
+    private fun setFixedIconRounded(iv: ImageView, radiusDp: Float) {
+        val rPx = dp(radiusDp).toFloat()
+        val radii = floatArrayOf(rPx, rPx, rPx, rPx, rPx, rPx, rPx, rPx)
+        val shape = ShapeDrawable(RoundRectShape(radii, null, null))
+        iv.background = shape
+        iv.clipToOutline = true
+        ViewCompat.setClipToOutline(iv, true)
     }
 
     private fun buildTopBar(header: LinearLayout) {
@@ -141,14 +154,14 @@ class AboutActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            // ←【App卡片内边距：左、上、右、下】现在上下16，左右14；改这四个数字
-            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setPadding(dp(8), dp(6), dp(8), dp(6)) // ← 缩小
         }
 
         val appIcon = ImageView(this).apply {
             setImageResource(R.mipmap.ic_launcher)
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            setFixedIconRounded(this@apply, avatarRadiusDp)
         }
 
         val info = LinearLayout(this).apply {
@@ -204,8 +217,7 @@ class AboutActivity : Activity() {
             val card = card()
             card.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                // ←【功能卡片内边距】上下16、左右14；控制文字距离卡片边缘
-                setPadding(dp(12), dp(8), dp(12), dp(8))
+                setPadding(dp(8), dp(6), dp(8), dp(6)) // ← 缩小
                 addView(cardTitle(title))
                 addView(TextView(this@AboutActivity).apply {
                     text = desc
@@ -221,17 +233,15 @@ class AboutActivity : Activity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also {
                 if (index > 0) {
-                    it.topMargin = dp(8) // ← 这是卡片之间的外边距，不是卡片内边距
+                    it.topMargin = dp(8)
                 }
             }
             content.addView(card)
         }
     }
 
-
     private fun buildAuthor() {
         val weiboUrl = "https://weibo.com/u/3963594403"
-        val avatarUrl = "https://tvax2.sinaimg.cn/crop.0.0.330.330.180/ec3fa6a3ly8hzi0yx1iuaj2096096dg0.jpg?KID=imgbed,tva&Expires=1789720896&ssig=uam475w+hB"
         val authorName = "Mars"
         val authorSubtitle = "点此访问作者主页，点点关注"
 
@@ -239,15 +249,14 @@ class AboutActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            // ←【作者卡片内边距】上下16，左右14
-            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setPadding(dp(8), dp(6), dp(8), dp(6)) // ← 缩小
         }
 
         val authorAvatar = ImageView(this).apply {
-            setImageResource(R.mipmap.ic_launcher)
+            setImageResource(R.drawable.avatar_mars)
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
             scaleType = ImageView.ScaleType.CENTER_CROP
-            clipToOutline = true
+            setFixedIconRounded(this@apply, avatarRadiusDp)
         }
 
         val info = LinearLayout(this).apply {
@@ -268,14 +277,6 @@ class AboutActivity : Activity() {
             textSize = Ui.ROW_SUMMARY
             setTextColor(Ui.TEXT_SECONDARY)
             setPadding(0, dp(3), 0, 0)
-        })
-        info.addView(TextView(this).apply {
-            text = weiboUrl
-            textSize = Ui.MICRO
-            setTextColor(Ui.TEXT_TERTIARY)
-            setPadding(0, dp(2), 0, 0)
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
         })
 
         val arrowTv = TextView(this).apply {
@@ -301,7 +302,6 @@ class AboutActivity : Activity() {
         content.addView(card)
     }
 
-
     private fun buildReferenceProjects() {
         data class RefProject(
             val repoName: String,
@@ -325,8 +325,7 @@ class AboutActivity : Activity() {
             val itemRow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                // ←【参考项目每一行的内边距】上下14，左右12
-                setPadding(dp(12), dp(8), dp(12), dp(8))
+                setPadding(dp(8), dp(6), dp(8), dp(6)) // ← 缩小
                 isClickable = true
                 isFocusable = true
                 setBackgroundResource(R.drawable.bg_card_ripple)
@@ -398,5 +397,29 @@ class AboutActivity : Activity() {
             it.bottomMargin = dp(8)
         }
         content.addView(titleView)
+    }
+
+    private fun dp(value: Float): Int = (resources.displayMetrics.density * value).roundToInt()
+    private fun dp(value: Int): Int = dp(value.toFloat())
+
+    private fun card(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+    private fun cardTitle(text: String): TextView = TextView(this).apply {
+        this.text = text
+        textSize = Ui.ROW_TITLE
+        setTypeface(null, Typeface.BOLD)
+        setTextColor(Ui.TEXT_PRIMARY)
+    }
+    private fun sectionTitle(text: String): TextView = TextView(this).apply {
+        this.text = text
+        textSize = Ui.SECTION_TITLE
+        setTextColor(Ui.TEXT_SECONDARY)
+    }
+    private fun View.tappable(activity: Activity, bgRes: Int) {
+        background = activity.resources.getDrawable(bgRes, theme)
+        isClickable = true
+        isFocusable = true
     }
 }

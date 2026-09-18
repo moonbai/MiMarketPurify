@@ -1,28 +1,48 @@
-<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 购物袋主体（代表应用商店） -->
+
+    <!-- 渐变背景：用 inset 模拟圆角方形底 -->
+    <group android:scaleX="0.9"
+        android:scaleY="0.9"
+        android:translateX="5.4"
+        android:translateY="5.4">
+        <path
+            android:fillType="evenOdd"
+            android:pathData="M54,0 h54 v54 a54,54 0 0 1 -54,54 h-54 a54,54 0 0 1 -54,-54 v-54 z" />
+    </group>
+
+    <!-- 背景渐变层：建议在 drawable-v24 或通过 layer-list 实现渐变；
+         纯 vector 无法直接渐变，这里先用纯色底占位，后续配合 layer-list 加 gradient -->
+    <path
+        android:fillColor="#FF5733"
+        android:pathData="M54,4 a50,50 0 1 1 0,100 a50,50 0 1 1 0,-100 z" />
+
+    <!-- 白色购物袋主体 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M32,56 h44 a6,6 0 0 1 6,6 v24 a6,6 0 0 1 -6,6 h-44 a6,6 0 0 1 -6,-6 v-24 a6,6 0 0 1 6,-6 z" />
+        android:pathData="M30,54 h48 a6,6 0 0 1 6,6 v28 a6,6 0 0 1 -6,6 h-48 a6,6 0 0 1 -6,-6 v-28 a6,6 0 0 1 6,-6 z" />
+
     <!-- 购物袋提手 -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:strokeLineCap="round"
-        android:pathData="M42,56 v-10 a14,14 0 0 1 28,0 v10" />
-    <!-- 禁止符号：深底圆盘 + 白色斜杠（表示“禁止广告”） -->
-    <path
-        android:fillColor="#1F1F2E"
-        android:pathData="M58,40 a16,16 0 1 0 32,0 a16,16 0 1 0 -32,0 z" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
         android:strokeWidth="5"
         android:strokeLineCap="round"
-        android:pathData="M63,29 L85,51" />
+        android:pathData="M42,54 v-12 a12,12 0 0 1 24,0 v12" />
+
+    <!-- 屏蔽符号底圆 -->
+    <path
+        android:fillColor="#1F2A44"
+        android:pathData="M66,32 a18,18 0 1 0 36,0 a18,18 0 1 0 -36,0 z" />
+
+    <!-- 屏蔽符号斜杠 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M71,21 L89,39" />
 </vector>
