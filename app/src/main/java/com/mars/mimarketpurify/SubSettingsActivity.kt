@@ -174,15 +174,15 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_SEARCH_ALSO_VIEW, true), tag = Settings.KEY_SEARCH_ALSO_VIEW
         ) { on -> writeRemote(Settings.KEY_SEARCH_ALSO_VIEW, on) }
 
-        addSwitchRow(group = group, title = "筛选顶栏推广位",
+        addSwitchRow(group = group, title = "顶栏推广位",
             summary = "清理首页/榜单等页面顶部的云控推广子标签",
             checked = readLocal(Settings.KEY_SUB_TAB_FILTER, true), tag = Settings.KEY_SUB_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_SUB_TAB_FILTER, on) }
 
         addSwitchRow(group = group, title = "更新界面全部升级按钮",
             summary = "隐藏更新界面全部升级按钮",
-            checked = readLocal(Settings.KEY_SUB_TAB_FILTER, true), tag = Settings.KEY_HIDE_UPDATE_ALL
-        ) { on -> writeRemote(Settings.KEY_SUB_TAB_FILTER, on) }
+            checked = readLocal(Settings.KEY_HIDE_UPDATE_ALL, true), tag = Settings.KEY_HIDE_UPDATE_ALL
+        ) { on -> writeRemote(Settings.KEY_HIDE_UPDATE_ALL, on) }
 
         content.addView(group)
         addFooter("Tips：隐藏的可能只是标题~")
