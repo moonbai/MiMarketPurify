@@ -6,6 +6,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RoundRectShape
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -107,8 +108,10 @@ class AboutActivity : Activity() {
         val radii = floatArrayOf(rPx, rPx, rPx, rPx, rPx, rPx, rPx, rPx)
         val shape = ShapeDrawable(RoundRectShape(radii, null, null))
         iv.background = shape
-        iv.clipToOutline = true
-        ViewCompat.setClipToOutline(iv, true)
+        // 修复：移除不存在的 ViewCompat.setClipToOutline，加版本保护
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            iv.clipToOutline = true
+        }
     }
 
     private fun buildTopBar(header: LinearLayout) {
@@ -154,14 +157,14 @@ class AboutActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(6), dp(8), dp(6)) // ← 缩小
+            setPadding(dp(8), dp(6), dp(8), dp(6))
         }
 
         val appIcon = ImageView(this).apply {
             setImageResource(R.mipmap.ic_launcher)
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
             scaleType = ImageView.ScaleType.CENTER_CROP
-            setFixedIconRounded(this@apply, avatarRadiusDp)
+            setFixedIconRounded(this, avatarRadiusDp)
         }
 
         val info = LinearLayout(this).apply {
@@ -217,7 +220,7 @@ class AboutActivity : Activity() {
             val card = card()
             card.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(8), dp(6), dp(8), dp(6)) // ← 缩小
+                setPadding(dp(8), dp(6), dp(8), dp(6))
                 addView(cardTitle(title))
                 addView(TextView(this@AboutActivity).apply {
                     text = desc
@@ -249,7 +252,7 @@ class AboutActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(6), dp(8), dp(6)) // ← 缩小
+            setPadding(dp(8), dp(6), dp(8), dp(6))
         }
 
         val authorAvatar = ImageView(this).apply {
@@ -257,7 +260,7 @@ class AboutActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
             scaleType = ImageView.ScaleType.CENTER_CROP
             isHardwareAccelerated = true
-            setFixedIconRounded(this@apply, avatarRadiusDp)
+            setFixedIconRounded(this, avatarRadiusDp)
         }
 
         val info = LinearLayout(this).apply {
@@ -323,10 +326,10 @@ class AboutActivity : Activity() {
         }
 
         references.forEachIndexed { index, item ->
-            val itemRow = LinearLayout(this).apply {
+            val itemRow = LinearLayout(this@AboutActivity).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(8), dp(6), dp(8), dp(6)) // ← 缩小
+                setPadding(dp(8), dp(6), dp(8), dp(6))
                 isClickable = true
                 isFocusable = true
                 setBackgroundResource(R.drawable.bg_card_ripple)
