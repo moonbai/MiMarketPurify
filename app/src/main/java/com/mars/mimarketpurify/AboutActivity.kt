@@ -253,9 +253,10 @@ class AboutActivity : Activity() {
         }
 
         val authorAvatar = ImageView(this).apply {
-            setImageResource(R.drawable.avatar_mars)
+            setImageResource(R.mipmap.avatar_mars)
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
             scaleType = ImageView.ScaleType.CENTER_CROP
+            isHardwareAccelerated = true
             setFixedIconRounded(this@apply, avatarRadiusDp)
         }
 
