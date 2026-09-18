@@ -94,7 +94,6 @@ class AboutActivity : Activity() {
         addSection("参考项目")
         buildReferenceProjects()
 
-        // 底部标语保持原样
         content.addView(TextView(this).apply {
             text = "不乱拉屎的应用商店才是好的应用商店@Mars"
             textSize = Ui.MICRO
@@ -105,7 +104,7 @@ class AboutActivity : Activity() {
         })
     }
 
-    // 修复A15‑17圆角不稳定：增加OutlineProvider强制锁形
+    // ✅ 修复：删掉不存在的 setClipToOutline、删掉不可写 isHardwareAccelerated
     private fun setFixedIconRounded(iv: ImageView, radiusDp: Float) {
         val rPx = dp(radiusDp).toFloat()
         val radii = floatArrayOf(rPx, rPx, rPx, rPx, rPx, rPx, rPx, rPx)
@@ -117,8 +116,6 @@ class AboutActivity : Activity() {
             }
         }
         iv.clipToOutline = true
-        ViewCompat.setClipToOutline(iv, true)
-        iv.isHardwareAccelerated = true
     }
 
     private fun buildTopBar(header: LinearLayout) {
@@ -164,7 +161,7 @@ class AboutActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(6), dp(8), dp(6)) // 统一缩小内边距
+            setPadding(dp(8), dp(6), dp(8), dp(6))
         }
 
         val appIcon = ImageView(this).apply {
@@ -260,7 +257,7 @@ class AboutActivity : Activity() {
             setPadding(dp(8), dp(6), dp(8), dp(6))
         }
 
-        // ✅ 严格保持 drawable 引用，不再改成 mipmap，避免找不到资源报错
+        // ✅ 保持 drawable/avatar_mars 不动
         val authorAvatar = ImageView(this).apply {
             setImageResource(R.drawable.avatar_mars)
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
@@ -338,7 +335,6 @@ class AboutActivity : Activity() {
                 isClickable = true
                 isFocusable = true
                 setBackgroundResource(R.drawable.bg_card_ripple)
-                // ✅ 补上缺失 LayoutParams，topMargin 才能生效
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -427,9 +423,10 @@ class AboutActivity : Activity() {
         setTypeface(null, Typeface.BOLD)
         setTextColor(Ui.TEXT_PRIMARY)
     }
+    // ✅ 修复：用已存在的 PAGE_TITLE 代替不存在的 SECTION_TITLE
     private fun sectionTitle(text: String): TextView = TextView(this).apply {
         this.text = text
-        textSize = Ui.SECTION_TITLE
+        textSize = Ui.PAGE_TITLE
         setTextColor(Ui.TEXT_SECONDARY)
     }
     private fun View.tappable(activity: Activity, bgRes: Int) {
