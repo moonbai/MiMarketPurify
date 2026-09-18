@@ -1,4 +1,4 @@
-run: 35345431964 attempt 1
-sha: 7f322a3c31ee27dbb46c1add7cc8340aabe02fbc
+run: 35345889597 attempt 1
+sha: 422c04466951c8e7239a25975c4b7c9b07ee2907
 outcome: failure
 apk:
