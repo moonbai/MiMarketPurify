@@ -184,6 +184,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_HIDE_UPDATE_ALL, true), tag = Settings.KEY_HIDE_UPDATE_ALL
         ) { on -> writeRemote(Settings.KEY_HIDE_UPDATE_ALL, on) }
 
+        addSwitchRow(group = group, title = "更新界面自动升级开关",
+            summary = "隐藏更新界面自动升级开关",
+            checked = readLocal(Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, true), tag = Settings.KEY_HIDE_AUTO_UPDATE_SWITCH
+        ) { on -> writeRemote(Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, on) }
         content.addView(group)
         addFooter("Tips：隐藏的可能只是标题~")
     }

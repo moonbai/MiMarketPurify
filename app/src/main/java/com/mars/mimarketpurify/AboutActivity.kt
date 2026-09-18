@@ -170,7 +170,7 @@ class AboutActivity : Activity() {
             setPadding(0, dp(3), 0, 0)
         })
         info.addView(TextView(this).apply {
-            text = "移除广告与推荐信息"
+            text = "小米应用商店净化与增强"
             textSize = Ui.MICRO
             setTextColor(Ui.TEXT_TERTIARY)
             setPadding(0, dp(3), 0, 0)
@@ -230,7 +230,7 @@ class AboutActivity : Activity() {
      private fun buildAuthor() {
         val weiboUrl = "https://weibo.com/u/3963594403"
         // 从微博个人头像右键复制「原图直链」(sinaimg.cn 结尾)，填入这里
-        val avatarUrl = "tvax2.sinaimg.cn/crop.0.0.330.330.180/ec3fa6a3ly8hzi0yx1iuaj2096096dg0.jpg?KID=imgbed,tva&Expires=1789720620&ssig=mpwYyDVqoG"
+        val avatarUrl = "https://tvax2.sinaimg.cn/crop.0.0.330.330.180/ec3fa6a3ly8hzi0yx1iuaj2096096dg0.jpg?KID=imgbed,tva&Expires=1789720896&ssig=uam475w+hB"
         val authorName = "Mars"
         val authorSubtitle = "点此访问作者主页，点点关注"
     

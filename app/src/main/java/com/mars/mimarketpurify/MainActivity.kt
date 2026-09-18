@@ -68,7 +68,8 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_UPDATE_HISTORY,
         Settings.KEY_SEARCH_ALSO_VIEW,
         Settings.KEY_SUB_TAB_FILTER,
-        Settings.KEY_HIDE_UPDATE_ALL
+        Settings.KEY_HIDE_UPDATE_ALL,
+        Settings.KEY_HIDE_AUTO_UPDATE_SWITCH
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
