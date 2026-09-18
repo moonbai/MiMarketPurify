@@ -80,6 +80,9 @@ class AboutActivity : Activity() {
 
         addSection("功能")
         buildFeatureCards()
+        
+        addSection("作者")
+        buildAuthor()
 
         addSection("参考项目")
         buildReferenceProjects()
@@ -222,6 +225,92 @@ class AboutActivity : Activity() {
             content.addView(card)
         }
     }
+    
+    
+     private fun buildAuthor() {
+        val weiboUrl = "https://weibo.com/u/3963594403"
+        // 从微博个人头像右键复制「原图直链」(sinaimg.cn 结尾)，填入这里
+        val avatarUrl = "tvax2.sinaimg.cn/crop.0.0.330.330.180/ec3fa6a3ly8hzi0yx1iuaj2096096dg0.jpg?KID=imgbed,tva&Expires=1789720620&ssig=mpwYyDVqoG"
+        val authorName = "Mars"
+        val authorSubtitle = "点此访问作者主页，点点关注"
+    
+        val card = card()
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+        }
+    
+        val authorAvatar = ImageView(this).apply {
+            // 默认占位先用应用图标；有图片库后替换为网络加载
+            setImageResource(R.mipmap.ic_launcher)
+            layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            clipToOutline = true
+            // 圆形需要 drawable‑shape 或者图片库 transform；这里先预留，不新增依赖
+        }
+    
+        // ———— 【可选、无新增依赖的异步加载占位示意】
+        // 若之后加入 Coil / Glide：
+        //   Coil.imageLoader(context).enqueue(
+        //       ImageRequest.Builder(context)
+        //           .data(avatarUrl)
+        //           .target(authorAvatar)
+        //           .build()
+        //   )
+        // ————
+    
+        val info = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            ).also {
+                it.marginStart = dp(12)
+                it.marginEnd = dp(8)
+            }
+        }
+    
+        info.addView(cardTitle(authorName))
+        info.addView(TextView(this).apply {
+            text = authorSubtitle
+            textSize = Ui.ROW_SUMMARY
+            setTextColor(Ui.TEXT_SECONDARY)
+            setPadding(0, dp(3), 0, 0)
+        })
+        info.addView(TextView(this).apply {
+            text = weiboUrl
+            textSize = Ui.MICRO
+            setTextColor(Ui.TEXT_TERTIARY)
+            setPadding(0, dp(2), 0, 0)
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        })
+    
+        val arrowTv = TextView(this).apply {
+            text = "›"
+            textSize = 20f
+            setTextColor(Ui.TEXT_TERTIARY)
+        }
+    
+        row.addView(authorAvatar)
+        row.addView(info)
+        row.addView(arrowTv)
+        card.addView(row)
+    
+        card.tappable(this, R.drawable.bg_card_ripple)
+        card.setOnClickListener {
+            runCatching {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(weiboUrl)))
+            }.onFailure {
+                Toast.makeText(this, "无法打开微博链接", Toast.LENGTH_SHORT).show()
+            }
+        }
+    
+        content.addView(card)
+    }
+    
 
     private fun buildReferenceProjects() {
         data class RefProject(
