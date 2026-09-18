@@ -108,7 +108,6 @@ class AboutActivity : Activity() {
         val radii = floatArrayOf(rPx, rPx, rPx, rPx, rPx, rPx, rPx, rPx)
         val shape = ShapeDrawable(RoundRectShape(radii, null, null))
         iv.background = shape
-        // 修复：移除不存在的 ViewCompat.setClipToOutline，加版本保护
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             iv.clipToOutline = true
         }
@@ -216,7 +215,7 @@ class AboutActivity : Activity() {
             "功能增强" to "下载超级岛、非正版APP显示、被隐藏更新显示、升级弹窗拦截"
         )
 
-        features.forEachIndexed { index, (title, desc) ->
+        features.forEachIndexed { idx, (title, desc) ->
             val card = card()
             card.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -235,7 +234,7 @@ class AboutActivity : Activity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also {
-                if (index > 0) {
+                if (idx > 0) {
                     it.topMargin = dp(8)
                 }
             }
@@ -325,7 +324,7 @@ class AboutActivity : Activity() {
             setPadding(dp(2), dp(2), dp(2), dp(2))
         }
 
-        references.forEachIndexed { index, item ->
+        references.forEachIndexed { idx, item ->
             val itemRow = LinearLayout(this@AboutActivity).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -375,7 +374,15 @@ class AboutActivity : Activity() {
                 addView(textLayout)
                 addView(arrow)
             }
-
+            // ✅ 修复点：不再复用/覆盖循环变量，直接用 idx 控制间距
+            if (idx > 0) {
+                itemRow.layoutParams = (itemRow.layoutParams ?: LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )).apply {
+                    topMargin = dp(4)
+                }
+            }
             listLayout.addView(itemRow)
         }
 
@@ -416,9 +423,10 @@ class AboutActivity : Activity() {
         setTypeface(null, Typeface.BOLD)
         setTextColor(Ui.TEXT_PRIMARY)
     }
+    // ✅ 修复点：移除不存在的 Ui.SECTION_TITLE，改用已存在 Ui.ROW_TITLE
     private fun sectionTitle(text: String): TextView = TextView(this).apply {
         this.text = text
-        textSize = Ui.SECTION_TITLE
+        textSize = Ui.ROW_TITLE
         setTextColor(Ui.TEXT_SECONDARY)
     }
     private fun View.tappable(activity: Activity, bgRes: Int) {
