@@ -24,7 +24,8 @@ import kotlin.math.roundToInt
 class AboutActivity : Activity() {
 
     private lateinit var content: LinearLayout
-    private val avatarRadiusDp = 22f
+    // 控制图像圆角尺寸
+    private val avatarRadiusDp = 8f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
