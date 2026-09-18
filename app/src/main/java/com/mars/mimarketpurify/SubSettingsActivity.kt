@@ -179,6 +179,11 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_SUB_TAB_FILTER, true), tag = Settings.KEY_SUB_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_SUB_TAB_FILTER, on) }
 
+        addSwitchRow(group = group, title = "更新界面全部升级按钮",
+            summary = "隐藏更新界面全部升级按钮",
+            checked = readLocal(Settings.KEY_SUB_TAB_FILTER, true), tag = Settings.KEY_HIDE_UPDATE_ALL
+        ) { on -> writeRemote(Settings.KEY_SUB_TAB_FILTER, on) }
+
         content.addView(group)
         addFooter("Tips：隐藏的可能只是标题~")
     }

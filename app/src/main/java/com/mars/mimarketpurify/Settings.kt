@@ -58,6 +58,8 @@ object Settings {
     const val KEY_UPDATE_DIALOG = "block_update_dialog"
     const val KEY_RANK_DEBUG = "rank_debug"
     const val KEY_ISLAND = "super_island"
+    const val KEY_HIDE_UPDATE_ALL = "hide_update_all"
+
 
     // ═══════════════ 移花接木 ═══════════════
     const val KEY_UPDATE_TAB = "update_tab_entry"

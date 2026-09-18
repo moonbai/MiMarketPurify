@@ -5,6 +5,7 @@ import com.mars.mimarketpurify.hooks.market.ConfigBackupRestore
 import com.mars.mimarketpurify.hooks.market.DetailAds
 import com.mars.mimarketpurify.hooks.market.EnableSuperIsland
 import com.mars.mimarketpurify.hooks.market.HideSecurityView
+import com.mars.mimarketpurify.hooks.market.HideUpdateAll
 import com.mars.mimarketpurify.hooks.market.HideFruitEntry
 import com.mars.mimarketpurify.hooks.market.HomeFeed
 import com.mars.mimarketpurify.hooks.market.RankAds
@@ -42,6 +43,7 @@ object Market : AppRegister() {
             UpdateDownloadAds,
             DetailAds,
             HideSecurityView,
+            HideUpdateAll,
             HideFruitEntry,
             TabFilter,
             SubTabFilter,
