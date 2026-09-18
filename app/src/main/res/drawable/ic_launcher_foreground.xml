@@ -56,13 +56,13 @@
         <path
             android:pathData="M81,9 m -21,0 a21,21 0 1,0 42,0 a21,21 0 1,0 -42,0"
             android:fillColor="#1A1A24"/>
+        </group>
         <group
             android:translateX="-0.5"
             android:translateY="0.5">
             <path
                 android:pathData="M73,19 L77,19 L81,29 L77,29 L76,26 L74,26 L73,29 L69,29 Z M74.6,22 L75.4,22 L75,24 Z M82,19 L86,19 A3,3 0 0,1 89,22 L89,26 A3,3 0 0,1 86,29 L82,29 Z M83,22 L83,26 L85,26 A1,1 0 0,0 86,25 L86,23 A1,1 0 0,0 85,22 Z"
                 android:fillColor="#FF3B30"/>
-        </group>
     </group>
 
 </vector>
