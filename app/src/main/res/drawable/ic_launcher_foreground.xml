@@ -36,17 +36,29 @@
 
     <!-- 锁身中间 Mi 文字（用路径模拟标准MI字形，居中） -->
     <path
-        android:pathData="M38,72 L42,72 L48,82 L54,72 L58,72 L58,86 L54,86 L54,78 L48,86 L42,78 L42,86 L38,86 Z"
+        android:pathData="M36,72 L41,72 L47,83 L53,72 L58,72 L58,86 L53,86 L53,77 L47,86 L41,77 L41,86 L36,86 Z"
         android:fillColor="#FF4242"/>
-
-    <!-- 右上角黑色圆形徽章 -->
+    
+    <!-- i：上面圆点 + 下面竖杆（两条，或者合并；这里拆成圆点+竖更可控） -->
     <path
-        android:pathData="M81,9 m -21,0 a21,21 0 1,0 42,0 a21,21 0 1,0 -42,0"
-        android:fillColor="#1A1A24"/>
-
-    <!-- 黑圆上红色 AD -->
+        android:pathData="M63,72 m -2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0"
+        android:fillColor="#FF4242"/>
     <path
-        android:pathData="M73,19 L77,19 L81,29 L77,29 L76,26 L74,26 L73,29 L69,29 Z M74.6,22 L75.4,22 L75,24 Z M82,19 L86,19 A3,3 0 0,1 89,22 L89,26 A3,3 0 0,1 86,29 L82,29 Z M83,22 L83,26 L85,26 A1,1 0 0,0 86,25 L86,23 A1,1 0 0,0 85,22 Z"
-        android:fillColor="#FF3B30"/>
-
+        android:pathData="M61,77 L65,77 L65,86 L61,86 Z"
+        android:fillColor="#FF4242"/>
+    
+    
+    <!-- 右上角黑色圆形徽章 + AD文字 → 整体左下偏移 -->
+    <group
+        android:translateX="-3"
+        android:translateY="4">
+        <path
+            android:pathData="M81,9 m -21,0 a21,21 0 1,0 42,0 a21,21 0 1,0 -42,0"
+            android:fillColor="#1A1A24"/>
+    
+        <path
+            android:pathData="M73,19 L77,19 L81,29 L77,29 L76,26 L74,26 L73,29 L69,29 Z M74.6,22 L75.4,22 L75,24 Z M82,19 L86,19 A3,3 0 0,1 89,22 L89,26 A3,3 0 0,1 86,29 L82,29 Z M83,22 L83,26 L85,26 A1,1 0 0,0 86,25 L86,23 A1,1 0 0,0 85,22 Z"
+            android:fillColor="#FF3B30"/>
+    </group>
+    
 </vector>
