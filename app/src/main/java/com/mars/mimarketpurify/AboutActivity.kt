@@ -253,7 +253,7 @@ class AboutActivity : Activity() {
         }
 
         val authorAvatar = ImageView(this).apply {
-            setImageResource(R.mipmap.avatar_mars)
+            setImageResource(R.drawable.avatar_mars)
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
             scaleType = ImageView.ScaleType.CENTER_CROP
             isHardwareAccelerated = true
