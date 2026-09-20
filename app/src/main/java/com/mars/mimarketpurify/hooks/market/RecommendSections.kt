@@ -1,9 +1,13 @@
 package com.mars.mimarketpurify.hooks.market
 
 import android.app.Activity
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.TextView
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
@@ -12,6 +16,7 @@ import com.mars.mimarketpurify.init.BaseHook
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 import java.util.Collections
+import java.util.WeakHashMap
 
 /**
  * 按**板块标题文案**整块隐藏推荐位。
@@ -65,6 +70,14 @@ object RecommendSections : BaseHook() {
     /** 已隐藏过的板块标题，避免日志刷屏 */
     private val reported = Collections.synchronizedSet(mutableSetOf<String>())
 
+    /** 已挂常驻防恢复监听的 decorView（WeakHashMap：页面销毁后自动释放，防泄漏） */
+    private val watchedDecors = Collections.synchronizedMap(WeakHashMap<View, Boolean>())
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    /** 防恢复重扫节流：布局变化后 500ms 内只扫一次 */
+    private const val GLOBAL_RESCAN_INTERVAL_MS = 500L
+
     override fun init() {
         // 路径 A：任何视图一挂上来就检查，滚动加载的新卡片也能覆盖。
         // 挂载的往往是整块卡片（ViewGroup 包着标题 TextView），所以对挂载视图做
@@ -87,6 +100,37 @@ object RecommendSections : BaseHook() {
         hookRescan("com.xiaomi.market.ui.UpdateHistoryActivity")
         hookRescan("com.xiaomi.market.ui.SearchActivityPhone")
         hookRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
+
+        // 路径 C：常驻防恢复——任何 Activity 布局变化就重扫全树。
+        // 商店隐藏后把卡片恢复（重新 bind / setVisibility(VISIBLE) / 滚动复用插入）都会
+        // 触发布局变化，监听从页面进入起常驻，恢复一次重扫一次，直到真正消失。
+        runCatching {
+            ClassUtil.loadClass("android.app.Activity")
+                .methodFinder()
+                .filterByName("onResume")
+                .forEach { m ->
+                    m.hooked {
+                        val result = proceed()
+                        val decor = (thisObject as? Activity)?.window?.decorView
+                        if (decor != null && watchedDecors.put(decor, true) == null) {
+                            decor.viewTreeObserver.addOnGlobalLayoutListener(
+                                object : ViewTreeObserver.OnGlobalLayoutListener {
+                                    private var lastScan = 0L
+                                    override fun onGlobalLayout() {
+                                        val now = SystemClock.uptimeMillis()
+                                        if (now - lastScan < GLOBAL_RESCAN_INTERVAL_MS) return
+                                        lastScan = now
+                                        runCatching { scanTree(decor, 0) }
+                                    }
+                                }
+                            )
+                        }
+                        result
+                    }
+                }
+        }.onFailure {
+            HookEnv.base.log(Log.ERROR, TAG, "$name: Activity.onResume 防恢复监听挂钩失败", it)
+        }
     }
 
     private fun hookRescan(className: String) {
@@ -183,6 +227,19 @@ object RecommendSections : BaseHook() {
             }
             if (reported.add(text)) {
                 HookEnv.base.log(Log.WARN, TAG, "$name: 已隐藏推荐板块「$text」", null)
+                // 复查 + 双保险：隐藏后 1 秒若被商店恢复，立即再隐藏并留证据
+                mainHandler.postDelayed({
+                    runCatching {
+                        if (target.visibility != View.GONE) {
+                            debugLog("⚠「$text」隐藏后 1s 被商店恢复，已重新隐藏")
+                            target.visibility = View.GONE
+                            target.layoutParams?.let { lp ->
+                                lp.height = 0
+                                target.layoutParams = lp
+                            }
+                        }
+                    }
+                }, 1000L)
             }
         }.onFailure {
             HookEnv.base.log(Log.VERBOSE, TAG, "$name: 隐藏「$text」失败 ${it.message}", null)
