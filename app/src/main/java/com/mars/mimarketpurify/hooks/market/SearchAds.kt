@@ -5,7 +5,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
@@ -18,7 +17,7 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
  *
  *  - NativeSearchSugFragment：搜索建议 adFlag = 0
  *  - NativeSearchGuideFragment：搜索引导页仅保留搜索历史
- *  - NativeSearchResultFragment：接口过滤 + RecyclerView动态监听拦截「安装XX的用户还喜欢」类关联推荐
+ *  - NativeSearchResultFragment：接口过滤 + 无硬依赖视图扫描拦截「安装XX的用户还喜欢」
  */
 object SearchAds : BaseHook() {
 
@@ -27,7 +26,6 @@ object SearchAds : BaseHook() {
     override val name: String
         get() = "移除搜索推荐"
 
-    // 命中关键词列表（适配动态应用名前缀）
     private val targetKeywords = listOf(
         "的用户还喜欢",
         "大家还喜欢",
@@ -36,23 +34,23 @@ object SearchAds : BaseHook() {
     )
 
     /**
-     * 递归扫描：任意子TextView命中任一关键词 → 返回true，返回最近可隐藏的根Item
+     * 递归扫描所有 TextView，命中关键词则隐藏自身所在父Item块
      */
     private fun findAndHideIfMatch(root: View) {
-        fun hasHit(view: View): Boolean {
+        fun scan(view: View): Boolean {
             if (view is TextView) {
                 val txt = view.text?.toString() ?: return false
                 return targetKeywords.any { txt.contains(it) }
             }
             if (view is ViewGroup) {
                 for (i in 0 until view.childCount) {
-                    if (hasHit(view.getChildAt(i))) return true
+                    if (scan(view.getChildAt(i))) return true
                 }
             }
             return false
         }
 
-        if (hasHit(root)) {
+        if (scan(root)) {
             root.visibility = View.GONE
             root.layoutParams?.let { lp ->
                 lp.height = 0
@@ -61,12 +59,55 @@ object SearchAds : BaseHook() {
             HookEnv.base.log(Log.INFO, TAG, "$name: 拦截关联推荐块")
         }
 
-        // 继续往下遍历，防止关键词和实际可隐藏容器不在同一个父级
         if (root is ViewGroup) {
             for (i in 0 until root.childCount) {
                 findAndHideIfMatch(root.getChildAt(i))
             }
         }
+    }
+
+    /**
+     * 不硬引用 RecyclerView：通过类名判断 + 反射注册子View附着监听
+     */
+    @Suppress("UNCHECKED_CAST")
+    private fun attachScrollWatcher(viewRoot: ViewGroup) {
+        fun traverse(parent: ViewGroup) {
+            for (i in 0 until parent.childCount) {
+                val child = parent.getChildAt(i)
+                val clzName = child.javaClass.name
+                // 用类名识别 RecyclerView，不 import
+                if (clzName.contains("recyclerview") || clzName.endsWith("RecyclerView")) {
+                    try {
+                        // 获取 addOnChildAttachStateChangeListener 方法
+                        val addMethod = child.javaClass.getDeclaredMethod(
+                            "addOnChildAttachStateChangeListener",
+                            Class.forName("androidx.recyclerview.widget.RecyclerView\$OnChildAttachStateChangeListener")
+                        )
+                        // 动态实例化监听器
+                        val listenerCls = Class.forName("androidx.recyclerview.widget.RecyclerView\$OnChildAttachStateChangeListener")
+                        val listener = java.lang.reflect.Proxy.newProxyInstance(
+                            child.javaClass.classLoader,
+                            arrayOf(listenerCls),
+                            { _, method, args ->
+                                when (method.name) {
+                                    "onChildViewAttachedToWindow" -> {
+                                        val attachedView = args[0] as View
+                                        findAndHideIfMatch(attachedView)
+                                    }
+                                }
+                                null
+                            }
+                        )
+                        addMethod.invoke(child, listener)
+                    } catch (e: Throwable) {
+                        // 找不到类/方法直接静默跳过，不影响整体
+                    }
+                } else if (child is ViewGroup) {
+                    traverse(child)
+                }
+            }
+        }
+        traverse(viewRoot)
     }
 
     override fun init() {
@@ -109,7 +150,7 @@ object SearchAds : BaseHook() {
                 }
         }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索引导页拦截失败", it) }
 
-        // 搜索结果：接口过滤 + RecyclerView动态监听
+        // 搜索结果：接口过滤 + 视图动态扫描
         runCatching {
             val searchResultFragCls = ClassUtil.loadClass(
                 "com.xiaomi.market.business_ui.search.NativeSearchResultFragment"
@@ -136,7 +177,7 @@ object SearchAds : BaseHook() {
                     proceed()
                     val root = args.getOrNull(1) as? ViewGroup ?: return@hooked null
 
-                    // 首次预绘制兜底
+                    // 首次预绘制兜底扫描
                     root.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
                         private var once = false
                         override fun onPreDraw(): Boolean {
@@ -148,23 +189,8 @@ object SearchAds : BaseHook() {
                         }
                     })
 
-                    // 找到RecyclerView，注册子View附着监听（解决滑动延迟渲染出来的条目）
-                    fun findRecyclerView(parent: ViewGroup) {
-                        for (i in 0 until parent.childCount) {
-                            val child = parent.getChildAt(i)
-                            if (child is RecyclerView) {
-                                child.addOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
-                                    override fun onChildViewAttachedToWindow(view: View) {
-                                        findAndHideIfMatch(view)
-                                    }
-                                    override fun onChildViewDetachedFromWindow(view: View) {}
-                                })
-                            } else if (child is ViewGroup) {
-                                findRecyclerView(child)
-                            }
-                        }
-                    }
-                    findRecyclerView(root)
+                    // 无硬依赖注册滚动条目监听
+                    attachScrollWatcher(root)
 
                     return@hooked null
                 }
