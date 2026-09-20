@@ -1,12 +1,16 @@
 package com.mars.mimarketpurify.hooks.market
 
 import android.util.Log
+import android.view.View
+import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
+import io.github.kyuubiran.ezxhelper.core.hook.AfterHook
 
 /**
  * 移除搜索相关的软件推荐。
@@ -15,6 +19,7 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
  *  - 移除搜索建议的软件推荐（NativeSearchSugFragment）
  *  - 移除搜索页面的软件推荐（NativeSearchGuideFragment）
  *  - 移除搜索结果的软件推荐（NativeSearchResultFragment）
+ *  - 新增：搜索结果页「安装xx的用户还喜欢」关联推荐（native_app_item_view / recycler_view 视图兜底）
  *
  * 注意：搜索结果页的过滤会保留“应用列表”组件、剔除其它组件，这可能使个别应用
  * （如“小米商城”）在搜索中不可见。该行为沿用原实现，若影响使用可在主页关闭本开关。
@@ -27,7 +32,7 @@ object SearchAds : BaseHook() {
         get() = "移除搜索推荐"
 
     override fun init() {
-        // 搜索建议：关闭广告标记
+        // ========== 原有：搜索建议 adFlag 关闭 ==========
         runCatching {
             ClassUtil.loadClass(
                 "com.xiaomi.market.business_ui.search.NativeSearchSugFragment"
@@ -43,7 +48,7 @@ object SearchAds : BaseHook() {
                 }
         }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索建议拦截失败", it) }
 
-        // 搜索页面：仅保留搜索历史组件
+        // ========== 原有：搜索引导页只保留历史 ==========
         runCatching {
             ClassUtil.loadClass(
                 "com.xiaomi.market.business_ui.search.NativeSearchGuideFragment"
@@ -53,7 +58,6 @@ object SearchAds : BaseHook() {
                     .first()
                     .hooked {
                         val result = proceed()
-                        // com.xiaomi.market.common.component.componentbeans.SearchHistoryComponent
                         @Suppress("UNCHECKED_CAST")
                         return@hooked (result as List<Any>).filter { component ->
                             component.javaClass.name.contains("SearchHistoryComponent")
@@ -67,17 +71,13 @@ object SearchAds : BaseHook() {
             }
         }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索页面拦截失败", it) }
 
-        // 搜索结果页面：仅保留应用列表（以及「软件」页签这类同样属于结果集的组件）
-        //
-        // 这里**少保任何一种组件都会误伤**：早期版本只保留 ListAppComponent，
-        // 而结果页另有 AppListComponent / SearchResultComponent 等多种写法，
-        // 版本一变就对不上。现在双条件——组件名**含有** Apps（覆盖
-        // AppsComponent / AppListComponent / ListAppsComponent…），
-        // 或者类名里带 ListAppComponent（兼容老命名）。
+        // ========== 原有：搜索结果接口层过滤 Apps‑相关组件 ==========
         runCatching {
-            ClassUtil.loadClass(
+            val searchResultFragCls = ClassUtil.loadClass(
                 "com.xiaomi.market.business_ui.search.NativeSearchResultFragment"
-            ).methodFinder()
+            )
+
+            searchResultFragCls.methodFinder()
                 .filterByName("parseResponseData")
                 .first()
                 .hooked {
@@ -88,10 +88,54 @@ object SearchAds : BaseHook() {
                         val n = component.javaClass.name
                         n.contains("AppsComponent") || n.contains("ListAppComponent")
                     }
-                    // 一个都没保住时宁可原样放行：白名单写错的话，
-                    // 结果就变成「列表空白而且一条都搜不到」，比有广告严重得多
                     return@hooked if (kept.isEmpty()) result else kept
                 }
-        }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索结果拦截失败", it) }
+
+            // ✨ 新增：Fragment onViewCreated 钩子 → 监听 R.id.recycler_view，拦截「用户还喜欢」native_app_item_view
+            searchResultFragCls.methodFinder()
+                .filter { it.name == "onViewCreated" }
+                .first()
+                .hook(AfterHook) { param ->
+                    val view = param.args[1] as? ViewGroup ?: return@hook
+                    val rv = view.findViewById<RecyclerView>(
+                        view.resources.getIdentifier("recycler_view", "id", "com.xiaomi.market")
+                    ) ?: return@hook
+
+                    // 给 RecyclerView 加子View attach 监听：命中 native_app_item_view + 包含关联推荐关键词时隐藏
+                    rv.setOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
+                        override fun onChildViewAttachedToWindow(child: View) {
+                            // 匹配目标 item id: native_app_item_view
+                            val itemView = child.findViewById<View>(
+                                child.resources.getIdentifier("native_app_item_view", "id", "com.xiaomi.market")
+                            ) ?: return
+
+                            // 文本特征匹配："安装.*的用户还喜欢" / "大家还在搜" / "相关推荐" 这类；命中直接隐藏
+                            val hasRelatedTip = runCatching {
+                                val txtSb = StringBuilder()
+                                fun traverse(v: View) {
+                                    if (v is android.widget.TextView) txtSb.append(v.text ?: "")
+                                    if (v is ViewGroup) for (i in 0 until v.childCount) traverse(v.getChildAt(i))
+                                }
+                                traverse(child)
+                                val text = txtSb.toString()
+                                text.contains("安装") && text.contains("的用户还喜欢")
+                                        || text.contains("大家还喜欢")
+                                        || text.contains("相关推荐")
+                            }.getOrDefault(false)
+
+                            if (hasRelatedTip) {
+                                child.visibility = View.GONE
+                                (child.layoutParams as? ViewGroup.MarginLayoutParams)?.apply {
+                                    width = 0; height = 0
+                                }
+                                HookEnv.base.log(Log.INFO, TAG, "$name: 已屏蔽「安装xx的用户还喜欢」关联条目")
+                            }
+                        }
+
+                        override fun onChildViewDetachedFromWindow(view: View) {}
+                    })
+                }
+
+        }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索结果+关联推荐拦截失败", it) }
     }
 }
