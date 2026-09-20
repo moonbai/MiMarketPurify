@@ -71,13 +71,15 @@ object SearchAds : BaseHook() {
     private fun debugAncestors(start: View): String {
         val sb = StringBuilder()
         var cur: View? = start
-        repeat(4) {
-            if (cur == null) return@repeat
+        var depth = 0
+        // 用 while 而非 repeat：lambda 捕获并修改 cur 会导致 smart cast 不可用（编译错误）
+        while (cur != null && depth < 4) {
             if (sb.isNotEmpty()) sb.append(" → ")
             val idName = runCatching { cur.resources.getResourceEntryName(cur.id) }
                 .getOrNull() ?: "id=${cur.id}"
             sb.append("${cur.javaClass.simpleName}($idName)")
             cur = cur.parent as? View
+            depth++
         }
         return sb.toString()
     }
