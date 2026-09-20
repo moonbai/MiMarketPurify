@@ -37,7 +37,7 @@
     <!-- 禁止圆环：深色空心圆 -->
     <path
         android:pathData="M54,68 m-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0"
-        android:strokeColor="#FF1A1A24"
+        android:strokeColor="#FFEE2E2E"
         android:strokeWidth="4.0"
         android:fillColor="@android:color/transparent"/>
 
@@ -66,7 +66,7 @@
     <!-- 斜杠：深色粗圆头斜杠 -->
     <path
         android:pathData="M40,58 L68,78"
-        android:strokeColor="#FF1A1A24"
+        android:strokeColor="#FFEE2E2E"
         android:strokeWidth="4.4"
         android:strokeLineCap="round"
         android:fillColor="@android:color/transparent"/>

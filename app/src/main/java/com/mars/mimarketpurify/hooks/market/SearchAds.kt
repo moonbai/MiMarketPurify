@@ -1,5 +1,7 @@
 package com.mars.mimarketpurify.hooks.market
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
@@ -13,18 +15,13 @@ import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFi
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 /**
- * 移除搜索相关的软件推荐。
- *
- *  - NativeSearchSugFragment：搜索建议 adFlag = 0
- *  - NativeSearchGuideFragment：搜索引导页仅保留搜索历史
- *  - NativeSearchResultFragment：接口过滤 + 无硬依赖视图扫描拦截「安装XX的用户还喜欢」
+ * 移除搜索相关的软件推荐
+ * 精准目标: native_app_suggest_root_view / "安装XX的用户还喜欢"
  */
 object SearchAds : BaseHook() {
 
     override val prefKey: String = Settings.KEY_SEARCH
-
-    override val name: String
-        get() = "移除搜索推荐"
+    override val name: String = "移除搜索推荐"
 
     private val targetKeywords = listOf(
         "的用户还喜欢",
@@ -33,41 +30,61 @@ object SearchAds : BaseHook() {
         "你可能还喜欢"
     )
 
+    // 市场固定特征ID（字符串匹配，不需要R常量）
+    private const val SUGGEST_ROOT_ID_NAME = "native_app_suggest_root_view"
+    private const val SUGGEST_ITEM_ID_NAME = "native_app_item_view"
+
     /**
-     * 递归扫描所有 TextView，命中关键词则隐藏自身所在父Item块
+     * 从命中的TextView向上回溯，优先找到 native_app_suggest_root_view；找不到就取最近有效父容器
      */
-    private fun findAndHideIfMatch(root: View) {
-        fun scan(view: View): Boolean {
-            if (view is TextView) {
-                val txt = view.text?.toString() ?: return false
-                return targetKeywords.any { txt.contains(it) }
+    private fun findSuggestRootFromChild(start: View): View? {
+        var cur: View? = start
+        var fallback: View? = null
+        var depth = 0
+        while (cur != null && depth < 12) {
+            val idName = try {
+                cur.resources.getResourceEntryName(cur.id)
+            } catch (_: Throwable) {
+                ""
             }
-            if (view is ViewGroup) {
-                for (i in 0 until view.childCount) {
-                    if (scan(view.getChildAt(i))) return true
-                }
+            if (idName == SUGGEST_ROOT_ID_NAME) {
+                return cur
             }
-            return false
+            if (idName == SUGGEST_ITEM_ID_NAME && fallback == null) {
+                fallback = cur
+            }
+            cur = cur.parent as? View
+            depth++
         }
-
-        if (scan(root)) {
-            root.visibility = View.GONE
-            root.layoutParams?.let { lp ->
-                lp.height = 0
-                root.layoutParams = lp
-            }
-            HookEnv.base.log(Log.INFO, TAG, "$name: 拦截关联推荐块")
-        }
-
-        if (root is ViewGroup) {
-            for (i in 0 until root.childCount) {
-                findAndHideIfMatch(root.getChildAt(i))
-            }
-        }
+        return fallback
     }
 
     /**
-     * 不硬引用 RecyclerView：通过类名判断 + 反射注册子View附着监听
+     * 递归扫描：找到命中文本 → 向上定位整卡并隐藏
+     */
+    private fun scanAndHide(root: View) {
+        fun dfs(view: View) {
+            if (view is TextView) {
+                val text = view.text?.toString() ?: return
+                if (targetKeywords.any { text.contains(it) }) {
+                    val targetRoot = findSuggestRootFromChild(view) ?: view
+                    targetRoot.visibility = View.GONE
+                    targetRoot.layoutParams?.let { lp -> lp.height = 0 }
+                    HookEnv.base.log(Log.INFO, TAG, "$name: 已拦截关联推荐卡")
+                    return
+                }
+            }
+            if (view is ViewGroup) {
+                for (i in 0 until view.childCount) {
+                    dfs(view.getChildAt(i))
+                }
+            }
+        }
+        dfs(root)
+    }
+
+    /**
+     * 无硬依赖反射注册RecyclerView子附着监听
      */
     @Suppress("UNCHECKED_CAST")
     private fun attachScrollWatcher(viewRoot: ViewGroup) {
@@ -75,32 +92,29 @@ object SearchAds : BaseHook() {
             for (i in 0 until parent.childCount) {
                 val child = parent.getChildAt(i)
                 val clzName = child.javaClass.name
-                // 用类名识别 RecyclerView，不 import
                 if (clzName.contains("recyclerview") || clzName.endsWith("RecyclerView")) {
                     try {
-                        // 获取 addOnChildAttachStateChangeListener 方法
-                        val addMethod = child.javaClass.getDeclaredMethod(
-                            "addOnChildAttachStateChangeListener",
-                            Class.forName("androidx.recyclerview.widget.RecyclerView\$OnChildAttachStateChangeListener")
-                        )
-                        // 动态实例化监听器
                         val listenerCls = Class.forName("androidx.recyclerview.widget.RecyclerView\$OnChildAttachStateChangeListener")
+                        val addMethod = child.javaClass.getDeclaredMethod(
+                            "addOnChildAttachStateChangeListener", listenerCls
+                        )
                         val listener = java.lang.reflect.Proxy.newProxyInstance(
                             child.javaClass.classLoader,
                             arrayOf(listenerCls),
                             { _, method, args ->
-                                when (method.name) {
-                                    "onChildViewAttachedToWindow" -> {
-                                        val attachedView = args[0] as View
-                                        findAndHideIfMatch(attachedView)
+                                if (method.name == "onChildViewAttachedToWindow") {
+                                    val attachedView = args[0] as View
+                                    // 绑定后延迟一帧再扫：避开bind还没完成文本为空
+                                    Handler(Looper.getMainLooper()).post {
+                                        scanAndHide(attachedView)
                                     }
                                 }
                                 null
                             }
                         )
                         addMethod.invoke(child, listener)
-                    } catch (e: Throwable) {
-                        // 找不到类/方法直接静默跳过，不影响整体
+                    } catch (_: Throwable) {
+                        // 类缺失静默跳过
                     }
                 } else if (child is ViewGroup) {
                     traverse(child)
@@ -111,7 +125,7 @@ object SearchAds : BaseHook() {
     }
 
     override fun init() {
-        // 搜索建议 adFlag = 0
+        // 搜索建议 adFlag=0
         runCatching {
             ClassUtil.loadClass("com.xiaomi.market.business_ui.search.NativeSearchSugFragment")
                 .methodFinder()
@@ -129,7 +143,6 @@ object SearchAds : BaseHook() {
         // 搜索引导页只保留历史
         runCatching {
             val cls = ClassUtil.loadClass("com.xiaomi.market.business_ui.search.NativeSearchGuideFragment")
-
             cls.methodFinder()
                 .filterByName("parseResponseData")
                 .first()
@@ -141,22 +154,17 @@ object SearchAds : BaseHook() {
                         it.javaClass.name.contains("SearchHistoryComponent")
                     }
                 }
-
             cls.methodFinder()
                 .filterByName("isLoadMoreEndGone")
                 .first()
-                .hooked {
-                    return@hooked true
-                }
+                .hooked { return@hooked true }
         }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索引导页拦截失败", it) }
 
-        // 搜索结果：接口过滤 + 视图动态扫描
+        // 搜索结果页
         runCatching {
-            val searchResultFragCls = ClassUtil.loadClass(
-                "com.xiaomi.market.business_ui.search.NativeSearchResultFragment"
-            )
+            val fragCls = ClassUtil.loadClass("com.xiaomi.market.business_ui.search.NativeSearchResultFragment")
 
-            searchResultFragCls.methodFinder()
+            fragCls.methodFinder()
                 .filterByName("parseResponseData")
                 .first()
                 .hooked {
@@ -170,30 +178,29 @@ object SearchAds : BaseHook() {
                     return@hooked if (kept.isNotEmpty()) kept else result
                 }
 
-            searchResultFragCls.methodFinder()
+            fragCls.methodFinder()
                 .filterByName("onViewCreated")
                 .first()
                 .hooked {
                     proceed()
                     val root = args.getOrNull(1) as? ViewGroup ?: return@hooked null
 
-                    // 首次预绘制兜底扫描
+                    // 预绘制 + 延迟二次扫描（解决初次bind滞后）
                     root.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
                         private var once = false
                         override fun onPreDraw(): Boolean {
                             if (once) return true
                             once = true
                             root.viewTreeObserver.removeOnPreDrawListener(this)
-                            findAndHideIfMatch(root)
+                            scanAndHide(root)
+                            Handler(Looper.getMainLooper()).postDelayed({ scanAndHide(root) }, 350)
                             return true
                         }
                     })
 
-                    // 无硬依赖注册滚动条目监听
                     attachScrollWatcher(root)
-
                     return@hooked null
                 }
-        }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索结果+关联推荐拦截失败", it) }
+        }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索结果关联推荐拦截失败", it) }
     }
 }
