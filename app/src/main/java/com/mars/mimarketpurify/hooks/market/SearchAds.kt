@@ -17,7 +17,10 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 /**
  * 移除搜索相关的软件推荐
- * 重点适配：点击安装后异步插入的「安装XX的用户还喜欢」(native_app_suggest_root_view)
+ * 重点适配：点击安装后异步插入的「安装XX的用户还喜欢」卡片。
+ * 卡片根容器 id 随商店版本漂移过多次（native_app_suggest_root_view → native_app_item_view），
+ * 因此锚点做成集合；仍漂移时开启调试开关（KEY_RANK_DEBUG），logcat 会打印命中文案
+ * 对应的容器链，可直接定位新 id 补进集合。
  */
 object SearchAds : BaseHook() {
 
@@ -31,7 +34,11 @@ object SearchAds : BaseHook() {
         "你可能还喜欢"
     )
 
-    private const val SUGGEST_ROOT_ID_NAME = "native_app_suggest_root_view"
+    /** 推荐卡根容器的已知资源 id（新版本若更换 id，从调试日志定位后追加到这里） */
+    private val SUGGEST_ROOT_IDS = setOf(
+        "native_app_suggest_root_view",
+        "native_app_item_view"
+    )
 
     /** 全局布局监听的最小扫描间隔：动画/滚动期间 onGlobalLayout 每帧都会触发，需要节流 */
     private const val GLOBAL_SCAN_INTERVAL_MS = 400L
@@ -40,7 +47,7 @@ object SearchAds : BaseHook() {
     private const val GLOBAL_SCAN_MAX_COUNT = 30
 
     /**
-     * 从命中TextView向上回溯找到整卡容器 native_app_suggest_root_view
+     * 从命中TextView向上回溯找到整卡容器（匹配 [SUGGEST_ROOT_IDS] 中的任一资源 id）
      */
     private fun findSuggestRootFromChild(start: View): View? {
         var cur: View? = start
@@ -51,7 +58,7 @@ object SearchAds : BaseHook() {
             } catch (_: Throwable) {
                 ""
             }
-            if (idName == SUGGEST_ROOT_ID_NAME) {
+            if (idName in SUGGEST_ROOT_IDS) {
                 return cur
             }
             cur = cur.parent as? View
@@ -60,17 +67,40 @@ object SearchAds : BaseHook() {
         return null
     }
 
-    private fun scanAndHide(root: View) {
+    /** 调试用：打印命中 TextView 及向上几层容器的 类名(id)，用于 id 再次漂移时定位新锚点 */
+    private fun debugAncestors(start: View): String {
+        val sb = StringBuilder()
+        var cur: View? = start
+        repeat(4) {
+            if (cur == null) return@repeat
+            if (sb.isNotEmpty()) sb.append(" → ")
+            val idName = runCatching { cur.resources.getResourceEntryName(cur.id) }
+                .getOrNull() ?: "id=${cur.id}"
+            sb.append("${cur.javaClass.simpleName}($idName)")
+            cur = cur.parent as? View
+        }
+        return sb.toString()
+    }
+
+    /** 全树扫描并隐藏推荐卡；返回本次是否命中目标（用于决定全局监听是否保留） */
+    private fun scanAndHide(root: View): Boolean {
+        var hit = false
         fun dfs(view: View) {
             if (view is TextView) {
                 val text = view.text?.toString() ?: return
                 if (targetKeywords.any { text.contains(it) }) {
-                    val targetRoot = findSuggestRootFromChild(view) ?: return
+                    val targetRoot = findSuggestRootFromChild(view)
+                    if (targetRoot == null) {
+                        // 命中文案但没找到根容器：说明 id 又漂移了，打印容器链便于补锚点
+                        debugLog("命中推荐文案「${text.take(30)}」但未匹配根容器 id，容器链: ${debugAncestors(view)}")
+                        return
+                    }
                     if (targetRoot.visibility != View.GONE) {
                         targetRoot.visibility = View.GONE
                         targetRoot.layoutParams?.let { lp -> lp.height = 0 }
                         HookEnv.base.log(Log.INFO, TAG, "$name: 拦截安装后关联推荐卡")
                     }
+                    hit = true
                     return
                 }
             }
@@ -81,6 +111,7 @@ object SearchAds : BaseHook() {
             }
         }
         dfs(root)
+        return hit
     }
 
     /**
@@ -183,22 +214,26 @@ object SearchAds : BaseHook() {
                     val root = args.getOrNull(1) as? ViewGroup ?: return@hooked null
 
                     // 持续监听布局变化 → 专门抓安装后异步新增的View。
-                    // 原实现每次布局变化都全树 DFS 且监听永不移除；这里做节流 + 次数上限：
+                    // 节流 + 智能上限：
                     //  - 动画/滚动期间 onGlobalLayout 每帧触发，间隔 < 400ms 的扫描直接丢弃；
-                    //  - 扫描满 30 次（约 12 秒窗口，足够覆盖安装后插入）自动移除监听，防无限空转。
+                    //  - 命中过目标则保留监听（持续防恢复/防后续卡片）；从未命中且扫描满
+                    //    上限才移除监听，避免页面长时间停留时全树扫描空转。
                     root.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
                         private var lastScan = 0L
                         private var scanCount = 0
+                        private var everHit = false
                         override fun onGlobalLayout() {
                             val now = SystemClock.uptimeMillis()
                             if (now - lastScan < GLOBAL_SCAN_INTERVAL_MS) return
                             lastScan = now
-                            if (scanCount >= GLOBAL_SCAN_MAX_COUNT) {
+                            if (!everHit && scanCount >= GLOBAL_SCAN_MAX_COUNT) {
                                 root.viewTreeObserver.removeOnGlobalLayoutListener(this)
                                 return
                             }
                             scanCount++
-                            scanAndHide(root)
+                            if (scanAndHide(root)) {
+                                everHit = true
+                            }
                         }
                     })
 
