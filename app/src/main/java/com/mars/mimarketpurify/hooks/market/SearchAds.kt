@@ -58,11 +58,12 @@ object SearchAds : BaseHook() {
                     }
                 }
 
+            // isLoadMoreEndGone：返回 true → 修改 args 不可行（无入参），直接 return true，不要 proceed(true)
             cls.methodFinder()
                 .filterByName("isLoadMoreEndGone")
                 .first()
                 .hooked {
-                    return@hooked proceed(true)
+                    return@hooked true
                 }
         }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索引导页拦截失败", it) }
 
@@ -86,7 +87,7 @@ object SearchAds : BaseHook() {
                     return@hooked if (kept.isNotEmpty()) kept else result
                 }
 
-            // onViewCreated(Bundle, View) — 和仓库保持一致的无‑chain 写法，用 args[1] 取 View
+            // onViewCreated(Bundle, View)
             searchResultFragCls.methodFinder()
                 .filterByName("onViewCreated")
                 .first()
@@ -122,7 +123,10 @@ object SearchAds : BaseHook() {
                                         || text.contains("相关推荐")
                                     ) {
                                         child.visibility = View.GONE
-                                        child.layoutParams?.let { lp -> lp.height = 0; child.layoutParams = lp }
+                                        child.layoutParams?.let { lp ->
+                                            lp.height = 0
+                                            child.layoutParams = lp
+                                        }
                                         HookEnv.base.log(Log.INFO, TAG, "$name: 已屏蔽关联推荐条目")
                                     }
                                     if (child is ViewGroup) traverse(child)
