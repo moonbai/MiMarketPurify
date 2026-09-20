@@ -16,7 +16,7 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 /**
  * 移除搜索相关的软件推荐
- * 精准目标: native_app_suggest_root_view / "安装XX的用户还喜欢"
+ * 重点适配：点击安装后异步插入的「安装XX的用户还喜欢」(native_app_suggest_root_view)
  */
 object SearchAds : BaseHook() {
 
@@ -30,16 +30,13 @@ object SearchAds : BaseHook() {
         "你可能还喜欢"
     )
 
-    // 市场固定特征ID（字符串匹配，不需要R常量）
     private const val SUGGEST_ROOT_ID_NAME = "native_app_suggest_root_view"
-    private const val SUGGEST_ITEM_ID_NAME = "native_app_item_view"
 
     /**
-     * 从命中的TextView向上回溯，优先找到 native_app_suggest_root_view；找不到就取最近有效父容器
+     * 从命中TextView向上回溯找到整卡容器 native_app_suggest_root_view
      */
     private fun findSuggestRootFromChild(start: View): View? {
         var cur: View? = start
-        var fallback: View? = null
         var depth = 0
         while (cur != null && depth < 12) {
             val idName = try {
@@ -50,27 +47,23 @@ object SearchAds : BaseHook() {
             if (idName == SUGGEST_ROOT_ID_NAME) {
                 return cur
             }
-            if (idName == SUGGEST_ITEM_ID_NAME && fallback == null) {
-                fallback = cur
-            }
             cur = cur.parent as? View
             depth++
         }
-        return fallback
+        return null
     }
 
-    /**
-     * 递归扫描：找到命中文本 → 向上定位整卡并隐藏
-     */
     private fun scanAndHide(root: View) {
         fun dfs(view: View) {
             if (view is TextView) {
                 val text = view.text?.toString() ?: return
                 if (targetKeywords.any { text.contains(it) }) {
-                    val targetRoot = findSuggestRootFromChild(view) ?: view
-                    targetRoot.visibility = View.GONE
-                    targetRoot.layoutParams?.let { lp -> lp.height = 0 }
-                    HookEnv.base.log(Log.INFO, TAG, "$name: 已拦截关联推荐卡")
+                    val targetRoot = findSuggestRootFromChild(view) ?: return
+                    if (targetRoot.visibility != View.GONE) {
+                        targetRoot.visibility = View.GONE
+                        targetRoot.layoutParams?.let { lp -> lp.height = 0 }
+                        HookEnv.base.log(Log.INFO, TAG, "$name: 拦截安装后关联推荐卡")
+                    }
                     return
                 }
             }
@@ -84,7 +77,7 @@ object SearchAds : BaseHook() {
     }
 
     /**
-     * 无硬依赖反射注册RecyclerView子附着监听
+     * 无硬依赖 RV 子附着监听
      */
     @Suppress("UNCHECKED_CAST")
     private fun attachScrollWatcher(viewRoot: ViewGroup) {
@@ -104,18 +97,15 @@ object SearchAds : BaseHook() {
                             { _, method, args ->
                                 if (method.name == "onChildViewAttachedToWindow") {
                                     val attachedView = args[0] as View
-                                    // 绑定后延迟一帧再扫：避开bind还没完成文本为空
-                                    Handler(Looper.getMainLooper()).post {
+                                    Handler(Looper.getMainLooper()).postDelayed({
                                         scanAndHide(attachedView)
-                                    }
+                                    }, 120)
                                 }
                                 null
                             }
                         )
                         addMethod.invoke(child, listener)
-                    } catch (_: Throwable) {
-                        // 类缺失静默跳过
-                    }
+                    } catch (_: Throwable) { }
                 } else if (child is ViewGroup) {
                     traverse(child)
                 }
@@ -160,7 +150,7 @@ object SearchAds : BaseHook() {
                 .hooked { return@hooked true }
         }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索引导页拦截失败", it) }
 
-        // 搜索结果页
+        // 搜索结果页：增加全局布局变化监听，捕获【点击安装后动态插入】的卡片
         runCatching {
             val fragCls = ClassUtil.loadClass("com.xiaomi.market.business_ui.search.NativeSearchResultFragment")
 
@@ -185,20 +175,25 @@ object SearchAds : BaseHook() {
                     proceed()
                     val root = args.getOrNull(1) as? ViewGroup ?: return@hooked null
 
-                    // 预绘制 + 延迟二次扫描（解决初次bind滞后）
-                    root.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
-                        private var once = false
-                        override fun onPreDraw(): Boolean {
-                            if (once) return true
-                            once = true
-                            root.viewTreeObserver.removeOnPreDrawListener(this)
+                    // 持续监听布局变化 → 专门抓安装后异步新增的View
+                    root.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                        private var runCount = 0
+                        override fun onGlobalLayout() {
+                            // 避免无限高频：最多触发若干次后保留弱检测；或者持续轻量扫描
                             scanAndHide(root)
-                            Handler(Looper.getMainLooper()).postDelayed({ scanAndHide(root) }, 350)
-                            return true
+                            runCount++
+                            // 系统版本兼容移除监听方式（>=16）
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
+                                // 不立刻移除！需要保留监听捕获「点击安装后后续布局变动」
+                                // root.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                            }
                         }
                     })
 
+                    // 初始兜底扫描
+                    Handler(Looper.getMainLooper()).postDelayed({ scanAndHide(root) }, 300)
                     attachScrollWatcher(root)
+
                     return@hooked null
                 }
         }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索结果关联推荐拦截失败", it) }
