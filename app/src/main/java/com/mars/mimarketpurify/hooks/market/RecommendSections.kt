@@ -49,17 +49,26 @@ object RecommendSections : BaseHook() {
     private val detailTokens = listOf(
         "猜你喜欢", "相关推荐", "热门推荐", "为你推荐", "人气推荐",
         "你可能喜欢", "大家也在用", "大家也在看", "大家都在用", "大家都在看",
-        "的用户还喜欢", "大家还喜欢", "精选推荐"
+        "的用户还喜欢", "大家还喜欢", "精选推荐", "大家都在下载"
     )
 
     /** 详情页 */
     private const val DETAIL_HOST = "AppDetailActivityInner"
 
+    /**
+     * 「安装后插入的关联推荐」卡片标题——全局生效（不限页面）：
+     * 这些文案只出现在推荐卡标题上，命中即隐藏整卡，不依赖页面类名 / 容器 id，
+     * 覆盖搜索结果页点击安装后插入的卡片、以及其他任何页面动态插入的同款卡片。
+     */
+    private val globalTokens = listOf("的用户还喜欢", "大家还喜欢", "你可能还喜欢")
+
     /** 已隐藏过的板块标题，避免日志刷屏 */
     private val reported = Collections.synchronizedSet(mutableSetOf<String>())
 
     override fun init() {
-        // 路径 A：任何视图一挂上来就检查，滚动加载的新卡片也能覆盖
+        // 路径 A：任何视图一挂上来就检查，滚动加载的新卡片也能覆盖。
+        // 挂载的往往是整块卡片（ViewGroup 包着标题 TextView），所以对挂载视图做
+        // 2 层小树 DFS（深度 0 检查自身 + 子级），而不是只看 v 本身。
         runCatching {
             ClassUtil.loadClass("android.view.View")
                 .methodFinder()
@@ -67,7 +76,7 @@ object RecommendSections : BaseHook() {
                 .first()
                 .hooked {
                     val result = proceed()
-                    (thisObject as? View)?.let { inspect(it) }
+                    (thisObject as? View)?.let { scanTree(it, 0, 2) }
                     result
                 }
         }.onFailure {
@@ -97,13 +106,13 @@ object RecommendSections : BaseHook() {
         }
     }
 
-    private fun scanTree(v: View, depth: Int) {
-        if (depth > 10) return
+    private fun scanTree(v: View, depth: Int, maxDepth: Int = 10) {
+        if (depth > maxDepth) return
         inspect(v)
         if (v !is ViewGroup) return
         val count = v.childCount.coerceAtMost(32)
         for (i in 0 until count) {
-            scanTree(v.getChildAt(i) ?: continue, depth + 1)
+            scanTree(v.getChildAt(i) ?: continue, depth + 1, maxDepth)
         }
     }
 
@@ -115,6 +124,10 @@ object RecommendSections : BaseHook() {
         val host = v.context?.javaClass?.name.orEmpty()
         if (host.isEmpty()) return
         val hit = when {
+            // 安装后插入的关联推荐卡：文案足够特定，全局命中即隐藏（不依赖页面/容器 id）
+            Settings.isEnabled(Settings.KEY_SEARCH, true) &&
+                globalTokens.any { text.contains(it) } -> true
+
             host.contains(HISTORY_HOST) &&
                 Settings.isEnabled(Settings.KEY_UPDATE_HISTORY, true) &&
                 text in historyTitles -> true

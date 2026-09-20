@@ -260,10 +260,20 @@ object UiCleanup : BaseHook() {
     private fun inspect(v: View) {
         if (v.visibility != View.VISIBLE) return
         runCatching {
-            if (isMineTarget(v) || isFeaturedTarget(v)) {
-                hide(v)
+            when {
+                isMineTarget(v) || isFeaturedTarget(v) -> hide(v)
+                // 果园皮肤 View 层兜底：apply* 方法 hook 失效/改名时，
+                // 挂载或补扫到升级卡片直接把背景清掉（不隐藏卡片本身）
+                isOrchardTarget(v) -> v.background = null
             }
         }
+    }
+
+    /** 升级卡片的果园背景：按类名兜底清除，开关实时判断 */
+    private fun isOrchardTarget(v: View): Boolean {
+        if (!Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) return false
+        val n = v.javaClass.name
+        return n.contains("MineUpdateView") || n.contains("MineUpdateLayout")
     }
 
     private fun isMineTarget(v: View): Boolean {
