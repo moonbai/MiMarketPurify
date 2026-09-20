@@ -8,6 +8,8 @@ import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 
 /**
@@ -20,6 +22,11 @@ import java.io.File
  *
  * 备份目录位于应用自身的 externalFilesDir 下，不额外申请权限。
  * 本模块为纯保护性安全网，由总开关统一门控；所有读写均包 try-catch，失败不影响商店运行。
+ *
+ * 相对原实现的修复：原手写 JSON 解析器不识别 Set<String>（会被 toString 成字符串、
+ * 恢复时类型丢失），且对 Double / 转义字符处理不完整。这里改用 Android 自带的
+ * org.json（无需新增依赖），完整覆盖 SharedPreferences 的全部值类型：
+ * boolean / int / long / float / String / Set<String>。
  */
 object ConfigBackupRestore : BaseHook() {
 
@@ -96,6 +103,8 @@ object ConfigBackupRestore : BaseHook() {
         return mainPrefs.all.isEmpty() || mainPrefs.all.size <= 1
     }
 
+    // ═══════════════ 备份 ═══════════════
+
     private fun backupConfig(context: Context, backupDir: File) {
         for (prefName in PREF_FILES_TO_BACKUP) {
             try {
@@ -104,17 +113,12 @@ object ConfigBackupRestore : BaseHook() {
                 if (allEntries.isEmpty()) continue
 
                 val backupFile = File(backupDir, "$prefName.json")
-                val jsonBuilder = StringBuilder("{")
-                var first = true
+                val json = JSONObject()
                 for ((key, value) in allEntries) {
-                    if (!first) jsonBuilder.append(",")
-                    first = false
-                    jsonBuilder.append("\"${escapeJson(key)}\":")
-                    jsonBuilder.append(escapeJsonValue(value))
+                    json.put(key, toJsonValue(value))
                 }
-                jsonBuilder.append("}")
 
-                backupFile.writeText(jsonBuilder.toString())
+                backupFile.writeText(json.toString())
                 HookEnv.base.log(
                     Log.DEBUG, TAG,
                     "Backed up $prefName (${allEntries.size} entries)",
@@ -130,6 +134,16 @@ object ConfigBackupRestore : BaseHook() {
         }
     }
 
+    /** 把 SharedPreferences 值转成可 JSON 化的值；Set<String> 转 JSONArray */
+    private fun toJsonValue(value: Any?): Any? = when (value) {
+        null -> JSONObject.NULL
+        is String, is Boolean, is Int, is Long, is Float, is Double -> value
+        is Set<*> -> JSONArray(value.filterIsInstance<String>())
+        else -> value.toString() // 其他罕见类型兜底为字符串，避免序列化失败
+    }
+
+    // ═══════════════ 恢复 ═══════════════
+
     private fun restoreConfig(context: Context, backupDir: File) {
         for (prefName in PREF_FILES_TO_BACKUP) {
             try {
@@ -141,22 +155,44 @@ object ConfigBackupRestore : BaseHook() {
 
                 val prefs = context.getSharedPreferences(prefName, Context.MODE_PRIVATE)
                 val editor = prefs.edit()
-                val entries = parseJson(jsonStr)
+                val json = JSONObject(jsonStr)
+                val keys = json.keys()
+                var count = 0
 
-                for ((key, value) in entries) {
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val value = json.opt(key)
                     when (value) {
-                        is Boolean -> editor.putBoolean(key, value)
-                        is Int -> editor.putInt(key, value)
-                        is Long -> editor.putLong(key, value)
-                        is Float -> editor.putFloat(key, value)
-                        is String -> editor.putString(key, value)
-                        null -> { /* skip null values */ }
+                        JSONObject.NULL -> { /* null 值跳过 */ }
+
+                        is Boolean -> { editor.putBoolean(key, value); count++ }
+
+                        // JSON 数字反序列化后只会是 Integer / Long / Double；
+                        // SharedPreferences 无 Double 类型，统一按 float 写入。
+                        is Int -> { editor.putInt(key, value); count++ }
+                        is Long -> { editor.putLong(key, value); count++ }
+                        is Float -> { editor.putFloat(key, value); count++ }
+                        is Double -> { editor.putFloat(key, value.toFloat()); count++ }
+
+                        is JSONArray -> {
+                            val list = mutableListOf<String>()
+                            for (i in 0 until value.length()) {
+                                list += value.getString(i)
+                            }
+                            editor.putStringSet(key, list.toSet())
+                            count++
+                        }
+
+                        is String -> { editor.putString(key, value); count++ }
+
+                        else -> { /* 未知类型跳过 */ }
                     }
                 }
+
                 editor.apply()
                 HookEnv.base.log(
                     Log.INFO, TAG,
-                    "Restored $prefName (${entries.size} entries)",
+                    "Restored $prefName ($count entries)",
                     null
                 )
             } catch (e: Exception) {
@@ -166,105 +202,6 @@ object ConfigBackupRestore : BaseHook() {
                     null
                 )
             }
-        }
-    }
-
-    private fun escapeJson(str: String): String {
-        return str.replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-    }
-
-    private fun escapeJsonValue(value: Any?): String {
-        return when (value) {
-            null -> "null"
-            is Boolean -> value.toString()
-            is Number -> value.toString()
-            is String -> "\"${escapeJson(value)}\""
-            else -> "\"${escapeJson(value.toString())}\""
-        }
-    }
-
-    /** 极简 JSON 解析：仅处理本模块自身写出的扁平 Entry，避免引入额外依赖 */
-    private fun parseJson(json: String): Map<String, Any?> {
-        val result = mutableMapOf<String, Any?>()
-        val trimmed = json.trim()
-            .removePrefix("{")
-            .removeSuffix("}")
-            .trim()
-
-        if (trimmed.isEmpty()) return result
-
-        var i = 0
-        while (i < trimmed.length) {
-            while (i < trimmed.length && trimmed[i] == ' ') i++
-            if (i >= trimmed.length || trimmed[i] != '"') break
-
-            i++
-            val keyBuilder = StringBuilder()
-            while (i < trimmed.length && trimmed[i] != '"') {
-                if (trimmed[i] == '\\' && i + 1 < trimmed.length) {
-                    keyBuilder.append(trimmed[i + 1])
-                    i += 2
-                } else {
-                    keyBuilder.append(trimmed[i])
-                    i++
-                }
-            }
-            if (i < trimmed.length) i++
-            val key = keyBuilder.toString()
-
-            while (i < trimmed.length && (trimmed[i] == ' ' || trimmed[i] == ':')) i++
-
-            val value = readValue(trimmed, i)
-            if (value != null) {
-                result[key] = value.first
-                i = value.second
-            }
-
-            while (i < trimmed.length && (trimmed[i] == ' ' || trimmed[i] == ',')) i++
-        }
-
-        return result
-    }
-
-    private fun readValue(str: String, start: Int): Pair<Any?, Int>? {
-        if (start >= str.length) return null
-        return when (str[start]) {
-            '"' -> {
-                var i = start + 1
-                val builder = StringBuilder()
-                while (i < str.length && str[i] != '"') {
-                    if (str[i] == '\\' && i + 1 < str.length) {
-                        builder.append(str[i + 1])
-                        i += 2
-                    } else {
-                        builder.append(str[i])
-                        i++
-                    }
-                }
-                if (i < str.length) i++
-                builder.toString() as Any to i
-            }
-            't' -> (true as Any) to (start + 4)
-            'f' -> (false as Any) to (start + 5)
-            'n' -> null to (start + 4)
-            '-', in '0'..'9' -> {
-                var i = start
-                while (i < str.length && (str[i] in '0'..'9' || str[i] == '.' || str[i] == '-' || str[i] == 'e' || str[i] == 'E')) i++
-                val numStr = str.substring(start, i)
-                val numValue: Any = if (numStr.contains('.') || numStr.contains('e') || numStr.contains('E')) {
-                    numStr.toDouble()
-                } else {
-                    val longVal = numStr.toLongOrNull()
-                    if (longVal != null && longVal > Int.MAX_VALUE) {
-                        longVal
-                    } else {
-                        numStr.toIntOrNull() ?: 0
-                    }
-                }
-                numValue to i
-            }
-            else -> null
         }
     }
 }

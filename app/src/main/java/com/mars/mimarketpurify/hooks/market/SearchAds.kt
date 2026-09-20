@@ -2,6 +2,7 @@ package com.mars.mimarketpurify.hooks.market
 
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
@@ -31,6 +32,12 @@ object SearchAds : BaseHook() {
     )
 
     private const val SUGGEST_ROOT_ID_NAME = "native_app_suggest_root_view"
+
+    /** 全局布局监听的最小扫描间隔：动画/滚动期间 onGlobalLayout 每帧都会触发，需要节流 */
+    private const val GLOBAL_SCAN_INTERVAL_MS = 400L
+
+    /** 全局布局扫描次数上限：足够覆盖「点击安装后动态插入」的时间窗，之后移除监听避免空转 */
+    private const val GLOBAL_SCAN_MAX_COUNT = 30
 
     /**
      * 从命中TextView向上回溯找到整卡容器 native_app_suggest_root_view
@@ -175,18 +182,23 @@ object SearchAds : BaseHook() {
                     proceed()
                     val root = args.getOrNull(1) as? ViewGroup ?: return@hooked null
 
-                    // 持续监听布局变化 → 专门抓安装后异步新增的View
+                    // 持续监听布局变化 → 专门抓安装后异步新增的View。
+                    // 原实现每次布局变化都全树 DFS 且监听永不移除；这里做节流 + 次数上限：
+                    //  - 动画/滚动期间 onGlobalLayout 每帧触发，间隔 < 400ms 的扫描直接丢弃；
+                    //  - 扫描满 30 次（约 12 秒窗口，足够覆盖安装后插入）自动移除监听，防无限空转。
                     root.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-                        private var runCount = 0
+                        private var lastScan = 0L
+                        private var scanCount = 0
                         override fun onGlobalLayout() {
-                            // 避免无限高频：最多触发若干次后保留弱检测；或者持续轻量扫描
-                            scanAndHide(root)
-                            runCount++
-                            // 系统版本兼容移除监听方式（>=16）
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
-                                // 不立刻移除！需要保留监听捕获「点击安装后后续布局变动」
-                                // root.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                            val now = SystemClock.uptimeMillis()
+                            if (now - lastScan < GLOBAL_SCAN_INTERVAL_MS) return
+                            lastScan = now
+                            if (scanCount >= GLOBAL_SCAN_MAX_COUNT) {
+                                root.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                                return
                             }
+                            scanCount++
+                            scanAndHide(root)
                         }
                     })
 

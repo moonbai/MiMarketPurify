@@ -23,6 +23,7 @@ object TabFilter : BaseHook() {
     private const val PURIFY_UPDATE = "purify_update"
 
     private var tabField: Field? = null
+    private var tabsField: Field? = null // 缓存 PageConfig.tabs 字段引用，避免每次触发都 getDeclaredField
     private var cachedPageConfig: Any? = null
     private var purifyTabInfo: Any? = null
 
@@ -41,6 +42,17 @@ object TabFilter : BaseHook() {
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] init() 完成")
     }
 
+    private fun tabsFieldOf(clazz: Class<*>): Field? {
+        tabsField?.let { return it }
+        synchronized(this) {
+            tabsField?.let { return it }
+            tabsField = runCatching {
+                clazz.getDeclaredField("tabs").apply { isAccessible = true }
+            }.getOrNull()
+            return tabsField
+        }
+    }
+
     // = = = = hook initTabs = = = =
 
     private fun hookInitTabs() {
@@ -53,22 +65,21 @@ object TabFilter : BaseHook() {
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] initTabs 方法: ${initTabsMethod.name} private=${Modifier.isPrivate(initTabsMethod.modifiers)}")
 
         initTabsMethod.hooked {
-            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] ★ initTabs lambda 被触发! thisObject=${thisObject?.javaClass?.simpleName}")
+            debugLog("initTabs lambda 被触发, thisObject=${thisObject?.javaClass?.simpleName}")
             val result = proceed()
-            val tabsField = runCatching { pageConfigClz.getDeclaredField("tabs") }.getOrNull()
+            val tabsField = tabsFieldOf(pageConfigClz)
             if (tabsField != null) {
-                tabsField.isAccessible = true
                 val tabs = tabsField.get(thisObject) as? MutableList<Any?> ?: return@hooked result
-                HookEnv.base.log(Log.WARN, TAG, "[TabFilter] tabs.size=${tabs.size}")
+                debugLog("tabs.size=${tabs.size}")
                 val alreadyHas = tabs.any { item ->
                     item != null && runCatching { tabField?.get(item) as? String }.getOrNull() == PURIFY_UPDATE
                 }
-                HookEnv.base.log(Log.WARN, TAG, "[TabFilter] alreadyHas=$alreadyHas")
+                debugLog("alreadyHas=$alreadyHas")
                 if (!alreadyHas) {
                     val tabInfo = ensurePurifyTab()
                     if (tabInfo != null) {
                         tabs.add(tabInfo)
-                        HookEnv.base.log(Log.WARN, TAG, "[TabFilter] ★ 注入 purify_update! tabs.size=${tabs.size}")
+                        debugLog("注入 purify_update! tabs.size=${tabs.size}")
                     }
                 }
             }
@@ -114,7 +125,7 @@ object TabFilter : BaseHook() {
             args.putString("url", "market://update")
             args.putString("tab_tag", PURIFY_UPDATE)
             val fragInfo = fragmentInfoCtor.newInstance(dummyFragmentClz, args, false)
-            HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] getFragmentInfo($index): dummy for purify_update")
+            debugLog("getFragmentInfo($index): dummy for purify_update")
             return@hooked fragInfo
         }
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.getFragmentInfo()")
@@ -153,7 +164,7 @@ object TabFilter : BaseHook() {
                     val result = proceed()
                     if (result != null && cachedPageConfig == null) {
                         cachedPageConfig = result
-                        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] PageConfig 单例已缓存")
+                        debugLog("PageConfig 单例已缓存")
                     }
                     return@hooked result
                 }

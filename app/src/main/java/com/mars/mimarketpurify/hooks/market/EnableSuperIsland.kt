@@ -41,13 +41,17 @@ object EnableSuperIsland : BaseHook() {
         hookIsShowIsland()
     }
 
+    /** 同时匹配包装类型 Boolean 与原始类型 boolean，避免商店方法签名变化时漏匹配 */
+    private fun isBooleanType(c: Class<*>): Boolean =
+        c == java.lang.Boolean::class.java || c == java.lang.Boolean.TYPE
+
     private fun hookShowIslandMsg() {
         try {
             val clazz = ClassUtil.loadClass(DOWNLOAD_INFO)
             val method = clazz.methodFinder().filterByName("getShowIslandMsg").firstOrNull()
                 ?: clazz.methodFinder().firstOrNull {
                     parameterTypes.isEmpty() &&
-                        returnType == java.lang.Boolean::class.java &&
+                        isBooleanType(returnType) &&
                         name.lowercase(Locale.ROOT).contains("island")
                 }
             if (method == null) {
@@ -66,7 +70,7 @@ object EnableSuperIsland : BaseHook() {
             val clazz = ClassUtil.loadClass(ISLAND_MANAGER)
             val method = clazz.methodFinder().filterByName("isShowIsland").firstOrNull()
                 ?: clazz.methodFinder().firstOrNull {
-                    returnType == Boolean::class.javaPrimitiveType &&
+                    isBooleanType(returnType) &&
                         parameterTypes.size == 1 &&
                         List::class.java.isAssignableFrom(parameterTypes[0]) &&
                         name.lowercase(Locale.ROOT).contains("island")

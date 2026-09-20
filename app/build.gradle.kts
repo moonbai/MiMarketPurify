@@ -18,8 +18,8 @@ android {
         applicationId = "com.mars.mimarketpurify"
         minSdk = 29
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.1.0"
         buildConfigField("String", "APP_NAME", "\"Mi Market Purify\"")
     }
 

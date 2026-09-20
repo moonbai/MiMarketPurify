@@ -22,6 +22,13 @@ object UiCleanup : BaseHook() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    /**
+     * 尚未执行的补扫任务。每次 onResume 会先取消上一批任务再重新调度，
+     * 防止快速进出页面时 Handler 上堆积大量 300/800/1500/3000ms 的重复扫描。
+     * （同一时刻至多一个前台 Activity，全局一份即可；全部操作都在主线程。）
+     */
+    private val pendingRescanTasks = mutableListOf<Runnable>()
+
     // ═══════════════ 五组开关 ID ═══════════════
     private val mineRecommendIds = listOf("mine_ad_container")
     private val mineTabIds = listOf("mine_middle_menu_container")
@@ -160,7 +167,7 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    // ═══════════════ onResume 补扫（原样保留） ═══════════════
+    // ═══════════════ onResume 补扫（任务去重版） ═══════════════
     private fun hookActivityRescan(className: String) {
         runCatching {
             ClassUtil.loadClass(className)
@@ -178,43 +185,44 @@ object UiCleanup : BaseHook() {
                         val summaryOn = Settings.isEnabled(Settings.KEY_MINE_SUMMARY, false)
                         val securityOn = Settings.isEnabled(Settings.KEY_MINE_SECURITY, true)
 
-                        HookEnv.base.log(Log.INFO, TAG,
-                            "$name: onResume: cleanup=$cleanupOn recommend=$recommendOn " +
-                            "tab=$tabOn summary=$summaryOn security=$securityOn")
-
                         if (!cleanupOn && !recommendOn && !tabOn && !summaryOn && !securityOn) {
                             return@hooked result
                         }
 
+                        // 取消该 Activity 尚未执行的旧补扫任务，再重新调度：
+                        // 快速进出页面时只保留最新一轮扫描，避免 Handler 任务堆积。
+                        pendingRescanTasks.forEach { mainHandler.removeCallbacks(it) }
+                        pendingRescanTasks.clear()
+
+                        fun schedule(delay: Long, block: () -> Unit) {
+                            val r = Runnable { runCatching { block() } }
+                            pendingRescanTasks += r
+                            mainHandler.postDelayed(r, delay)
+                        }
+
                         scanTree(decor, 0)
-                        mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 300L)
-                        mainHandler.postDelayed({ runCatching { scanTree(decor, 0) } }, 800L)
+                        schedule(300L) { scanTree(decor, 0) }
+                        schedule(800L) { scanTree(decor, 0) }
 
                         if (cleanupOn) {
-                            mainHandler.postDelayed({
-                                runCatching {
-                                    getCleanupIdSet(decor).forEach { targetId ->
-                                        val v = findViewById(decor, targetId) ?: return@forEach
-                                        if (v.visibility == View.VISIBLE) {
-                                            HookEnv.base.log(Log.WARN, TAG,
-                                                "$name: ★ 精确 hide ${getResourceName(v)}")
-                                            hide(v)
-                                        }
+                            schedule(1500L) {
+                                getCleanupIdSet(decor).forEach { targetId ->
+                                    val v = findViewById(decor, targetId) ?: return@forEach
+                                    if (v.visibility == View.VISIBLE) {
+                                        debugLog("★ 精确 hide ${getResourceName(v)}")
+                                        hide(v)
                                     }
                                 }
-                            }, 1500L)
-                            mainHandler.postDelayed({
-                                runCatching {
-                                    getCleanupIdSet(decor).forEach { targetId ->
-                                        val v = findViewById(decor, targetId) ?: return@forEach
-                                        if (v.visibility == View.VISIBLE) {
-                                            HookEnv.base.log(Log.WARN, TAG,
-                                                "$name: ⚠ 恢复了! 重新 hide ${getResourceName(v)}")
-                                            hide(v)
-                                        }
+                            }
+                            schedule(3000L) {
+                                getCleanupIdSet(decor).forEach { targetId ->
+                                    val v = findViewById(decor, targetId) ?: return@forEach
+                                    if (v.visibility == View.VISIBLE) {
+                                        debugLog("⚠ 恢复了! 重新 hide ${getResourceName(v)}")
+                                        hide(v)
                                     }
                                 }
-                            }, 3000L)
+                            }
                         }
 
                         result

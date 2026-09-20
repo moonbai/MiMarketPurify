@@ -94,6 +94,7 @@ object AntiSelfDestruct : BaseHook() {
     /**
      * 重置商店的崩溃计数器（uncaught_exception_file 中的 exceptionTimes_<versionCode>）。
      * 计数器过高会触发商店自我卸载，这里在 hook 初始化时清零，从源头阻断自毁。
+     * 使用 apply() 异步写盘，避免在初始化阶段阻塞主线程。
      */
     @Suppress("DEPRECATION") // versionCode 在高版本仍有值（minSdk 29），此处按 int 使用即可
     private fun resetCrashCounter() {
@@ -106,7 +107,7 @@ object AntiSelfDestruct : BaseHook() {
             val prefs = currentApp.getSharedPreferences("uncaught_exception_file", 0)
             val count = prefs.getInt(key, 0)
             if (count > 0) {
-                prefs.edit().putInt(key, 0).commit()
+                prefs.edit().putInt(key, 0).apply()
                 HookEnv.base.log(Log.INFO, TAG, "Crash counter reset: was $count for version ${pkgInfo.versionCode}", null)
             }
         } catch (e: Exception) {

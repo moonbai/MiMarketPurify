@@ -4,6 +4,7 @@ import android.util.Log
 import com.mars.mimarketpurify.TAG
 import io.github.libxposed.api.XposedModule
 import org.xmlpull.v1.XmlPullParser
+import java.io.File
 
 object Settings {
 
@@ -64,42 +65,85 @@ object Settings {
 
     // ═══════════════ 移花接木 ═══════════════
     const val KEY_UPDATE_TAB = "update_tab_entry"
-    
+
+    // ═══════════════ 读取缓存 ═══════════════
+    //
+    // 远程偏好经 binder 跨进程获取、SP 文件需读盘 + XML 解析，而 hook 拦截点是高频路径
+    // （如 View.setVisibility / onAttachedToWindow 每次调用都会触发 enabled() 判断），
+    // 若每次实时读取会放大开销。这里加短 TTL 缓存：
+    //  - 缓存有效期 500ms，用户切换开关后最多延迟半秒生效，对体验几乎无感；
+    //  - 远程偏好不可用时降级读目标 app 的 SP 文件，按文件 mtime 判断是否需要重新解析。
+    private const val CACHE_TTL_MS = 500L
+
+    @Volatile private var remotePrefsCache: android.content.SharedPreferences? = null
+    @Volatile private var remotePrefsCachedAt: Long = 0L
+
+    private class SpFileCache(
+        val mtime: Long,
+        val values: Map<String, String>?
+    )
+
+    @Volatile private var spFileCache: SpFileCache? = null
+
     // ═══════════════ 读取 ═══════════════
 
     private fun readFromTargetSp(key: String): String? {
         return runCatching {
-            val spFile = java.io.File(
+            val spFile = File(
                 "/data/data/$TARGET_PKG/shared_prefs/com.xiaomi.market_preferences.xml")
-            if (!spFile.exists()) return@runCatching null
-            val parser = android.util.Xml.newPullParser()
-            parser.setInput(spFile.inputStream(), "UTF-8")
-            var type = parser.eventType
-            while (type != XmlPullParser.END_DOCUMENT) {
-                if (type == XmlPullParser.START_TAG) {
-                    val name = parser.getAttributeValue(null, "name")
-                    if (name == key) {
-                        return when (parser.name) {
-                            "boolean" -> parser.getAttributeValue(null, "value")
-                            "string" -> parser.nextText()
-                            else -> null
-                        }
-                    }
-                }
-                type = parser.next()
+            if (!spFile.exists()) {
+                // 文件不存在：置空缓存，避免每次 stat 都重复解析
+                spFileCache = SpFileCache(0L, null)
+                return@runCatching null
             }
-            null
+            val mtime = spFile.lastModified()
+            val cache = spFileCache
+            if (cache == null || cache.mtime != mtime || cache.values == null) {
+                spFileCache = SpFileCache(mtime, parseSpFile(spFile))
+            }
+            spFileCache?.values?.get(key)
         }.onFailure {
             HookEnv.base.log(Log.WARN, TAG, "读取目标 app SP 失败: ${it.message}", null)
         }.getOrNull()
     }
 
+    /** 一次性解析 SP XML 为 Map，供缓存复用 */
+    private fun parseSpFile(spFile: File): Map<String, String> {
+        val result = mutableMapOf<String, String>()
+        val parser = android.util.Xml.newPullParser()
+        parser.setInput(spFile.inputStream(), "UTF-8")
+        var type = parser.eventType
+        while (type != XmlPullParser.END_DOCUMENT) {
+            if (type == XmlPullParser.START_TAG) {
+                val name = parser.getAttributeValue(null, "name")
+                if (name != null) {
+                    when (parser.name) {
+                        "boolean" -> result[name] = parser.getAttributeValue(null, "value")
+                        "string" -> result[name] = parser.nextText()
+                    }
+                }
+            }
+            type = parser.next()
+        }
+        return result
+    }
+
     private fun getRemotePrefs(): android.content.SharedPreferences? {
-        return runCatching {
+        val now = System.currentTimeMillis()
+        val cached = remotePrefsCache
+        if (cached != null && now - remotePrefsCachedAt < CACHE_TTL_MS) {
+            return cached
+        }
+        val fresh = runCatching {
             (HookEnv.base as XposedModule).getRemotePreferences(PREFS_GROUP)
         }.onFailure { e ->
             HookEnv.base.log(Log.WARN, TAG, "远程偏好不可用: ${e.message}", null)
         }.getOrNull()
+        if (fresh != null) {
+            remotePrefsCache = fresh
+            remotePrefsCachedAt = now
+        }
+        return fresh
     }
 
     fun isMasterEnabled(): Boolean = isEnabled(KEY_MASTER, true)
@@ -107,19 +151,11 @@ object Settings {
     fun isEnabled(key: String, def: Boolean = true): Boolean {
         val remote = getRemotePrefs()
         if (remote != null) {
-            val value = remote.getBoolean(key, def)
-            if (key.startsWith("mine_")) {
-                HookEnv.base.log(Log.INFO, TAG, "Settings.isEnabled($key)=$value (default=$def, source=remote)")
-            }
-            return value
+            return remote.getBoolean(key, def)
         }
         val raw = readFromTargetSp(key)
         if (raw != null) {
-            val value = raw == "true"
-            if (key.startsWith("mine_")) {
-                HookEnv.base.log(Log.INFO, TAG, "Settings.isEnabled($key)=$value (default=$def, source=target_sp)")
-            }
-            return value
+            return raw == "true"
         }
         HookEnv.base.log(Log.WARN, TAG, "Settings.isEnabled($key): 远程+目标SP都不可用，默认 false")
         return false

@@ -2,18 +2,14 @@ package com.mars.mimarketpurify.hooks.market
 
 import android.util.Log
 import android.view.View
-import android.view.ViewGroup
-import android.widget.TextView
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
 import com.mars.mimarketpurify.util.getFieldValue
-import com.mars.mimarketpurify.util.invokeAs
 import dalvik.system.DexFile
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
-import java.util.Collections
 
 object RankAds : BaseHook() {
 
@@ -32,10 +28,15 @@ object RankAds : BaseHook() {
 
     override fun init() {
         hookAdEngine()
-        diagnosticScan()
+        // 诊断扫描是调试工具：全量枚举 dex、反射打印每个类的方法签名并给所有 onBindData
+        // 挂日志拦截器，属于高开销路径。原实现无条件执行，等于把调试代码跑在生产环境。
+        // 这里收进调试开关（KEY_RANK_DEBUG），默认关闭时不产生任何诊断开销。
+        if (isDebug()) {
+            diagnosticScan()
+        }
     }
 
-    // = = = = 诊断扫描（只读，不 hook） = = = =
+    // = = = = 诊断扫描（只读 + 日志观察，仅调试开关开启时执行） = = = =
 
     private fun diagnosticScan() {
         var discovered = listOf<String>()
@@ -114,9 +115,17 @@ object RankAds : BaseHook() {
                 it.name == "compute" && it.parameterTypes.size == 2
             }
             if (computeMethod != null) {
+                val returnType = computeMethod.returnType
                 computeMethod.hooked {
-                    HookEnv.base.log(Log.WARN, TAG, "[广告引擎] compute 被调用！拦截中...")
-                    return@hooked null
+                    debugLog("[广告引擎] compute 被调用，返回安全空值")
+                    // 原实现一律返回 null：若 compute 返回 List，调用方拿到 null 可能直接 NPE。
+                    // 这里按真实返回类型返回安全空值，避免下游空指针。
+                    return@hooked when {
+                        returnType == java.lang.Boolean.TYPE ||
+                            returnType == java.lang.Boolean::class.java -> false
+                        List::class.java.isAssignableFrom(returnType) -> emptyList<Any>()
+                        else -> null
+                    }
                 }
                 HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked AdReRankEngine.compute ✓")
             }
