@@ -16,13 +16,13 @@ import java.util.Collections
 /**
  * 按**板块标题文案**整块隐藏推荐位。
  *
- * 两个目标页面的共同点：推荐位是「一个标题 + 一排应用」组成的卡片，
- * 标题文案稳定（精选推荐 / 搜索 xxx 的人也在看），但容器 id / 类名随版本乱变，
+ * 目标页面的共同点：推荐位是「一个标题 + 一排应用」组成的卡片，
+ * 标题文案稳定（精选推荐 / 搜索 xxx 的人也在看 / 猜你喜欢），但容器 id / 类名随版本乱变，
  * 按 id 匹配基本抓不住。所以这里反过来——先认标题，再往上找到整块卡片的根，
  * 把根整个隐藏，应用列表自然一起消失。
  *
- * 两个页面各用一个独立开关（[Settings.KEY_UPDATE_HISTORY] / [Settings.KEY_SEARCH_ALSO_VIEW]，
- * 因此本 hook 不设单一 prefKey。
+ * 各页面用独立开关控制（[Settings.KEY_UPDATE_HISTORY] / [Settings.KEY_SEARCH_ALSO_VIEW] /
+ * [Settings.KEY_DETAIL_RECOMMEND]，因此本 hook 不设单一 prefKey。
  */
 object RecommendSections : BaseHook() {
 
@@ -45,6 +45,16 @@ object RecommendSections : BaseHook() {
     /** 搜索结果页 */
     private const val SEARCH_HOST = "SearchActivityPhone"
 
+    /** 详情页（AppDetailActivityInner）推荐区块的常见标题——按片段匹配，覆盖版本文案微调 */
+    private val detailTokens = listOf(
+        "猜你喜欢", "相关推荐", "热门推荐", "为你推荐", "人气推荐",
+        "你可能喜欢", "大家也在用", "大家也在看", "大家都在用", "大家都在看",
+        "的用户还喜欢", "大家还喜欢", "精选推荐"
+    )
+
+    /** 详情页 */
+    private const val DETAIL_HOST = "AppDetailActivityInner"
+
     /** 已隐藏过的板块标题，避免日志刷屏 */
     private val reported = Collections.synchronizedSet(mutableSetOf<String>())
 
@@ -64,9 +74,10 @@ object RecommendSections : BaseHook() {
             HookEnv.base.log(Log.ERROR, TAG, "$name: View.onAttachedToWindow 挂钩失败", it)
         }
 
-        // 路径 B：进入这两个页面时整树补扫一遍，防止路径 A 在某些框架上挂不上
+        // 路径 B：进入目标页面时整树补扫一遍，防止路径 A 在某些框架上挂不上
         hookRescan("com.xiaomi.market.ui.UpdateHistoryActivity")
         hookRescan("com.xiaomi.market.ui.SearchActivityPhone")
+        hookRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
     }
 
     private fun hookRescan(className: String) {
@@ -111,6 +122,10 @@ object RecommendSections : BaseHook() {
             host.contains(SEARCH_HOST) &&
                 Settings.isEnabled(Settings.KEY_SEARCH_ALSO_VIEW, true) &&
                 alsoViewTokens.any { text.contains(it) } -> true
+
+            host.contains(DETAIL_HOST) &&
+                Settings.isEnabled(Settings.KEY_DETAIL_RECOMMEND, true) &&
+                detailTokens.any { text.contains(it) } -> true
 
             else -> false
         }

@@ -61,6 +61,7 @@ object Settings {
     const val KEY_ISLAND = "super_island"
     const val KEY_HIDE_UPDATE_ALL = "hide_update_all"
     const val KEY_HIDE_AUTO_UPDATE_SWITCH = "hide_auto_update_switch"
+    const val KEY_DETAIL_RECOMMEND = "hide_detail_recommend"
 
 
     // ═══════════════ 移花接木 ═══════════════
