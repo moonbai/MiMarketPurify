@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
@@ -17,7 +18,7 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
  *
  *  - NativeSearchSugFragment：搜索建议 adFlag = 0
  *  - NativeSearchGuideFragment：搜索引导页仅保留搜索历史
- *  - NativeSearchResultFragment：搜索结果过滤非应用组件 + 视图层兜底屏蔽「安装xx的用户还喜欢」类关联推荐
+ *  - NativeSearchResultFragment：接口过滤 + RecyclerView动态监听拦截「安装XX的用户还喜欢」类关联推荐
  */
 object SearchAds : BaseHook() {
 
@@ -25,6 +26,48 @@ object SearchAds : BaseHook() {
 
     override val name: String
         get() = "移除搜索推荐"
+
+    // 命中关键词列表（适配动态应用名前缀）
+    private val targetKeywords = listOf(
+        "的用户还喜欢",
+        "大家还喜欢",
+        "相关推荐",
+        "你可能还喜欢"
+    )
+
+    /**
+     * 递归扫描：任意子TextView命中任一关键词 → 返回true，返回最近可隐藏的根Item
+     */
+    private fun findAndHideIfMatch(root: View) {
+        fun hasHit(view: View): Boolean {
+            if (view is TextView) {
+                val txt = view.text?.toString() ?: return false
+                return targetKeywords.any { txt.contains(it) }
+            }
+            if (view is ViewGroup) {
+                for (i in 0 until view.childCount) {
+                    if (hasHit(view.getChildAt(i))) return true
+                }
+            }
+            return false
+        }
+
+        if (hasHit(root)) {
+            root.visibility = View.GONE
+            root.layoutParams?.let { lp ->
+                lp.height = 0
+                root.layoutParams = lp
+            }
+            HookEnv.base.log(Log.INFO, TAG, "$name: 拦截关联推荐块")
+        }
+
+        // 继续往下遍历，防止关键词和实际可隐藏容器不在同一个父级
+        if (root is ViewGroup) {
+            for (i in 0 until root.childCount) {
+                findAndHideIfMatch(root.getChildAt(i))
+            }
+        }
+    }
 
     override fun init() {
         // 搜索建议 adFlag = 0
@@ -58,7 +101,6 @@ object SearchAds : BaseHook() {
                     }
                 }
 
-            // isLoadMoreEndGone：返回 true → 修改 args 不可行（无入参），直接 return true，不要 proceed(true)
             cls.methodFinder()
                 .filterByName("isLoadMoreEndGone")
                 .first()
@@ -67,7 +109,7 @@ object SearchAds : BaseHook() {
                 }
         }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索引导页拦截失败", it) }
 
-        // 搜索结果：接口过滤 + onViewCreated 挂载视图监听
+        // 搜索结果：接口过滤 + RecyclerView动态监听
         runCatching {
             val searchResultFragCls = ClassUtil.loadClass(
                 "com.xiaomi.market.business_ui.search.NativeSearchResultFragment"
@@ -87,7 +129,6 @@ object SearchAds : BaseHook() {
                     return@hooked if (kept.isNotEmpty()) kept else result
                 }
 
-            // onViewCreated(Bundle, View)
             searchResultFragCls.methodFinder()
                 .filterByName("onViewCreated")
                 .first()
@@ -95,47 +136,36 @@ object SearchAds : BaseHook() {
                     proceed()
                     val root = args.getOrNull(1) as? ViewGroup ?: return@hooked null
 
+                    // 首次预绘制兜底
                     root.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
                         private var once = false
                         override fun onPreDraw(): Boolean {
                             if (once) return true
                             once = true
                             root.viewTreeObserver.removeOnPreDrawListener(this)
-
-                            fun collectAllText(v: View): String {
-                                val sb = StringBuilder()
-                                fun scan(node: View) {
-                                    if (node is TextView) sb.append(node.text ?: "")
-                                    if (node is ViewGroup) {
-                                        for (i in 0 until node.childCount) scan(node.getChildAt(i))
-                                    }
-                                }
-                                scan(v)
-                                return sb.toString()
-                            }
-
-                            fun traverse(parent: ViewGroup) {
-                                for (i in 0 until parent.childCount) {
-                                    val child = parent.getChildAt(i)
-                                    val text = collectAllText(child)
-                                    if ((text.contains("安装") && text.contains("的用户还喜欢"))
-                                        || text.contains("大家还喜欢")
-                                        || text.contains("相关推荐")
-                                    ) {
-                                        child.visibility = View.GONE
-                                        child.layoutParams?.let { lp ->
-                                            lp.height = 0
-                                            child.layoutParams = lp
-                                        }
-                                        HookEnv.base.log(Log.INFO, TAG, "$name: 已屏蔽关联推荐条目")
-                                    }
-                                    if (child is ViewGroup) traverse(child)
-                                }
-                            }
-                            traverse(root)
+                            findAndHideIfMatch(root)
                             return true
                         }
                     })
+
+                    // 找到RecyclerView，注册子View附着监听（解决滑动延迟渲染出来的条目）
+                    fun findRecyclerView(parent: ViewGroup) {
+                        for (i in 0 until parent.childCount) {
+                            val child = parent.getChildAt(i)
+                            if (child is RecyclerView) {
+                                child.addOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
+                                    override fun onChildViewAttachedToWindow(view: View) {
+                                        findAndHideIfMatch(view)
+                                    }
+                                    override fun onChildViewDetachedFromWindow(view: View) {}
+                                })
+                            } else if (child is ViewGroup) {
+                                findRecyclerView(child)
+                            }
+                        }
+                    }
+                    findRecyclerView(root)
+
                     return@hooked null
                 }
         }.onFailure { HookEnv.base.log(Log.ERROR, TAG, "$name: 搜索结果+关联推荐拦截失败", it) }

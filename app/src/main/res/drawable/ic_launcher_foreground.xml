@@ -41,22 +41,22 @@
         android:strokeWidth="4.0"
         android:fillColor="@android:color/transparent"/>
 
-    <!-- 字母 AD：深色粗无衬线字母 -->
+    <!-- 字母 AD：全部Y手动‑4上移 -->
     <group>
         <!-- 字母 A -->
-        <path android:pathData="M44,78 L48,64 L51,64 L47,78 Z" android:fillColor="#FF1A1A24"/>
-        <path android:pathData="M52,64 L56,78 L53,78 L49,64 Z" android:fillColor="#FF1A1A24"/>
-        <path android:pathData="M46,71 L52,71 L52,73 L46,73 Z" android:fillColor="#FF1A1A24"/>
+        <path android:pathData="M44,74 L48,60 L51,60 L47,74 Z" android:fillColor="#FF1A1A24"/>
+        <path android:pathData="M52,60 L56,74 L53,74 L49,60 Z" android:fillColor="#FF1A1A24"/>
+        <path android:pathData="M46,67 L52,67 L52,69 L46,69 Z" android:fillColor="#FF1A1A24"/>
 
         <!-- 字母 D (空心轮廓) -->
         <path
-            android:pathData="M58,64 L58,78"
+            android:pathData="M58,60 L58,74"
             android:strokeColor="#FF1A1A24"
             android:strokeWidth="3.0"
             android:strokeLineCap="round"
             android:fillColor="@android:color/transparent"/>
         <path
-            android:pathData="M58,64 A7,7 0 0,1 58,78"
+            android:pathData="M58,60 A7,7 0 0,1 58,74"
             android:strokeColor="#FF1A1A24"
             android:strokeWidth="3.0"
             android:strokeLineCap="round"
