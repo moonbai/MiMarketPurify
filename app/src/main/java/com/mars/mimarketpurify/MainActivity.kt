@@ -262,6 +262,14 @@ class MainActivity : SettingsBaseActivity() {
         val advancedGroup = groupCard()
         addSwitchRow(
             group = advancedGroup,
+            title = "悬浮底栏",
+            summary = "把贴边底栏换成悬浮胶囊样式，导航与角标仍由原生驱动",
+            checked = readLocal(Settings.KEY_FLOATING_BAR, false),
+            tag = Settings.KEY_FLOATING_BAR,
+            default = false
+        ) { on -> writeRemote(Settings.KEY_FLOATING_BAR, on) }
+        addSwitchRow(
+            group = advancedGroup,
             title = "下载超级岛",
             summary = "强制让下载进度进入小米超级岛（无视灰度）",
             checked = readLocal(Settings.KEY_ISLAND, true),

@@ -23,6 +23,14 @@ object Settings {
     const val KEY_TAB_FILTER = "tab_filter"
     const val KEY_SUB_TAB_FILTER = "sub_tab_filter"
     const val KEY_TAB_KEEP = "tab_keep"
+
+    // ═══════════════ 悬浮底栏（纯原生自绘） ═══════════════
+    /** 主开关：把原生贴边底栏换成悬浮胶囊底栏 */
+    const val KEY_FLOATING_BAR = "floating_bar"
+    /** 子选项：悬浮底栏是否保留商店原生角标（红点 / 数字） */
+    const val KEY_FLOATING_BAR_BADGE = "floating_bar_badge"
+    /** 子选项：悬浮底栏是否显示标签文字（关闭则纯图标） */
+    const val KEY_FLOATING_BAR_LABEL = "floating_bar_label"
     const val DEFAULT_TAB_KEEP = "native_market_home,native_market_mine"
     val TAB_ITEMS: LinkedHashMap<String, String> = linkedMapOf(
         "native_market_home" to "首页",

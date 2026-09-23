@@ -27,6 +27,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
     private var page: String = PAGE_MINE
     private val tabChecks = mutableListOf<CheckBox>()
     private var tabSelectBlock: View? = null
+    private var floatingOptionsGroup: LinearLayout? = null
     private var hideIconSwitch: CompoundButton? = null
 
     private val adFeatures = listOf(
@@ -155,7 +156,30 @@ class SubSettingsActivity : SettingsBaseActivity() {
 
         buildTabSelectBlock(group)
         content.addView(group)
-        addFooter("Tips：隐藏标签后需重启一次应用商店才会生效")
+
+        buildFloatingOptions()
+        addFooter("Tips：隐藏标签后需重启一次应用商店才会生效；悬浮底栏为实时生效。")
+    }
+
+    /**
+     * 悬浮底栏的**子选项**。
+     * 主开关在程序主页「高级功能」里，这里只放细粒度选项；
+     * 主开关关闭时整组隐藏，避免用户改到不生效的配置。
+     */
+    private fun buildFloatingOptions() {
+        val group = groupCard()
+        addSwitchRow(group = group, title = "显示标签文字",
+            summary = "关闭后悬浮底栏只保留图标，栏体更矮更清爽",
+            checked = readLocal(Settings.KEY_FLOATING_BAR_LABEL, true),
+            tag = Settings.KEY_FLOATING_BAR_LABEL
+        ) { on -> writeRemote(Settings.KEY_FLOATING_BAR_LABEL, on) }
+        addSwitchRow(group = group, title = "显示角标",
+            summary = "悬浮底栏是否照抄商店的红点与数字（受「底栏角标」净化约束）",
+            checked = readLocal(Settings.KEY_FLOATING_BAR_BADGE, true),
+            tag = Settings.KEY_FLOATING_BAR_BADGE
+        ) { on -> writeRemote(Settings.KEY_FLOATING_BAR_BADGE, on) }
+        content.addView(group)
+        floatingOptionsGroup = group
     }
 
     private fun buildMisc() {
@@ -258,6 +282,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
         val filterOn = readLocal(Settings.KEY_TAB_FILTER, true)
         tabSelectBlock?.visibility = if (filterOn) View.VISIBLE else View.GONE
         tabChecks.forEach { it.isEnabled = master && filterOn }
+
+        // 悬浮底栏子选项：仅在总开关与悬浮底栏主开关都开启时才显示
+        val floatingOn = master && readLocal(Settings.KEY_FLOATING_BAR, false)
+        floatingOptionsGroup?.visibility = if (floatingOn) View.VISIBLE else View.GONE
     }
 
     data class Feature(val key: String, val title: String, val summary: String)

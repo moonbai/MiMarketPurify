@@ -20,6 +20,7 @@ import com.mars.mimarketpurify.hooks.market.MiscApply
 import com.mars.mimarketpurify.hooks.market.RecommendSections
 import com.mars.mimarketpurify.hooks.market.SearchAds
 import com.mars.mimarketpurify.hooks.market.SplashAds
+import com.mars.mimarketpurify.hooks.market.FloatingBottomBar
 import com.mars.mimarketpurify.hooks.market.TabFilter
 import com.mars.mimarketpurify.hooks.market.SubTabFilter
 import com.mars.mimarketpurify.hooks.market.UiCleanup
@@ -48,6 +49,7 @@ object Market : AppRegister() {
             HideAutoUpdateSwitch,
             HideFruitEntry,
             TabFilter,
+            FloatingBottomBar,
             SubTabFilter,
             RankAds,
             UiCleanup,
