@@ -396,10 +396,10 @@ class FloatingBarHost private constructor(
                     visibility = if (showLabel) View.VISIBLE else View.GONE
                 }
                 iconViews.getOrNull(i)?.let { iv ->
-                    iv.alpha = if (selected == i) 1f else 0.72f
-                    iv.clearColorFilter()
-                    if (onPill) iv.setColorFilter(selectedContentColor())
-                    else if (tintWhenSelected && selected == i) iv.setColorFilter(color)
+                    // 未选中/选中都按对应颜色着色，图标跟随"未选中/选中颜色"设置
+                    iv.alpha = 1f
+                    iv.setColorFilter(color)
+                    // 选中图标轻微放大 + 过冲
                     val scale = if (selected == i) ICON_SCALE_SELECTED else 1f
                     if (selectionChanged && !rebuilt) {
                         iv.animate().scaleX(scale).scaleY(scale)
