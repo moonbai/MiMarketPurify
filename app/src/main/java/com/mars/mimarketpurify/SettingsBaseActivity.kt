@@ -266,11 +266,12 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         textWrap.addView(titleView)
         textWrap.addView(summaryView)
         val valueView = TextView(this).apply {
-            text = format(value)
+            text = format(initialValue)
             textSize = Ui.CAPTION
             setTypeface(null, android.graphics.Typeface.BOLD)
             setTextColor(Ui.ACCENT)
         }
+        
         topRow.addView(textWrap)
         topRow.addView(valueView)
 
