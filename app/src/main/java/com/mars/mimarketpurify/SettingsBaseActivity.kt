@@ -3,6 +3,8 @@ package com.mars.mimarketpurify
 import android.app.Activity
 import android.content.ComponentName
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.widget.CompoundButton
@@ -271,7 +273,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             setTypeface(null, android.graphics.Typeface.BOLD)
             setTextColor(Ui.ACCENT)
         }
-        
+
         topRow.addView(textWrap)
         topRow.addView(valueView)
 
@@ -352,6 +354,72 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         if (gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
     }
 
+    // ===================== 新增：颜色选择行 =====================
+    protected fun addColorPickerRow(
+        group: LinearLayout,
+        title: String,
+        tag: String,
+        defaultColor: Int,
+        gated: Boolean = true
+    ) {
+        val row = row()
+        val textWrap = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+            ).also { it.marginEnd = dp(12) }
+        }
+        val titleView = rowTitle(title)
+        val summaryView = rowSummary("点击选择颜色")
+        textWrap.addView(titleView)
+        textWrap.addView(summaryView)
+
+        val previewBox = View(this).apply {
+            val colorVal = readLocalInt(tag, defaultColor)
+            background = GradientDrawable().apply {
+                setColor(colorVal)
+                cornerRadius = dpf(8f)
+            }
+            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32))
+        }
+
+        row.addView(textWrap)
+        row.addView(previewBox)
+        row.tappable(this, R.drawable.bg_row_ripple)
+        row.setOnClickListener {
+            val current = readLocalInt(tag, defaultColor)
+            showColorPickerDialog(current) { newColor ->
+                writeRemoteInt(tag, newColor)
+                previewBox.background = GradientDrawable().apply {
+                    setColor(newColor)
+                    cornerRadius = dpf(8f)
+                }
+            }
+        }
+        if (group.childCount > 0) {
+            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(Ui.ROW_GAP)
+        }
+        group.addView(row)
+        if(gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
+    }
+
+    protected fun showColorPickerDialog(initColor: Int, onPick: (Int) -> Unit) {
+        val colorList = intArrayOf(
+            0xFF4080F0.toInt(),
+            0xFF34A853.toInt(),
+            0xFFFBBC05.toInt(),
+            0xFFEA4335.toInt(),
+            0xFF222222.toInt(),
+            0xFFFFFFFF.toInt()
+        )
+        val nameList = arrayOf("蓝色", "绿色", "黄色", "红色", "黑色", "白色")
+        android.app.AlertDialog.Builder(this)
+            .setTitle("选择颜色")
+            .setItems(nameList) { _, idx ->
+                onPick.invoke(colorList[idx])
+            }.show()
+    }
+
     protected open fun updateGateState() {
         val master = readLocal(Settings.KEY_MASTER, true)
         sliderEntries.forEach { it.seek.isEnabled = master }
@@ -430,7 +498,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     protected fun isLauncherIconHidden(): Boolean {
         return runCatching {
             packageManager.getComponentEnabledSetting(launcherAlias) ==
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED
         }.getOrDefault(false)
     }
 
@@ -454,6 +522,73 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         }.onFailure {
             Toast.makeText(this, "操作失败：${it.message}", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    // ==================== 工具辅助函数（原有项目依赖） ====================
+    protected fun dp(value: Int): Int = resources.displayMetrics.density.times(value).toInt()
+    protected fun dpf(value: Float): Float = resources.displayMetrics.density * value
+
+    protected fun row(): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(Ui.ROW_PAD_H), dp(Ui.ROW_PAD_V), dp(Ui.ROW_PAD_H), dp(Ui.ROW_PAD_V))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+    }
+
+    protected fun rowTitle(text: String): TextView = TextView(this).apply {
+        this.text = text
+        textSize = Ui.ROW_TITLE
+        setTextColor(Ui.TEXT_PRIMARY)
+    }
+
+    protected fun rowSummary(text: String): TextView = TextView(this).apply {
+        this.text = text
+        textSize = Ui.ROW_SUMMARY
+        setTextColor(Ui.TEXT_SECONDARY)
+        setPadding(0, dp(2),0,0)
+    }
+
+    protected fun sectionTitle(text: String): TextView = TextView(this).apply {
+        this.text = text
+        textSize = Ui.SECTION_TITLE
+        setTypeface(null, android.graphics.Typeface.BOLD)
+        setTextColor(Ui.TEXT_PRIMARY)
+    }
+
+    protected fun groupCard(): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = GradientDrawable().apply {
+                setColor(Ui.CARD_BG)
+                cornerRadius = dpf(16f)
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(12)
+            }
+        }
+    }
+
+    // 扩展：drawable 着色
+    private fun android.graphics.drawable.Drawable.tinted(on: Int, off: Int): android.graphics.drawable.Drawable {
+        return mutate().apply {
+            setTintList(android.content.res.ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(on, off)
+            ))
+        }
+    }
+
+    private fun View.tappable(ctx: Activity, rippleRes: Int) {
+        background = ctx.getDrawable(rippleRes)
+        isClickable = true
+        isFocusable = true
     }
 
     // ==================== 数据结构 ====================

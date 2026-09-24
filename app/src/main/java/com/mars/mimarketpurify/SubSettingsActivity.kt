@@ -19,6 +19,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         const val PAGE_MISC = "misc"
         const val PAGE_EXTRA = "extra"
         const val PAGE_MODULE = "module"
+        const val PAGE_TAB_BAR = "tab_bar_config"
 
         fun intent(context: Context, page: String): Intent =
             Intent(context, SubSettingsActivity::class.java).putExtra(EXTRA_PAGE, page)
@@ -54,6 +55,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             PAGE_TABS -> buildTabs()
             PAGE_MISC -> buildMisc()
             PAGE_EXTRA -> buildExtra()
+            PAGE_TAB_BAR -> buildTabBarConfig()
             else -> buildModule()
         }
         refreshAll()
@@ -65,6 +67,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         PAGE_TABS -> "底部标签栏"
         PAGE_MISC -> "其他界面精简"
         PAGE_EXTRA -> "高级净化"
+        PAGE_TAB_BAR -> "悬浮底栏高级配置"
         else -> "模块功能"
     }
 
@@ -201,6 +204,13 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_FLOATING_BAR_BADGE, true),
             tag = Settings.KEY_FLOATING_BAR_BADGE
         ) { on -> writeRemote(Settings.KEY_FLOATING_BAR_BADGE, on) }
+
+        addSectionHeader("色彩自定义", "胶囊背景、文字高亮配色")
+        addColorPickerRow(group = group, title = "底栏背景色", tag = Settings.KEY_FLOAT_BG_COLOR, defaultColor = Ui.BG)
+        addColorPickerRow(group = group, title = "选中胶囊背景色", tag = Settings.KEY_FLOAT_SELECT_BG_COLOR, defaultColor = Ui.ACCENT)
+        addColorPickerRow(group = group, title = "未选中文字/图标颜色", tag = Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, defaultColor = Ui.TEXT_SECONDARY)
+        addColorPickerRow(group = group, title = "选中文字/图标高亮色", tag = Settings.KEY_FLOAT_TEXT_SELECT_COLOR, defaultColor = 0xFFFFFFFF.toInt())
+
         addSliderRow(group = group, title = "背景透明度",
             summary = "胶囊底色的不透明度，越低越通透",
             key = Settings.KEY_FLOATING_BAR_ALPHA,
@@ -219,6 +229,82 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
         content.addView(group)
         floatingOptionsGroup = group
+    }
+
+    /** 独立悬浮底栏高级配置页面 PAGE_TAB_BAR */
+    private fun buildTabBarConfig() {
+        addSectionHeader("悬浮底栏高级配置", "胶囊外观、色彩、透明度、尺寸、动效参数")
+        val baseGroup = groupCard()
+        addSwitchRow(
+            group = baseGroup,
+            title = "启用悬浮胶囊底栏",
+            summary = "在小米应用商店底部渲染胶囊风格Tab导航栏",
+            checked = readLocal(Settings.KEY_FLOATING_BAR, false),
+            tag = Settings.KEY_FLOATING_BAR,
+            default = false
+        ) { checked ->
+            writeRemote(Settings.KEY_FLOATING_BAR, checked)
+            updateGateState()
+        }
+        addSwitchRow(
+            group = baseGroup,
+            title = "液态选中高亮动画",
+            summary = "选中项跟随移动液态胶囊，图标弹性缩放",
+            checked = readLocal(Settings.KEY_FLOATING_BAR_LIQUID, true),
+            tag = Settings.KEY_FLOATING_BAR_LIQUID
+        ) { checked ->
+            writeRemote(Settings.KEY_FLOATING_BAR_LIQUID, checked)
+        }
+        addSwitchRow(
+            group = baseGroup,
+            title = "显示标签文字",
+            summary = "关闭仅保留图标，减少高度",
+            checked = readLocal(Settings.KEY_FLOATING_BAR_LABEL, true),
+            tag = Settings.KEY_FLOATING_BAR_LABEL
+        ) { checked ->
+            writeRemote(Settings.KEY_FLOATING_BAR_LABEL, checked)
+        }
+        addSwitchRow(
+            group = baseGroup,
+            title = "显示角标",
+            summary = "悬浮栏同步原生红点/数字角标，受底栏角标净化开关控制",
+            checked = readLocal(Settings.KEY_FLOATING_BAR_BADGE, true),
+            tag = Settings.KEY_FLOATING_BAR_BADGE
+        ) { checked ->
+            writeRemote(Settings.KEY_FLOATING_BAR_BADGE, checked)
+        }
+        content.addView(baseGroup)
+
+        addSectionHeader("色彩设置", "自定义胶囊与文字配色")
+        val colorGroup = groupCard()
+        addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, Ui.BG)
+        addColorPickerRow(colorGroup, "选中胶囊背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
+        addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, Ui.TEXT_SECONDARY)
+        addColorPickerRow(colorGroup, "选中文字/图标高亮色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFFFFFFFF.toInt())
+        content.addView(colorGroup)
+
+        addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度")
+        val sizeGroup = groupCard()
+        addSliderRow(sizeGroup, title = "背景透明度",
+            summary = "胶囊底色不透明度，越低越通透",
+            key = Settings.KEY_FLOATING_BAR_ALPHA,
+            minValue = Settings.FLOATING_ALPHA_MIN,
+            maxValue = Settings.FLOATING_ALPHA_MAX,
+            initialValue = readLocalInt(Settings.KEY_FLOATING_BAR_ALPHA, Settings.FLOATING_ALPHA_DEFAULT),
+            defaultValue = Settings.FLOATING_ALPHA_DEFAULT,
+            format = { "$it%" }
+        ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_ALPHA, v) }
+        addSliderRow(sizeGroup, title = "圆角大小",
+            summary = "胶囊圆角半径，0直角，上限建议不超过栏高一半",
+            key = Settings.KEY_FLOATING_BAR_RADIUS,
+            minValue = Settings.FLOATING_RADIUS_MIN,
+            maxValue = Settings.FLOATING_RADIUS_MAX,
+            initialValue = readLocalInt(Settings.KEY_FLOATING_BAR_RADIUS, Settings.FLOATING_RADIUS_DEFAULT),
+            defaultValue = Settings.FLOATING_RADIUS_DEFAULT,
+            format = { "${v}dp" }
+        ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
+        content.addView(sizeGroup)
+        addFooter("Tips：悬浮底栏参数实时生效，改动后重新进入商店页面即可预览效果。")
     }
 
     private fun buildMisc() {

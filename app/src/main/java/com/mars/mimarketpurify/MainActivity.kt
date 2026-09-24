@@ -241,6 +241,14 @@ class MainActivity : SettingsBaseActivity() {
             value = { tabsText() }
         ) { openPage(SubSettingsActivity.PAGE_TABS) }
     
+        // ====== 新增：悬浮底栏高级配置入口 =====
+        addNavRow(
+            group = uiGroup,
+            title = "悬浮底栏高级配置",
+            summary = "胶囊色彩、透明度、手势滑动与动效参数",
+            value = { "外观自定义" }
+        ) { openPage(SubSettingsActivity.PAGE_TAB_BAR) }
+
         addNavRow(
             group = uiGroup,
             title = "「我的」页精简",
