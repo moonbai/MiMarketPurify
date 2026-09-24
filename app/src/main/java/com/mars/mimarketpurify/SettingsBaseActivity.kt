@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
@@ -643,7 +644,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         private var svBitmapHue = -1f  // 缓存：仅 hue 变化才重建昂贵的 SV 位图
 
         private val borderPaint = android.graphics.Paint().apply {
-            style = android.graphics.Paint.Style.STROKE
+            style = Paint.Style.STROKE
             strokeWidth = 1f * densityF
             color = 0x33000000
         }
@@ -767,11 +768,11 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             paint.setShadowLayer(3f * densityF, 0f, 1f, 0x66000000)
             canvas.drawCircle(cx, cy, 9f * densityF, paint)
             paint.clearShadowLayer()
-            paint.style = android.graphics.Paint.STROKE
+            paint.style = Paint.STROKE
             paint.strokeWidth = 2f * densityF
             paint.color = 0xFF333333.toInt()
             canvas.drawCircle(cx, cy, 9f * densityF, paint)
-            paint.style = android.graphics.Paint.Style.FILL
+            paint.style = Paint.Style.FILL
         }
 
         private var dragging = 0  // 0=none 1=sv 2=hue 3=alpha
