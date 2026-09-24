@@ -787,59 +787,57 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             paint.style = android.graphics.Paint.Style.FILL
         }
 
-        private enum class DragTarget { NONE, SV, HUE, ALPHA }
-        private var dragging = DragTarget.NONE
-
+        private var dragging = 0  // 0=none, 1=sv, 2=hue, 3=alpha
+ 
         override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
                     dragging = hitTest(event.x, event.y)
-                    if (dragging != DragTarget.NONE) {
+                    if (dragging != 0) {
                         updateFromTouch(event.x, event.y)
                         return true
                     }
                     return false
                 }
                 android.view.MotionEvent.ACTION_MOVE -> {
-                    if (dragging != DragTarget.NONE) {
+                    if (dragging != 0) {
                         updateFromTouch(event.x, event.y)
                         return true
                     }
                 }
                 android.view.MotionEvent.ACTION_UP,
-                android.view.MotionEvent.ACTION_CANCEL -> dragging = DragTarget.NONE
+                android.view.MotionEvent.ACTION_CANCEL -> dragging = 0
             }
             return super.onTouchEvent(event)
         }
 
-        private fun hitTest(x: Float, y: Float): DragTarget {
-            if (alphaRect.contains(x, y)) return DragTarget.ALPHA
-            if (hueRect.contains(x, y)) return DragTarget.HUE
-            if (svRect.contains(x, y)) return DragTarget.SV
-            return DragTarget.NONE
+        private fun hitTest(x: Float, y: Float): Int {
+            if (alphaRect.contains(x, y)) return 3
+            if (hueRect.contains(x, y)) return 2
+            if (svRect.contains(x, y)) return 1
+            return 0
         }
 
         private fun updateFromTouch(x: Float, y: Float) {
             when (dragging) {
-                DragTarget.SV -> {
+                1 -> {
                     hsv[1] = ((x - svRect.left) / svRect.width()).coerceIn(0f, 1f)
                     hsv[2] = (1f - (y - svRect.top) / svRect.height()).coerceIn(0f, 1f)
                     rebuildShaders()
                 }
-                DragTarget.HUE -> {
+                2 -> {
                     hsv[0] = ((y - hueRect.top) / hueRect.height() * 360f).coerceIn(0f, 360f)
                     rebuildShaders()
                 }
-                DragTarget.ALPHA -> {
+                3 -> {
                     alpha = ((x - alphaRect.left) / alphaRect.width() * 255f).coerceIn(0f, 255f)
                     invalidate()
                 }
-                DragTarget.NONE -> {}
             }
             color = android.graphics.Color.HSVToColor(alpha.toInt(), hsv)
             onColorChanged?.invoke(color)
         }
-    }
+            }
 
 
     // ==================== 数据结构 ====================
