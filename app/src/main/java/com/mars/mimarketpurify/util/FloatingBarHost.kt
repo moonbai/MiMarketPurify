@@ -135,7 +135,28 @@ class FloatingBarHost private constructor(
     }
 
     private fun buildBarRoot(): FrameLayout {
-        val bar = FrameLayout(activity).apply {
+        val touchSlop = dp(12).toFloat()
+        val bar = object : FrameLayout(activity) {
+            override fun onInterceptTouchEvent(ev: android.view.MotionEvent): Boolean {
+                when (ev.action) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        touchDownX = ev.x
+                        touchDownY = ev.y
+                        lastDragDx = 0f
+                        isDragging = false
+                    }
+                    android.view.MotionEvent.ACTION_MOVE -> {
+                        val dx = ev.x - touchDownX
+                        val dy = ev.y - touchDownY
+                        if (!isDragging && kotlin.math.abs(dx) > touchSlop &&
+                            kotlin.math.abs(dx) > kotlin.math.abs(dy)) {
+                            isDragging = true
+                        }
+                    }
+                }
+                return isDragging
+            }
+        }.apply {
             background = barBg
             elevation = dpf(12f)
             outlineProvider = roundedOutlineProvider
@@ -149,6 +170,40 @@ class FloatingBarHost private constructor(
             )
         )
         bar.addView(itemsRow)
+
+        // 滑动切换触摸处理
+        bar.setOnTouchListener { _, ev ->
+            when (ev.action) {
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    if (isDragging) {
+                        val dx = ev.x - touchDownX
+                        pill.cancelAnimation()
+                        pill.dragBy(dx - lastDragDx)
+                        lastDragDx = dx
+                        true
+                    } else false
+                }
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_CANCEL -> {
+                    if (isDragging) {
+                        val dx = ev.x - touchDownX
+                        val threshold = dp(40).toFloat()
+                        when {
+                            dx > threshold && lastSelected > 0 ->
+                                onItemClicked(lastSelected - 1)
+                            dx < -threshold && lastSelected < items.size - 1 ->
+                                onItemClicked(lastSelected + 1)
+                            else ->
+                                pill.select(lastSelected, animated = true)
+                        }
+                    }
+                    isDragging = false
+                    lastDragDx = 0f
+                    false
+                }
+                else -> false
+            }
+        }
 
         val params = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
@@ -172,7 +227,6 @@ class FloatingBarHost private constructor(
             }
             insets
         }
-        // View.OnLayoutChange 回调共 9 个形参（v + 8 个 Int），下划线必须 9 个
         itemsRow.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             runCatching { updatePillSlots() }
         }
@@ -386,10 +440,17 @@ class FloatingBarHost private constructor(
                     visibility = if (showLabel) View.VISIBLE else View.GONE
                 }
                 iconViews.getOrNull(i)?.let { iv ->
-                    // 未选中/选中都按对应颜色着色，图标跟随"未选中/选中颜色"设置
                     iv.alpha = 1f
                     iv.setColorFilter(color)
-                    // 选中图标轻微放大 + 过冲
+                    // 选中态强制 checked/enabled state，触发原生图标的 pressed 填充变体
+                    // （原生 tab 图标在 pressed 时会从线描变成实心，移植到选中态常驻）
+                    iv.setImageState(
+                        if (selected == i)
+                            intArrayOf(android.R.attr.state_enabled, android.R.attr.state_checked)
+                        else
+                            intArrayOf(android.R.attr.state_enabled),
+                        false
+                    )
                     val scale = if (selected == i) ICON_SCALE_SELECTED else 1f
                     if (selectionChanged && !rebuilt) {
                         iv.animate().scaleX(scale).scaleY(scale)
@@ -498,6 +559,13 @@ class FloatingBarHost private constructor(
 
     private var pillHasSlots = false
     private var styleDirty = true
+
+    // ── 滑动切换 ──
+    private var touchDownX = 0f
+    private var touchDownY = 0f
+    private var lastDragDx = 0f
+    private var isDragging = false
+
 
     private fun resolveAccent(): Int? = runCatching {
         val tv = TypedValue()

@@ -148,6 +148,22 @@ class LiquidSelectionView(context: Context) : View(context) {
         }
     }
 
+    /** 取消进行中的位移动画（拖动切换前调用） */
+    fun cancelAnimation() {
+        animator?.cancel()
+    }
+
+    /**
+     * 拖动中：胶囊整体水平平移 deltaX px（跟手）。
+     * 由宿主根据触摸增量逐帧调用，松手后由 select() 决定落位或回弹。
+     */
+    fun dragBy(deltaX: Float) {
+        if (!hasGeometry) return
+        left += deltaX
+        right += deltaX
+        invalidate()
+    }
+
     override fun onDraw(canvas: Canvas) {
         if (!hasGeometry || slots.isEmpty()) return
         val h = height.toFloat()
