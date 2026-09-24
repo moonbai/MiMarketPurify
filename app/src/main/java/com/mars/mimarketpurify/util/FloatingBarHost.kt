@@ -135,7 +135,29 @@ class FloatingBarHost private constructor(
     }
 
     private fun buildBarRoot(): FrameLayout {
-        val bar = FrameLayout(activity).apply {
+        val bar = object : FrameLayout(activity) {
+            override fun onInterceptTouchEvent(ev: android.view.MotionEvent): Boolean {
+                when (ev.action) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        touchDownX = ev.x
+                        touchDownY = ev.y
+                        lastDragDx = 0f
+                        isDragging = false
+                    }
+                    android.view.MotionEvent.ACTION_MOVE -> {
+                        val dx = ev.x - touchDownX
+                        val dy = ev.y - touchDownY
+                        if (!isDragging &&
+                            kotlin.math.abs(dx) > dp(12).toFloat() &&
+                            kotlin.math.abs(dx) > kotlin.math.abs(dy)) {
+                            isDragging = true
+                            pill.cancelAnimation()
+                        }
+                    }
+                }
+                return isDragging
+            }
+        }.apply {
             background = barBg
             elevation = dpf(12f)
             outlineProvider = roundedOutlineProvider
@@ -151,35 +173,23 @@ class FloatingBarHost private constructor(
         )
         bar.addView(itemsRow)
 
-        // 滑动切换 + 点击：barRoot 统一消费所有触摸
+        // 只处理被 onInterceptTouchEvent 拦截后的滑动事件；
+        // 非滑动时事件透给 item，由 item 自己的 onClickListener 处理点击
         bar.setOnTouchListener { _, ev ->
             when (ev.action) {
-                android.view.MotionEvent.ACTION_DOWN -> {
-                    touchDownX = ev.x
-                    touchDownY = ev.y
-                    lastDragDx = 0f
-                    isDragging = false
-                    true
-                }
                 android.view.MotionEvent.ACTION_MOVE -> {
-                    val dx = ev.x - touchDownX
-                    val dy = ev.y - touchDownY
-                    if (!isDragging &&
-                        kotlin.math.abs(dx) > dp(12).toFloat() &&
-                        kotlin.math.abs(dx) > kotlin.math.abs(dy)) {
-                        isDragging = true
-                        pill.cancelAnimation()
-                    }
                     if (isDragging) {
+                        val dx = ev.x - touchDownX
                         pill.dragBy(dx - lastDragDx)
                         lastDragDx = dx
                     }
                     true
                 }
-                android.view.MotionEvent.ACTION_UP -> {
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_CANCEL -> {
                     if (isDragging) {
                         val dx = ev.x - touchDownX
-                        val slotW = if (items.isNotEmpty()) bar.width / items.size else 0
+                        val slotW = if (items.isNotEmpty()) width / items.size else 0
                         val threshold = slotW * 0.3f
                         when {
                             dx < -threshold && lastSelected < items.size - 1 ->
@@ -189,22 +199,12 @@ class FloatingBarHost private constructor(
                             else ->
                                 pill.select(lastSelected, animated = true)
                         }
-                    } else {
-                        val slotW = if (items.isNotEmpty()) bar.width / items.size else 1
-                        val idx = (ev.x / slotW).toInt().coerceIn(0, items.size - 1)
-                        onItemClicked(idx)
                     }
                     isDragging = false
                     lastDragDx = 0f
                     true
                 }
-                android.view.MotionEvent.ACTION_CANCEL -> {
-                    if (isDragging) pill.select(lastSelected, animated = true)
-                    isDragging = false
-                    lastDragDx = 0f
-                    true
-                }
-                else -> true
+                else -> false
             }
         }
 
