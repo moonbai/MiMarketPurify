@@ -189,7 +189,7 @@ class FloatingBarHost private constructor(
                 android.view.MotionEvent.ACTION_CANCEL -> {
                     if (isDragging) {
                         val dx = ev.x - touchDownX
-                        val slotW = if (items.isNotEmpty()) width / items.size else 0
+                        val slotW = if (items.isNotEmpty()) bar.width / items.size else 0
                         val threshold = slotW * 0.3f
                         when {
                             dx < -threshold && lastSelected < items.size - 1 ->
