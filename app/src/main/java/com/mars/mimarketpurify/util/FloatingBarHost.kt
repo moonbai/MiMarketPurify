@@ -135,26 +135,7 @@ class FloatingBarHost private constructor(
     }
 
     private fun buildBarRoot(): FrameLayout {
-        val touchSlop = dp(12).toFloat()
         val bar = FrameLayout(activity).apply {
-            background = barBg
-            elevation = dpf(12f)
-            outlineProvider = roundedOutlineProvider
-            clipToOutline = true
-            visibility = View.GONE
-        }
-                    android.view.MotionEvent.ACTION_MOVE -> {
-                        val dx = ev.x - touchDownX
-                        val dy = ev.y - touchDownY
-                        if (!isDragging && kotlin.math.abs(dx) > touchSlop &&
-                            kotlin.math.abs(dx) > kotlin.math.abs(dy)) {
-                            isDragging = true
-                        }
-                    }
-                }
-                return isDragging
-            }
-        }.apply {
             background = barBg
             elevation = dpf(12f)
             outlineProvider = roundedOutlineProvider
@@ -164,12 +145,13 @@ class FloatingBarHost private constructor(
         bar.addView(
             pill,
             FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
             )
         )
         bar.addView(itemsRow)
 
-        // 滑动切换触摸处理
+        // 滑动切换 + 点击：barRoot 统一消费所有触摸
         bar.setOnTouchListener { _, ev ->
             when (ev.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
@@ -208,8 +190,7 @@ class FloatingBarHost private constructor(
                                 pill.select(lastSelected, animated = true)
                         }
                     } else {
-                        // 不是滑动：按触摸位置找到对应 tab 并点击
-                        val slotW = bar.width / items.size
+                        val slotW = if (items.isNotEmpty()) bar.width / items.size else 1
                         val idx = (ev.x / slotW).toInt().coerceIn(0, items.size - 1)
                         onItemClicked(idx)
                     }
@@ -226,7 +207,7 @@ class FloatingBarHost private constructor(
                 else -> true
             }
         }
-        
+
         val params = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             dp(BAR_HEIGHT_DP)
