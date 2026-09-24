@@ -17,6 +17,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.ViewCompat
+import com.mars.mimarketpurify.HookEnv
+import com.mars.mimarketpurify.TAG
 import androidx.core.view.WindowInsetsCompat
 import com.mars.mimarketpurify.Settings
 
@@ -64,6 +66,19 @@ class FloatingBarHost private constructor(
 
     private val resources = activity.resources
     private val density = resources.displayMetrics.density
+
+    /**
+     * 调试日志。
+     * 注意：本类**不是 BaseHook 子类**，拿不到 BaseHook.debugLog，
+     * 故在此实现同语义版本（同样受 KEY_RANK_DEBUG 门控），前缀保持与模块日志一致。
+     */
+    private fun debugLog(msg: String) {
+        runCatching {
+            if (Settings.isEnabled(Settings.KEY_RANK_DEBUG, false)) {
+                HookEnv.base.log(android.util.Log.DEBUG, TAG, "[悬浮底栏] $msg")
+            }
+        }
+    }
 
     private var originalBottomAlpha = originalBottomContainer.alpha
     private var originalBottomA11y = originalBottomContainer.importantForAccessibility
@@ -570,11 +585,11 @@ class FloatingBarHost private constructor(
             val host = FloatingBarHost(
                 activity = activity,
                 overlayParent = overlay,
-                originalBottomContainer = bottom,
-                basicModeContainer = NativeTabBar.viewByResName(activity, "tab_basic_mode_container_layout"),
-                nativeTabLayout = tabLayout,
-                contentView = content,
-                navigationBarPlaceholder = NativeTabBar.viewByResName(activity, "navigation_bar_placeholder"),
+                initBottomContainer = bottom,
+                initBasicModeContainer = NativeTabBar.viewByResName(activity, "tab_basic_mode_container_layout"),
+                initTabLayout = tabLayout,
+                initContent = content,
+                initNavPlaceholder = NativeTabBar.viewByResName(activity, "navigation_bar_placeholder"),
             )
             active.put(activity, host)
             host.start()

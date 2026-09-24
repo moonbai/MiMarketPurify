@@ -287,3 +287,24 @@ LSPosed 日志：挂载成功 3 次（50.481/50.494/50.495），**之后再无�
 但修复后日志会直接给出答案：若榜单页仍回退，新日志会打印出具体阻塞原因
 （`底栏容器已脱离视图树` / `tab_container 不可见` / `精简模式底栏占用` / `标签数=N`），
 届时可据此精确定位，不再靠猜。
+
+### 构建修复第二轮（CI run 35938216742，10 错 / 2 类）
+两处都由**上一轮自己的改动**引入，且都属于"grep 型静态检查抓不出来"的类型问题：
+
+1. **`Unresolved reference 'debugLog'`（4 处）**
+   `debugLog` 是 `BaseHook` 的 protected 成员，而 `FloatingBarHost` 是普通类、**不继承 BaseHook**。
+   上一轮往宿主里加诊断日志时，没有先确认这个方法住在哪。
+   → 在宿主内实现同语义的 `private fun debugLog()`（同样受 `KEY_RANK_DEBUG` 门控，
+   日志前缀保持 `[悬浮底栏]`），并补 `HookEnv` / `TAG` 的 import（宿主在 `util` 子包）。
+2. **`No parameter with name ... / No value passed for parameter 'initXxx'`（6 处）**
+   上一轮为消除"构造参数与属性同名"的作用域歧义，把形参改名成 `initXxx`，
+   **却漏改 `attach()` 里的具名实参** → Kotlin 按名字匹配直接报错。
+   → 调用点同步改为 `initBottomContainer =` 等。
+
+### 教训：改名的影响面必须用符号审计确认
+本轮补做三项检查（比括号计数有效得多）：
+- **具名实参 ↔ 形参**逐一比对，确认改名后两侧完全一致；
+- **BaseHook 专属成员**（`enabled()` / `isDebug()` / `prefKey` / `hooked` / `debugLog`）
+  在非子类文件中是否被引用 —— 结果：宿主内仅剩自带的 `debugLog`，无其它泄漏，
+  排除了"下轮再报第三个同类错"；
+- **跨包符号 ↔ import**：`HookEnv` / `TAG` / `Settings` / `NativeTabBar` 等逐个核对。
