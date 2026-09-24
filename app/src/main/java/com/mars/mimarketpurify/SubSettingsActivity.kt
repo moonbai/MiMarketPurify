@@ -183,53 +183,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
         content.addView(group)
     }
 
-    /**
-     * 悬浮底栏的子选项与外观参数，主开关关闭时整组隐藏。
-     * 透明度与圆角用纯原生 SeekBar 调节，取值范围与运行期收敛逻辑共用 Settings 常量。
-     */
-    private fun buildFloatingOptions() {
-        val group = groupCard()
-        addSwitchRow(group = group, title = "液态选中高亮",
-            summary = "选中项显示跟随移动的液态胶囊（参考 iOS），图标带弹性缩放",
-            checked = readLocal(Settings.KEY_FLOATING_BAR_LIQUID, true),
-            tag = Settings.KEY_FLOATING_BAR_LIQUID
-        ) { on -> writeRemote(Settings.KEY_FLOATING_BAR_LIQUID, on) }
-        addSwitchRow(group = group, title = "显示标签文字",
-            summary = "关闭后悬浮底栏只保留图标，栏体更矮更清爽",
-            checked = readLocal(Settings.KEY_FLOATING_BAR_LABEL, true),
-            tag = Settings.KEY_FLOATING_BAR_LABEL
-        ) { on -> writeRemote(Settings.KEY_FLOATING_BAR_LABEL, on) }
-        addSwitchRow(group = group, title = "显示角标",
-            summary = "悬浮底栏是否照抄商店的红点与数字（受「底栏角标」净化约束）",
-            checked = readLocal(Settings.KEY_FLOATING_BAR_BADGE, true),
-            tag = Settings.KEY_FLOATING_BAR_BADGE
-        ) { on -> writeRemote(Settings.KEY_FLOATING_BAR_BADGE, on) }
-
-        addSectionHeader("色彩自定义", "胶囊背景、文字高亮配色")
-        addColorPickerRow(group = group, title = "底栏背景色", tag = Settings.KEY_FLOAT_BG_COLOR, defaultColor = Ui.BG)
-        addColorPickerRow(group = group, title = "选中胶囊背景色", tag = Settings.KEY_FLOAT_SELECT_BG_COLOR, defaultColor = Ui.ACCENT)
-        addColorPickerRow(group = group, title = "未选中文字/图标颜色", tag = Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, defaultColor = Ui.TEXT_SECONDARY)
-        addColorPickerRow(group = group, title = "选中文字/图标高亮色", tag = Settings.KEY_FLOAT_TEXT_SELECT_COLOR, defaultColor = 0xFFFFFFFF.toInt())
-
-        addSliderRow(group = group, title = "背景透明度",
-            summary = "胶囊底色的不透明度，越低越通透",
-            key = Settings.KEY_FLOATING_BAR_ALPHA,
-            minValue = Settings.FLOATING_ALPHA_MIN, maxValue = Settings.FLOATING_ALPHA_MAX,
-            initialValue = readLocalInt(Settings.KEY_FLOATING_BAR_ALPHA, Settings.FLOATING_ALPHA_DEFAULT),
-            defaultValue = Settings.FLOATING_ALPHA_DEFAULT,
-            format = { "$it%" }
-        ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_ALPHA, v) }
-        addSliderRow(group = group, title = "圆角大小",
-            summary = "胶囊圆角半径，0 为直角；上限为栏高一半",
-            key = Settings.KEY_FLOATING_BAR_RADIUS,
-            minValue = Settings.FLOATING_RADIUS_MIN, maxValue = Settings.FLOATING_RADIUS_MAX,
-            initialValue = readLocalInt(Settings.KEY_FLOATING_BAR_RADIUS, Settings.FLOATING_RADIUS_DEFAULT),
-            defaultValue = Settings.FLOATING_RADIUS_DEFAULT,
-            format = { "${it}dp" }
-        ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
-        content.addView(group)
-        floatingOptionsGroup = group
-    }
 
     /** 独立悬浮底栏高级配置页面 PAGE_TAB_BAR */
     private fun buildTabBarConfig() {
@@ -249,7 +202,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addSwitchRow(
             group = baseGroup,
             title = "液态选中高亮动画",
-            summary = "选中项跟随移动液态胶囊，图标弹性缩放",
+            summary = "选中项显示跟随移动的液态胶囊（参考 iOS），图标带弹性缩放",
             checked = readLocal(Settings.KEY_FLOATING_BAR_LIQUID, true),
             tag = Settings.KEY_FLOATING_BAR_LIQUID
         ) { checked ->
@@ -258,7 +211,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addSwitchRow(
             group = baseGroup,
             title = "显示标签文字",
-            summary = "关闭仅保留图标，减少高度",
+            summary = "关闭后悬浮底栏只保留图标，栏体更矮更清爽",
             checked = readLocal(Settings.KEY_FLOATING_BAR_LABEL, true),
             tag = Settings.KEY_FLOATING_BAR_LABEL
         ) { checked ->

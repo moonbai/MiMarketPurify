@@ -237,7 +237,7 @@ class MainActivity : SettingsBaseActivity() {
         addNavRow(
             group = uiGroup,
             title = "底栏自定义",
-            summary = "底部标签筛选与悬浮底栏外观",
+            summary = "底部标签筛选",
             value = { tabsText() }
         ) { openPage(SubSettingsActivity.PAGE_TABS) }
     

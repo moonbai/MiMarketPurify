@@ -404,7 +404,9 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     }
 
     protected fun showColorPickerDialog(initColor: Int, onPick: (Int) -> Unit) {
-        val colorList = intArrayOf(
+        // 提取初始颜色的十六进制字符串
+        val initHex = String.format("#%06X", 0xFFFFFF and initColor)
+        val presetColors = intArrayOf(
             0xFF4080F0.toInt(),
             0xFF34A853.toInt(),
             0xFFFBBC05.toInt(),
@@ -412,14 +414,67 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             0xFF222222.toInt(),
             0xFFFFFFFF.toInt()
         )
-        val nameList = arrayOf("蓝色", "绿色", "黄色", "红色", "黑色", "白色")
-        android.app.AlertDialog.Builder(this)
+        val presetLabels = arrayOf("蓝色", "绿色", "黄色", "红色", "黑色", "白色")
+    
+        // 布局：预设色块 + 输入框
+        val rootLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(16), dp(16), dp(8))
+        }
+        val presetRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        // 生成预设色块按钮
+        presetColors.forEachIndexed { idx, color ->
+            val box = View(this@SettingsBaseActivity).apply {
+                background = GradientDrawable().apply {
+                    setColor(color)
+                    cornerRadius = dpf(6f)
+                }
+                layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).also {
+                    it.marginEnd = dp(8)
+                }
+                setOnClickListener {
+                    onPick(color)
+                    dialog?.dismiss()
+                }
+            }
+            presetRow.addView(box)
+        }
+        rootLayout.addView(presetRow)
+    
+        val inputField = android.widget.EditText(this).apply {
+            hint = "#RRGGBB"
+            setText(initHex)
+            textSize = 16f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.topMargin = dp(16) }
+        }
+        rootLayout.addView(inputField)
+    
+        val dialog = android.app.AlertDialog.Builder(this)
             .setTitle("选择颜色")
-            .setItems(nameList) { _, idx ->
-                onPick.invoke(colorList[idx])
-            }.show()
+            .setView(rootLayout)
+            .setPositiveButton("确定") { _, _ ->
+                val raw = inputField.text.toString().trim()
+                runCatching {
+                    // 解析 #RRGGBB，强制 Alpha=FF
+                    val parsed = android.graphics.Color.parseColor(raw)
+                    onPick(parsed)
+                }.onFailure {
+                    Toast.makeText(this@SettingsBaseActivity, "颜色格式错误，请输入 #RRGGBB", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("取消", null)
+            .create()
+        dialog.show()
     }
-
+    
     protected open fun updateGateState() {
         val master = readLocal(Settings.KEY_MASTER, true)
         sliderEntries.forEach { it.seek.isEnabled = master }
