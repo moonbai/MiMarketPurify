@@ -61,7 +61,7 @@ class LiquidSelectionView(context: Context) : View(context) {
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         haloPaint.style = Paint.Style.FILL
         sheenPaint.style = Paint.Style.STROKE
-        sheenPaint.strokeWidth = max(1f, 0.8f * density)
+        sheenPaint.strokeWidth = max(0.6f, 0.4f * density)
     }
 
     /** 配置主色与圆角（dp→px 由宿主换算后传入）。 */
@@ -181,8 +181,9 @@ class LiquidSelectionView(context: Context) : View(context) {
         val insetX = min(r * 0.5f, rect.width() / 2f - 1f)
         val insetY = min(r * 0.5f, rect.height() / 2f - 1f)
         if (insetX > 0f && insetY > 0f) {
-            rect.inset(insetX, insetY)
-            canvas.drawRoundRect(rect, r * 0.5f, r * 0.5f, sheenPaint)
+            val tempRect = RectF(rect) // 复制一份，不修改主rect
+            tempRect.inset(insetX, insetY)
+            canvas.drawRoundRect(tempRect, r * 0.5f, r * 0.5f, sheenPaint)
         }
     }
 
@@ -196,20 +197,20 @@ class LiquidSelectionView(context: Context) : View(context) {
         (alpha.coerceIn(0, 255) shl 24) or (rgb and 0x00FFFFFF)
 
     companion object {
-        private val DEFAULT_COLOR = 0xFF0A84FF.toInt()
-
+        private val DEFAULT_COLOR = 0xFFD7F0FF.toInt()
+    
         private const val BASE_DURATION_MS = 210f
         private const val MS_PER_PX = 0.42f
         private const val MIN_DURATION_MS = 210f
         private const val MAX_DURATION_MS = 430f
-
+    
         private const val OVERSHOOT_TENSION = 1.45f
         private const val TRAIL_DECELERATE = 1.6f
-
-        private const val HALO_ALPHA = 46
-        private const val FILL_BOTTOM_ALPHA = 168
+    
+        private const val HALO_ALPHA = 22        // 外圈光晕进一步降低
+        private const val FILL_BOTTOM_ALPHA = 230 // 底部高度透明，玻璃感拉满
         private const val SHEEN_ALPHA = 46
         private const val MIN_WIDTH_PX = 8f
-        private const val GLOW_INSET_PX = 3f
+        private const val GLOW_INSET_PX = 2f
     }
 }
