@@ -136,15 +136,13 @@ class FloatingBarHost private constructor(
 
     private fun buildBarRoot(): FrameLayout {
         val touchSlop = dp(12).toFloat()
-        val bar = object : FrameLayout(activity) {
-            override fun onInterceptTouchEvent(ev: android.view.MotionEvent): Boolean {
-                when (ev.action) {
-                    android.view.MotionEvent.ACTION_DOWN -> {
-                        touchDownX = ev.x
-                        touchDownY = ev.y
-                        lastDragDx = 0f
-                        isDragging = false
-                    }
+        val bar = FrameLayout(activity).apply {
+            background = barBg
+            elevation = dpf(12f)
+            outlineProvider = roundedOutlineProvider
+            clipToOutline = true
+            visibility = View.GONE
+        }
                     android.view.MotionEvent.ACTION_MOVE -> {
                         val dx = ev.x - touchDownX
                         val dy = ev.y - touchDownY
@@ -179,38 +177,53 @@ class FloatingBarHost private constructor(
                     touchDownY = ev.y
                     lastDragDx = 0f
                     isDragging = false
-                    false
+                    true
                 }
                 android.view.MotionEvent.ACTION_MOVE -> {
-                    if (isDragging) {
-                        val dx = ev.x - touchDownX
+                    val dx = ev.x - touchDownX
+                    val dy = ev.y - touchDownY
+                    if (!isDragging &&
+                        kotlin.math.abs(dx) > dp(12).toFloat() &&
+                        kotlin.math.abs(dx) > kotlin.math.abs(dy)) {
+                        isDragging = true
                         pill.cancelAnimation()
+                    }
+                    if (isDragging) {
                         pill.dragBy(dx - lastDragDx)
                         lastDragDx = dx
-                        true
-                    } else false
+                    }
+                    true
                 }
-                android.view.MotionEvent.ACTION_UP,
-                android.view.MotionEvent.ACTION_CANCEL -> {
+                android.view.MotionEvent.ACTION_UP -> {
                     if (isDragging) {
                         val dx = ev.x - touchDownX
-                        val threshold = dp(30).toFloat()
-                        var target = lastSelected
+                        val slotW = if (items.isNotEmpty()) bar.width / items.size else 0
+                        val threshold = slotW * 0.3f
                         when {
-                            dx < -threshold && lastSelected < items.size - 1 -> target = lastSelected + 1
-                            dx > threshold && lastSelected > 0 -> target = lastSelected - 1
+                            dx < -threshold && lastSelected < items.size - 1 ->
+                                onItemClicked(lastSelected + 1)
+                            dx > threshold && lastSelected > 0 ->
+                                onItemClicked(lastSelected - 1)
+                            else ->
+                                pill.select(lastSelected, animated = true)
                         }
-                        if (target != lastSelected) {
-                            onItemClicked(target)
-                        } else {
-                            pill.select(lastSelected, animated = true)
-                        }
+                    } else {
+                        // 不是滑动：按触摸位置找到对应 tab 并点击
+                        val slotW = bar.width / items.size
+                        val idx = (ev.x / slotW).toInt().coerceIn(0, items.size - 1)
+                        onItemClicked(idx)
                     }
                     isDragging = false
                     lastDragDx = 0f
-                    false
+                    true
                 }
-                else -> false
+                android.view.MotionEvent.ACTION_CANCEL -> {
+                    if (isDragging) pill.select(lastSelected, animated = true)
+                    isDragging = false
+                    lastDragDx = 0f
+                    true
+                }
+                else -> true
             }
         }
         
@@ -451,11 +464,19 @@ class FloatingBarHost private constructor(
                 iconViews.getOrNull(i)?.let { iv ->
                     iv.alpha = 1f
                     iv.setColorFilter(color)
-                    // 选中态：仅在切换时强制 checked state（触发填充变体），
-                    // 平时不碰 imageState，让 ImageView 自己响应 pressed（按压填充）
+                    // 选中/未选中 state 只在切换时写一次，平时不碰，
+                    // 让 ImageView 自己响应 pressed（按压填充），不被每帧覆盖
                     if (selectionChanged) {
-                        iv.isSelected = (selected == i)
-                        iv.isActivated = (selected == i)
+                        val state = if (selected == i) {
+                            intArrayOf(
+                                android.R.attr.state_enabled,
+                                android.R.attr.state_checked,
+                                android.R.attr.state_selected
+                            )
+                        } else {
+                            intArrayOf(android.R.attr.state_enabled)
+                        }
+                        iv.setImageState(state, false)
                     }
                     val scale = if (selected == i) ICON_SCALE_SELECTED else 1f
                     if (selectionChanged && !rebuilt) {
@@ -628,8 +649,6 @@ class FloatingBarHost private constructor(
     private fun onItemClicked(index: Int) {
         val tab = tabViews().getOrNull(index) ?: return
         runCatching { tab.performClick() }
-        lastSelected = index
-        pill.select(index, animated = true)
         barRoot.post { runCatching { lastSignature = ""; sync() } }
     }
 
