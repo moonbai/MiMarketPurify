@@ -388,12 +388,16 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         row.tappable(this, R.drawable.bg_row_ripple)
         row.setOnClickListener {
             val current = readLocalInt(tag, defaultColor)
-            showColorPickerDialog(current) { newColor ->
-                writeRemoteInt(tag, newColor)
-                previewBox.background = GradientDrawable().apply {
-                    setColor(newColor)
-                    cornerRadius = dpf(8f)
-                }
+            showColorPickerDialog(currentColor) { newColor ->
+                // 1. 写入持久化
+                saveLocal(Settings.KEY_BAR_HIGHLIGHT_COLOR, newColor)
+                // 2. 更新当前内存变量
+                currentColor = newColor
+                // 3. 刷新预览View，强制重绘
+                previewBar?.setBackgroundColor(newColor)
+                previewBar?.invalidate()
+                // 4. 如果是live数据，通知模块刷新（可选）
+                // notifyModuleReload()
             }
         }
         if (group.childCount > 0) {

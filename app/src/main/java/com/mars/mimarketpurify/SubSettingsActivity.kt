@@ -161,29 +161,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
         content.addView(group)
         addFooter("Tips：隐藏标签后需重启一次应用商店才会生效；悬浮底栏及其参数为实时生效。")
     }
-
-    /**
-     * 悬浮底栏主开关。
-     * 原先放在程序主页「高级功能」里，现按要求收进本二级页，与子选项、自定义参数同页管理。
-     */
-    private fun buildFloatingSwitch() {
-        val group = groupCard()
-        addSwitchRow(group = group, title = "悬浮底栏",
-            summary = "把贴边原生底栏换成悬浮圆角胶囊，导航与角标仍由原生驱动",
-            checked = readLocal(Settings.KEY_FLOATING_BAR, false),
-            tag = Settings.KEY_FLOATING_BAR,
-            default = false
-        ) { on ->
-            writeRemote(Settings.KEY_FLOATING_BAR, on)
-            updateGateState()   // 立即展开/收起下方参数卡
-        }
-        content.addView(group)
-    }
-
-
+    
     /** 独立悬浮底栏高级配置页面 PAGE_TAB_BAR */
     private fun buildTabBarConfig() {
-        addSectionHeader("悬浮底栏高级配置", "胶囊外观、色彩、透明度、尺寸、动效参数")
+        // addSectionHeader("悬浮底栏高级配置", "胶囊外观、色彩、透明度、尺寸、动效参数")
         val baseGroup = groupCard()
         addSwitchRow(
             group = baseGroup,
@@ -224,16 +205,19 @@ class SubSettingsActivity : SettingsBaseActivity() {
             writeRemote(Settings.KEY_FLOATING_BAR_BADGE, checked)
         }
         content.addView(baseGroup)
-
-        addSectionHeader("色彩设置", "自定义胶囊与文字配色")
+    
+        // ========== 全部子参数放进 floatingOptionsGroup ==========
+        floatingOptionsGroup = groupCard()
+    
+        addSectionHeader("色彩设置", "自定义胶囊与文字配色", parent = floatingOptionsGroup)
         val colorGroup = groupCard()
         addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, Ui.BG)
         addColorPickerRow(colorGroup, "选中胶囊背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
         addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, Ui.TEXT_SECONDARY)
         addColorPickerRow(colorGroup, "选中文字/图标高亮色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFFFFFFFF.toInt())
-        content.addView(colorGroup)
-
-        addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度")
+        floatingOptionsGroup?.addView(colorGroup)
+    
+        addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度", parent = floatingOptionsGroup)
         val sizeGroup = groupCard()
         addSliderRow(sizeGroup, title = "背景透明度",
             summary = "胶囊底色不透明度，越低越通透",
@@ -253,10 +237,21 @@ class SubSettingsActivity : SettingsBaseActivity() {
             defaultValue = Settings.FLOATING_RADIUS_DEFAULT,
             format = { "${it}dp" }
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
-        content.addView(sizeGroup)
-        addFooter("Tips：悬浮底栏参数实时生效，改动后重新进入商店页面即可预览效果。")
+        floatingOptionsGroup?.addView(sizeGroup)
+    
+        // 底部提示也放到组内
+        val tipText = TextView(this).apply {
+            text = "Tips：悬浮底栏参数实时生效，改动后重新进入商店页面即可预览效果。"
+            textSize = Ui.MICRO
+            setTextColor(Ui.TEXT_TERTIARY)
+            setPadding(dp(4), dp(2), dp(4), dp(16))
+        }
+        floatingOptionsGroup?.addView(tipText)
+    
+        // 把整个容器加到content
+        content.addView(floatingOptionsGroup)
     }
-
+    
     private fun buildMisc() {
         // addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
         val group = groupCard()
