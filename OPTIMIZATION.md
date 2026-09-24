@@ -354,3 +354,71 @@ LSPosed 日志：挂载成功 3 次（50.481/50.494/50.495），**之后再无�
 ### 第七章修复的保留价值
 `refreshViewRefs` / `visibilityBlocker` / 还原去抖仍然有意义：它们覆盖的是
 「商店真的重建底栏」这一类场景，只是本次症状另有其因。
+
+---
+
+## 九、悬浮底栏：参数自定义 + iOS 液态选中效果（纯原生）
+
+> 本轮两项需求：① 悬浮底栏开关从主页移入「底栏自定义」二级页，并开放**透明度**与**圆角**自定义；
+> ② 选中效果参考 iOS 液态玻璃。**全程不引入 Compose 或任何第三方库**。
+
+### 1. 液态高亮：`util/LiquidSelectionView.kt`（新）
+纯 Canvas 实现，观感由三部分叠加：
+- **非对称插值（液态主体）**：移动时**前导边用 `OvershootInterpolator(1.45)`、
+  尾随边用 `DecelerateInterpolator(1.6)`**，两速度差使胶囊在飞行途中被拉长、
+  到位后收回；左右移动分别指定谁是前导边，避免方向反转时表现不一致。
+  时长随距离插值（210~430ms），短距离不拖沓、长距离不闪现。
+- **落点过冲**：前导边过冲产生轻微越界回弹，即"果冻落地"。
+- **玻璃质感**：竖向渐变（上 255 → 下 168 alpha）+ 顶部内缩高光泽描边 + 外圈 3px 柔光晕。
+  **诚实边界**：iOS 真·背景折射需要采样胶囊背后的内容，Android 纯原生 View
+  拿不到兄弟视图之后的像素（等价能力只有 Compose `GraphicsLayer` 或反射 uikit 私有 API），
+  因此这里是"逼近观感"而非实现折射，未对外宣称做到了 backdrop blur。
+
+健壮性：`hasGeometry` 缺失时只跳变不动画；动画前统一 `animator?.cancel()`，
+防连点时两条动画争写同一对边界；宽度低于 8px 时按中心回推防负宽；
+`onDetachedFromWindow` 取消动画；`MIN_WIDTH`/内缩尺寸均做正值校验防极端窄胶囊反转。
+
+### 2. 结构改造：`FloatingBarHost`
+浮层从「单个 LinearLayout」改为 **FrameLayout 根 + 两层**：
+```
+barRoot(FrameLayout, 圆角背景/阴影/导航避让)
+ ├─ pill      (LiquidSelectionView, MATCH_PARENT)   ← 先加，故绘制在下方
+ └─ itemsRow  (LinearLayout, 各 tab 项)             ← 后加，绘制在高亮之上
+```
+- **几何喂给**：`updatePillSlots()` 用各 item 的 `left/right`（itemsRow 与 pill
+  同为 barRoot 的 MATCH_PARENT 子节点，坐标系一致）算出中心与半宽，两侧各内缩 5dp。
+- **时序安全**：刚 `addView` 的子项尚未测量（`left/right` 全 0），此时算几何必错 →
+  `items.none { it.width > 0 }` 时直接返回，交由 `OnLayoutChangeListener` 布局完成后补算，
+  不做自我 post 避免空转。
+- **动画时机**：仅 `selectionChanged && !rebuilt` 时播放过渡；重建/首帧一律跳变落位。
+- **反色**：液态开启时胶囊为强调色底，其上图标与文字反白（`ON_PILL_CONTENT`）；
+  关闭时退回原「强调色文字 + 图标染色」方案。选中图标另做 1.12 倍过冲缩放。
+
+### 3. 参数自定义
+- 新 key：`KEY_FLOATING_BAR_LIQUID`（液态高亮开关）、`KEY_FLOATING_BAR_ALPHA`（35–100%）、
+  `KEY_FLOATING_BAR_RADIUS`（0–29dp，上限=栏高一半）。
+  **区间常量放在 `Settings` 里由 UI 与运行期共用**，避免两边写死后不一致。
+- `Settings` 新增 `getInt()`：与 `isEnabled` 同优先级（远程偏好 → 目标 SP → 默认值）；
+  SP 回退解析补 `int/long/float` 标签识别。
+  透明度按**百分比整数**存储而非 float，规避跨版本 float 兼容问题。
+- 三个参数全部纳入 `buildSignature()` 指纹 → 用户改完回到商店，恢复时的首帧 pre-draw
+  即触发 `refreshBarStyle()` 重设背景与圆角，**无需重启商店**。
+- 圆角同时作用于背景、`OutlineProvider`（阴影形状跟随）与液态胶囊半径（取二者较小值）。
+
+### 4. UI 调整
+- 主开关**从主页「高级功能」移入「底栏自定义」二级页**，与子选项、参数同页；
+  切换主开关即时 `updateGateState()` 展开/收起参数卡。
+- `SettingsBaseActivity` 新增纯原生 `addSliderRow()`：上排「标题+当前值」、下排 SeekBar，
+  **仅在 `onStopTrackingTouch` 落盘**（避免拖动过程每像素一次 binder 写）；
+  值变化即时刷新右侧文本；登记 `SliderEntry` 以支持 service 重连回填与总开关门控禁用。
+- 新增 `readLocalInt/writeRemoteInt`，与既有 boolean 路径同样支持
+  service 未连接时暂存、连上后补写。
+- 主页「底栏自定义」入口摘要升级为「未隐藏 · 悬浮已开」形式，便于定位该功能。
+
+### 5. 验证状态
+- 六项符号审计全部通过：跨包↔import、BaseHook 成员归属、构造具名实参、
+  companion 误用实例成员、`pill.*` 调用与 `LiquidSelectionView` 公开 API 对齐、
+  未使用 import（据此移除宿主里没用到的 `kotlin.math.max`）。
+- 过程中自查出并修掉 1 处会直接编译失败的旧签名残留调用
+  （`updatePillSlots(forceJump = false)`，该方法已改为无参）。
+- **仍未本地编译**（无 JDK / Android SDK），需以 CI 与真机为准。

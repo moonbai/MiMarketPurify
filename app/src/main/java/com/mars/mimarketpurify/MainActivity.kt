@@ -237,7 +237,7 @@ class MainActivity : SettingsBaseActivity() {
         addNavRow(
             group = uiGroup,
             title = "底栏自定义",
-            summary = "自定义管理底部标签",
+            summary = "底部标签筛选与悬浮底栏外观",
             value = { tabsText() }
         ) { openPage(SubSettingsActivity.PAGE_TABS) }
     
@@ -260,14 +260,6 @@ class MainActivity : SettingsBaseActivity() {
     private fun buildModuleRow() {
         addSectionHeader("高级功能", "深度净化与功能增强")
         val advancedGroup = groupCard()
-        addSwitchRow(
-            group = advancedGroup,
-            title = "悬浮底栏",
-            summary = "把贴边底栏换成悬浮胶囊样式，导航与角标仍由原生驱动",
-            checked = readLocal(Settings.KEY_FLOATING_BAR, false),
-            tag = Settings.KEY_FLOATING_BAR,
-            default = false
-        ) { on -> writeRemote(Settings.KEY_FLOATING_BAR, on) }
         addSwitchRow(
             group = advancedGroup,
             title = "下载超级岛",
@@ -319,9 +311,15 @@ class MainActivity : SettingsBaseActivity() {
         "已启用 ${keys.count { readLocal(it, true) }}/${keys.size}"
 
     private fun tabsText(): String {
-        if (!readLocal(Settings.KEY_TAB_FILTER, true)) return "已关闭"
-        val hidden = Settings.TAB_ITEMS.size - readLocalTabs().size
-        return if (hidden <= 0) "未隐藏" else "已隐藏 $hidden 个"
+        val parts = mutableListOf<String>()
+        if (!readLocal(Settings.KEY_TAB_FILTER, true)) {
+            parts += "筛选已关闭"
+        } else {
+            val hidden = Settings.TAB_ITEMS.size - readLocalTabs().size
+            parts += if (hidden <= 0) "未隐藏" else "已隐藏 $hidden 个"
+        }
+        if (readLocal(Settings.KEY_FLOATING_BAR, false)) parts += "悬浮已开"
+        return parts.joinToString(" · ")
     }
 
     private fun moduleText(): String {

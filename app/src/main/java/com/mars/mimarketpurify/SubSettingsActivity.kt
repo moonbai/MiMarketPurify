@@ -157,17 +157,40 @@ class SubSettingsActivity : SettingsBaseActivity() {
         buildTabSelectBlock(group)
         content.addView(group)
 
+        buildFloatingSwitch()
         buildFloatingOptions()
-        addFooter("Tips：隐藏标签后需重启一次应用商店才会生效；悬浮底栏为实时生效。")
+        addFooter("Tips：隐藏标签后需重启一次应用商店才会生效；悬浮底栏及其参数为实时生效。")
     }
 
     /**
-     * 悬浮底栏的**子选项**。
-     * 主开关在程序主页「高级功能」里，这里只放细粒度选项；
-     * 主开关关闭时整组隐藏，避免用户改到不生效的配置。
+     * 悬浮底栏主开关。
+     * 原先放在程序主页「高级功能」里，现按要求收进本二级页，与子选项、自定义参数同页管理。
+     */
+    private fun buildFloatingSwitch() {
+        val group = groupCard()
+        addSwitchRow(group = group, title = "悬浮底栏",
+            summary = "把贴边原生底栏换成悬浮圆角胶囊，导航与角标仍由原生驱动",
+            checked = readLocal(Settings.KEY_FLOATING_BAR, false),
+            tag = Settings.KEY_FLOATING_BAR,
+            default = false
+        ) { on ->
+            writeRemote(Settings.KEY_FLOATING_BAR, on)
+            updateGateState()   // 立即展开/收起下方参数卡
+        }
+        content.addView(group)
+    }
+
+    /**
+     * 悬浮底栏的子选项与外观参数，主开关关闭时整组隐藏。
+     * 透明度与圆角用纯原生 SeekBar 调节，取值范围与运行期收敛逻辑共用 Settings 常量。
      */
     private fun buildFloatingOptions() {
         val group = groupCard()
+        addSwitchRow(group = group, title = "液态选中高亮",
+            summary = "选中项显示跟随移动的液态胶囊（参考 iOS），图标带弹性缩放",
+            checked = readLocal(Settings.KEY_FLOATING_BAR_LIQUID, true),
+            tag = Settings.KEY_FLOATING_BAR_LIQUID
+        ) { on -> writeRemote(Settings.KEY_FLOATING_BAR_LIQUID, on) }
         addSwitchRow(group = group, title = "显示标签文字",
             summary = "关闭后悬浮底栏只保留图标，栏体更矮更清爽",
             checked = readLocal(Settings.KEY_FLOATING_BAR_LABEL, true),
@@ -178,6 +201,22 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_FLOATING_BAR_BADGE, true),
             tag = Settings.KEY_FLOATING_BAR_BADGE
         ) { on -> writeRemote(Settings.KEY_FLOATING_BAR_BADGE, on) }
+        addSliderRow(group = group, title = "背景透明度",
+            summary = "胶囊底色的不透明度，越低越通透",
+            tag = Settings.KEY_FLOATING_BAR_ALPHA,
+            min = Settings.FLOATING_ALPHA_MIN, max = Settings.FLOATING_ALPHA_MAX,
+            value = readLocalInt(Settings.KEY_FLOATING_BAR_ALPHA, Settings.FLOATING_ALPHA_DEFAULT),
+            default = Settings.FLOATING_ALPHA_DEFAULT,
+            format = { "$it%" }
+        ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_ALPHA, v) }
+        addSliderRow(group = group, title = "圆角大小",
+            summary = "胶囊圆角半径，0 为直角；上限为栏高一半",
+            tag = Settings.KEY_FLOATING_BAR_RADIUS,
+            min = Settings.FLOATING_RADIUS_MIN, max = Settings.FLOATING_RADIUS_MAX,
+            value = readLocalInt(Settings.KEY_FLOATING_BAR_RADIUS, Settings.FLOATING_RADIUS_DEFAULT),
+            default = Settings.FLOATING_RADIUS_DEFAULT,
+            format = { "${it}dp" }
+        ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
         content.addView(group)
         floatingOptionsGroup = group
     }

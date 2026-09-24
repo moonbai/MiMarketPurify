@@ -10,6 +10,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.ViewCompat
@@ -29,6 +30,11 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     private val switchEntries = mutableListOf<SwitchEntry>()
 
     private val navRows = mutableListOf<NavRow>()
+
+    private val sliderEntries = mutableListOf<SliderEntry>()
+
+    /** service 未连接期间的待写入整型值，连接后补写。 */
+    private val pendingIntWrites = mutableMapOf<String, Int>()
 
     protected val launcherAlias: ComponentName by lazy {
         ComponentName(this, "$packageName.LauncherAlias")
@@ -64,6 +70,13 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
                 }
                 pendingWrites.clear()
             }
+            if (service != null && pendingIntWrites.isNotEmpty()) {
+                val prefs = service?.getRemotePreferences(PREFS_GROUP)
+                pendingIntWrites.forEach { (k, v) ->
+                    prefs?.edit()?.putInt(k, v)?.apply()
+                }
+                pendingIntWrites.clear()
+            }
             refreshAll()
         }
     }
@@ -73,6 +86,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     protected fun refreshAll() {
         switchEntries.forEach { e -> e.sw.isChecked = readLocal(e.key, e.def) }
         navRows.forEach { n -> n.value.text = n.compute() }
+        sliderEntries.forEach { e -> e.sync(readLocalInt(e.key, e.def)) }
         onRefresh()
         updateGateState()
     }
@@ -213,6 +227,82 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         return sw
     }
 
+    /**
+     * 数值调节行（纯原生 SeekBar）：上排「标题 + 当前值」，下排滑杆。
+     * 只在**拖动结束**时落盘，避免 onProgressChanged 每像素打一次 binder 写。
+     */
+    protected fun addSliderRow(
+        group: LinearLayout,
+        title: String,
+        summary: String,
+        tag: String,
+        min: Int,
+        max: Int,
+        value: Int,
+        default: Int,
+        gated: Boolean = true,
+        format: (Int) -> String,
+        onChanged: (Int) -> Unit
+    ): SeekBar {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(Ui.ROW_PAD_H), dp(Ui.ROW_PAD_V), dp(Ui.ROW_PAD_H), dp(Ui.ROW_PAD_V))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        val topRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val textWrap = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                .also { it.marginEnd = dp(12) }
+        }
+        val titleView = rowTitle(title)
+        val summaryView = rowSummary(summary)
+        textWrap.addView(titleView)
+        textWrap.addView(summaryView)
+        val valueView = TextView(this).apply {
+            text = format(value)
+            textSize = Ui.CAPTION
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(Ui.ACCENT)
+        }
+        topRow.addView(textWrap)
+        topRow.addView(valueView)
+
+        val seek = SeekBar(this).apply {
+            this.tag = tag
+            this.max = max - min
+            progress = value - min
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                    valueView.text = format(min + progress)
+                }
+
+                override fun onStartTrackingTouch(sb: SeekBar?) {}
+
+                override fun onStopTrackingTouch(sb: SeekBar?) {
+                    val v = (sb?.progress ?: 0) + min
+                    if (v.coerceIn(min, max) != readLocalInt(tag, default)) onChanged(v)
+                }
+            })
+        }
+        row.addView(topRow)
+        row.addView(seek)
+        if (group.childCount > 0) {
+            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(Ui.ROW_GAP)
+        }
+        group.addView(row)
+
+        sliderEntries += SliderEntry(tag, default, seek, valueView, min, max, format)
+        if (gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
+        return seek
+    }
+
     protected fun addNavRow(
         group: LinearLayout,
         title: String,
@@ -261,6 +351,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
 
     protected open fun updateGateState() {
         val master = readLocal(Settings.KEY_MASTER, true)
+        sliderEntries.forEach { it.seek.isEnabled = master }
         gatedRows.forEach { r ->
             r.sw?.isEnabled = master
             r.row.isClickable = master
@@ -300,6 +391,23 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             ?.getString(Settings.KEY_TAB_KEEP, Settings.DEFAULT_TAB_KEEP)
             ?: Settings.DEFAULT_TAB_KEEP
         return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    }
+
+    protected fun readLocalInt(key: String, def: Int): Int =
+        service?.getRemotePreferences(PREFS_GROUP)?.getInt(key, def) ?: def
+
+    /** 写整型远程偏好；service 未连接时暂存，连接后补写。 */
+    protected fun writeRemoteInt(key: String, value: Int) {
+        val prefs = service?.getRemotePreferences(PREFS_GROUP)
+        if (prefs == null) {
+            pendingIntWrites[key] = value
+            return
+        }
+        runCatching {
+            prefs.edit()?.putInt(key, value)?.apply()
+        }.onFailure {
+            Toast.makeText(this, "保存失败：${it.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     protected fun writeRemoteString(key: String, value: String) {
@@ -348,6 +456,22 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     // ==================== 数据结构 ====================
 
     private data class SwitchEntry(val key: String, val def: Boolean, val sw: CompoundButton)
+
+    /** 滑块行登记项：service 重连或外部改动后据此刷新显示值。 */
+    private data class SliderEntry(
+        val key: String,
+        val def: Int,
+        val seek: SeekBar,
+        val valueView: TextView,
+        val min: Int,
+        val max: Int,
+        val format: (Int) -> String,
+    ) {
+        fun sync(v: Int) {
+            seek.progress = (v - min).coerceIn(0, max - min)
+            valueView.text = format(v)
+        }
+    }
 
     protected data class SwitchRow(
         val row: LinearLayout,

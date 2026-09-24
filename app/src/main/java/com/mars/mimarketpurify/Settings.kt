@@ -31,6 +31,22 @@ object Settings {
     const val KEY_FLOATING_BAR_BADGE = "floating_bar_badge"
     /** 子选项：悬浮底栏是否显示标签文字（关闭则纯图标） */
     const val KEY_FLOATING_BAR_LABEL = "floating_bar_label"
+    /** 子选项：选中项是否使用 iOS 风格液态高亮胶囊 */
+    const val KEY_FLOATING_BAR_LIQUID = "floating_bar_liquid"
+    /** 自定义：底栏背景不透明度（百分比整数，避免远程偏好跨版本 float 兼容问题） */
+    const val KEY_FLOATING_BAR_ALPHA = "floating_bar_alpha"
+    /** 自定义：底栏圆角半径（dp 整数） */
+    const val KEY_FLOATING_BAR_RADIUS = "floating_bar_radius"
+
+    /** 透明度可调区间（%）：低于 35 时胶囊几乎看不见，再低无意义 */
+    const val FLOATING_ALPHA_MIN = 35
+    const val FLOATING_ALPHA_MAX = 100
+    const val FLOATING_ALPHA_DEFAULT = 95
+
+    /** 圆角可调区间（dp）：0=直角，上限取胶囊高度一半 */
+    const val FLOATING_RADIUS_MIN = 0
+    const val FLOATING_RADIUS_MAX = 29
+    const val FLOATING_RADIUS_DEFAULT = 29
     const val DEFAULT_TAB_KEEP = "native_market_home,native_market_mine"
     val TAB_ITEMS: LinkedHashMap<String, String> = linkedMapOf(
         "native_market_home" to "首页",
@@ -127,7 +143,8 @@ object Settings {
                 val name = parser.getAttributeValue(null, "name")
                 if (name != null) {
                     when (parser.name) {
-                        "boolean" -> result[name] = parser.getAttributeValue(null, "value")
+                        "boolean", "int", "long", "float" ->
+                            result[name] = parser.getAttributeValue(null, "value")
                         "string" -> result[name] = parser.nextText()
                     }
                 }
@@ -169,6 +186,30 @@ object Settings {
         HookEnv.base.log(Log.WARN, TAG, "Settings.isEnabled($key): 远程+目标SP都不可用，默认 false")
         return false
     }
+
+    /**
+     * 读取整型配置（悬浮底栏的透明度、圆角等）。
+     * 与 [isEnabled] 同一套优先级：远程偏好 → 目标 app SP → 默认值。
+     */
+    fun getInt(key: String, def: Int): Int {
+        val remote = getRemotePrefs()
+        if (remote != null) {
+            return remote.getInt(key, def)
+        }
+        val raw = readFromTargetSp(key)
+        raw?.toIntOrNull()?.let { return it }
+        return def
+    }
+
+    /** 透明度百分比 → 0..255 alpha 通道值。 */
+    fun floatingBarAlphaPercent(): Int =
+        getInt(KEY_FLOATING_BAR_ALPHA, FLOATING_ALPHA_DEFAULT)
+            .coerceIn(FLOATING_ALPHA_MIN, FLOATING_ALPHA_MAX)
+
+    /** 圆角 dp 值（越界收敛）。 */
+    fun floatingBarRadiusDp(): Int =
+        getInt(KEY_FLOATING_BAR_RADIUS, FLOATING_RADIUS_DEFAULT)
+            .coerceIn(FLOATING_RADIUS_MIN, FLOATING_RADIUS_MAX)
 
     fun getKeptTabs(): Set<String> {
         val raw = getRemotePrefs()?.getString(KEY_TAB_KEEP, DEFAULT_TAB_KEEP)
