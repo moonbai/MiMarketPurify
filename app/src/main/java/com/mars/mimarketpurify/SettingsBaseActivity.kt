@@ -235,11 +235,11 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         group: LinearLayout,
         title: String,
         summary: String,
-        tag: String,
-        min: Int,
-        max: Int,
-        value: Int,
-        default: Int,
+        key: String,
+        minValue: Int,
+        maxValue: Int,
+        initialValue: Int,
+        defaultValue: Int,
         gated: Boolean = true,
         format: (Int) -> String,
         onChanged: (Int) -> Unit
@@ -274,20 +274,22 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         topRow.addView(textWrap)
         topRow.addView(valueView)
 
+        val span = maxValue - minValue
+        val startProgress = (initialValue - minValue).coerceIn(0, span)
         val seek = SeekBar(this).apply {
-            this.tag = tag
-            this.max = max - min
-            progress = value - min
+            tag = key
+            max = span
+            progress = startProgress
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                    valueView.text = format(min + progress)
+                    valueView.text = format(minValue + progress)
                 }
 
                 override fun onStartTrackingTouch(sb: SeekBar?) {}
 
                 override fun onStopTrackingTouch(sb: SeekBar?) {
-                    val v = (sb?.progress ?: 0) + min
-                    if (v.coerceIn(min, max) != readLocalInt(tag, default)) onChanged(v)
+                    val v = (sb?.progress ?: 0) + minValue
+                    if (v.coerceIn(minValue, maxValue) != readLocalInt(key, defaultValue)) onChanged(v)
                 }
             })
         }
@@ -298,7 +300,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         }
         group.addView(row)
 
-        sliderEntries += SliderEntry(tag, default, seek, valueView, min, max, format)
+        sliderEntries += SliderEntry(key, defaultValue, seek, valueView, minValue, maxValue, format)
         if (gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
         return seek
     }

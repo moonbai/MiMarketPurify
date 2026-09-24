@@ -111,11 +111,15 @@ class LiquidSelectionView(context: Context) : View(context) {
         val fr = right
         val movingRight = tr >= fr
         val distance = kotlin.math.abs(tr - fr) + kotlin.math.abs(tl - fl)
-        val duration = (BASE_DURATION_MS + distance * MS_PER_PX)
+        // 全链路 Float：Kotlin 不做隐式数值转换，Float 结果不能拿去 coerceIn(Long, Long)
+        val totalMs = (BASE_DURATION_MS + distance * MS_PER_PX)
             .coerceIn(MIN_DURATION_MS, MAX_DURATION_MS).toLong()
 
         animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            this.duration = duration
+            // 必须用独立名字 totalMs：在 apply 里写 `this.duration = duration`，
+            // 右侧 duration 会解析成 ValueAnimator.duration（隐式接收者成员优先于外层局部变量），
+            // 变成自赋值，距离插值就静默失效了
+            this.duration = totalMs
             // 前导边带过冲（果冻落位），尾随边缓出（产生飞行中的拉伸）
             val lead = OvershootInterpolator(OVERSHOOT_TENSION)
             val trail = DecelerateInterpolator(TRAIL_DECELERATE)
@@ -194,10 +198,10 @@ class LiquidSelectionView(context: Context) : View(context) {
     companion object {
         private val DEFAULT_COLOR = 0xFF0A84FF.toInt()
 
-        private const val BASE_DURATION_MS = 210L
+        private const val BASE_DURATION_MS = 210f
         private const val MS_PER_PX = 0.42f
-        private const val MIN_DURATION_MS = 210L
-        private const val MAX_DURATION_MS = 430L
+        private const val MIN_DURATION_MS = 210f
+        private const val MAX_DURATION_MS = 430f
 
         private const val OVERSHOOT_TENSION = 1.45f
         private const val TRAIL_DECELERATE = 1.6f

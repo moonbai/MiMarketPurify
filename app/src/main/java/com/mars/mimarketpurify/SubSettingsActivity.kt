@@ -203,18 +203,18 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) { on -> writeRemote(Settings.KEY_FLOATING_BAR_BADGE, on) }
         addSliderRow(group = group, title = "背景透明度",
             summary = "胶囊底色的不透明度，越低越通透",
-            tag = Settings.KEY_FLOATING_BAR_ALPHA,
-            min = Settings.FLOATING_ALPHA_MIN, max = Settings.FLOATING_ALPHA_MAX,
-            value = readLocalInt(Settings.KEY_FLOATING_BAR_ALPHA, Settings.FLOATING_ALPHA_DEFAULT),
-            default = Settings.FLOATING_ALPHA_DEFAULT,
+            key = Settings.KEY_FLOATING_BAR_ALPHA,
+            minValue = Settings.FLOATING_ALPHA_MIN, maxValue = Settings.FLOATING_ALPHA_MAX,
+            initialValue = readLocalInt(Settings.KEY_FLOATING_BAR_ALPHA, Settings.FLOATING_ALPHA_DEFAULT),
+            defaultValue = Settings.FLOATING_ALPHA_DEFAULT,
             format = { "$it%" }
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_ALPHA, v) }
         addSliderRow(group = group, title = "圆角大小",
             summary = "胶囊圆角半径，0 为直角；上限为栏高一半",
-            tag = Settings.KEY_FLOATING_BAR_RADIUS,
-            min = Settings.FLOATING_RADIUS_MIN, max = Settings.FLOATING_RADIUS_MAX,
-            value = readLocalInt(Settings.KEY_FLOATING_BAR_RADIUS, Settings.FLOATING_RADIUS_DEFAULT),
-            default = Settings.FLOATING_RADIUS_DEFAULT,
+            key = Settings.KEY_FLOATING_BAR_RADIUS,
+            minValue = Settings.FLOATING_RADIUS_MIN, maxValue = Settings.FLOATING_RADIUS_MAX,
+            initialValue = readLocalInt(Settings.KEY_FLOATING_BAR_RADIUS, Settings.FLOATING_RADIUS_DEFAULT),
+            defaultValue = Settings.FLOATING_RADIUS_DEFAULT,
             format = { "${it}dp" }
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
         content.addView(group)
