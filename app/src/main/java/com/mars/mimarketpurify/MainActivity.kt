@@ -326,9 +326,10 @@ class MainActivity : SettingsBaseActivity() {
             val hidden = Settings.TAB_ITEMS.size - readLocalTabs().size
             parts += if (hidden <= 0) "未隐藏" else "已隐藏 $hidden 个"
         }
-        if (readLocal(Settings.KEY_FLOATING_BAR, false)) parts += "悬浮已开"
+        // 悬浮底栏迁移到其他页面，移除悬浮状态展示
         return parts.joinToString(" · ")
     }
+    
 
     private fun moduleText(): String {
         val debug = readLocal(Settings.KEY_RANK_DEBUG, false)
