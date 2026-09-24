@@ -70,7 +70,8 @@ class FloatingBarHost private constructor(
     private val items = ArrayList<View>()
     private val iconViews = ArrayList<ImageView>()
     private val labelViews = ArrayList<TextView>()
-    private val badgeViews = ArrayList<View>()
+    private val badgeViews = ArrayList<TextView>()
+
 
     private val preDrawListener = ViewTreeObserver.OnPreDrawListener {
         sync()
