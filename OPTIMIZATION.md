@@ -221,3 +221,69 @@ HyperModifier 的 `MarketFloatingNavigation` 浮层是 **Compose + Miuix KMP** �
 - **仍未做 Gradle 编译**（本地无 Android SDK / JDK），装机前请在 Android Studio 编译。
 - 悬浮底栏依赖商店资源名与 TabView 公开方法名，漂移时 `attach()` 返回 null，
   重试超限后静默放弃，**不会**残留半截浮层。
+
+### 构建修复（CI 实测）
+首次装机编译（GitHub Actions `:app:compileDebugKotlin`）报 2 个错误，均为同一根因：
+```
+e: FloatingBarHost.kt:267:35 Unresolved reference 'text'.
+e: FloatingBarHost.kt:271:35 Unresolved reference 'text'.
+```
+- **根因**：`badgeViews` 声明为 `ArrayList<View>`，而赋值处用的是 `TextView` 专有的 `text` 属性；
+  `View` 上没有 `text`，Kotlin 无法解析该引用。
+- **修复**：集合类型收窄为 `ArrayList<TextView>`（入列元素本就是 `TextView`，无需强转）。
+- **同类排查**：`items`（`ArrayList<View>`）仅用于追加与 `clear()`，未访问子类属性，无同类问题；
+  本次编译除这 2 处外**零错误零警告**，其余改动均通过。
+
+---
+
+## 七、榜单页底栏回退 + 图标文字错位（装机反馈修复）
+
+### 症状
+开启悬浮底栏后进商店正常，**点「榜单」后恢复成原生底栏**；且底栏图标与文字未对齐。
+LSPosed 日志：挂载成功 3 次（50.481/50.494/50.495），**之后再无任何悬浮底栏日志**，
+全程零异常、零崩溃、无「已卸载」、无「重试超限」。
+
+### 根因：原生 View 引用被长期持有，商店重建底栏后压制错了对象
+`attach()` 时一次性 `findViewById` 解析出底栏容器等 View 并存为 `val`，此后从不重查。
+关键认知：**`visibility` 只是 View 对象上的一个字段，已脱离视图树的旧实例依然返回 `VISIBLE`**，
+所以 `shouldShow()` 检测不到"我盯的那个 View 已经不在屏幕上了"。
+
+进榜单时商店重建底栏 View 实例 → 我们继续把 `alpha=0` 压在那个"幽灵旧实例"上，
+新生成的底栏完全不受控 → 原生底栏重现，且**不产生任何异常**（与日志表现一致）。
+
+对照参考实现可确认这是移植时漏掉的防护：HyperModifier 的 `EarlyBottomBarSuppressor`
+每次都做 `currentBottomBar?.takeIf(View::isAttachedToWindow) ?: findBottomBar()`
+（缓存对象一旦脱离视图树就重新查找），我移植时省掉了这一层。
+
+### 修复
+1. **引用可替换**：底栏容器 / `tab_container` / `fragment_container` / 精简模式容器 /
+   手势占位 全部由 `val` 改 `var`；构造参数改名 `initXxx` 避免与属性同名的作用域歧义。
+2. **每帧刷新 + 换绑即作废本帧**：`refreshViewRefs()` 在引用不再 attached 时重新 `findViewById`，
+   并重置原始 alpha / 无障碍快照与 `suppressing`，让新实例下一帧被重新压制；
+   真的换过引用则本帧数据已过期，`return` 等下一帧干净重建。
+3. **切页强制重查**：部分版本榜单页会**另建一套底栏**，此时旧实例"仍挂在树上"，
+   只判 `isAttachedToWindow` 换不过来 → 在状态指纹变化（=切页）时 `force=true` 重查一次。
+   只在切页跑，不增加每帧开销。
+4. **判定必须带 attach 检查**：`shouldShow` 抽出为 `visibilityBlocker()`，
+   把「已脱离视图树」作为独立于「visibility != VISIBLE」的第一类状态。
+5. **还原去抖**：判定失败后连续 2 帧才真正还原原生底栏，避免切页瞬间某帧标签数为 0
+   就把原生底栏放回去造成抖动。
+6. **可诊断性**：阻塞原因与还原动作都经 `debugLog` 输出（暂停原因 / 连续帧数 /
+   实例已切换 / 已还原 / 恢复显示）。此前只在挂载与卸载时打日志，
+   导致这份日志**无法回答"为什么没了"**——属于我的埋点缺陷。
+7. **日志去重**：`tryAttach` 区分"新建"与"复用已有宿主"，消除重复的「悬浮底栏已挂载」。
+
+### 图标与文字错位
+1. **`FIT_CENTER` → `CENTER_INSIDE`**：`FIT_CENTER` 会把小图标**放大**填满 22dp，
+   商店各图标原始尺寸不同，放大后各 tab 视觉大小不一，即"没对齐"的观感；
+   `CENTER_INSIDE` 只缩不放，各图标保持在同一视觉基准。
+2. **图标容器 `MATCH_PARENT` → `WRAP_CONTENT` + 水平居中**：原先角标按 `TOP|END`
+   定位时被推到整列最右，与居中的图标错开；容器收窄贴住图标后角标自然落在图标右上角。
+3. **文字显式 `CENTER_HORIZONTAL`**：标题被 tab 宽度约束成父宽时 TextView 默认左对齐，
+   会与居中图标错开；补上 `gravity` 与 `layoutParams.gravity` 后每列几何一致。
+
+### 本次验证边界（重要）
+以上是基于日志与代码比对的**推断性根因**，修复本身未经设备实机验证。
+但修复后日志会直接给出答案：若榜单页仍回退，新日志会打印出具体阻塞原因
+（`底栏容器已脱离视图树` / `tab_container 不可见` / `精简模式底栏占用` / `标签数=N`），
+届时可据此精确定位，不再靠猜。

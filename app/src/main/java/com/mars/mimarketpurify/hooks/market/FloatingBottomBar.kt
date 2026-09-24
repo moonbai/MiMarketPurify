@@ -111,12 +111,14 @@ object FloatingBottomBar : BaseHook() {
 
     private fun tryAttach(activity: Activity): Boolean {
         if (activity.isFinishing || activity.isDestroyed || !enabled()) return false
+        // 先记录是否已存在，避免「复用已有宿主」也被记成一次新挂载（日志刷屏）
+        val existed = FloatingBarHost.get(activity) != null
         val host = runCatching { FloatingBarHost.attach(activity) }.getOrNull()
         if (host == null) {
             debugLog("attach 失败：未找到原生底栏 View，继续按帧重试")
             return false
         }
-        debugLog("悬浮底栏已挂载")
+        if (!existed) debugLog("悬浮底栏已挂载")
         return true
     }
 

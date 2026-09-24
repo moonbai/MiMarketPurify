@@ -46,12 +46,21 @@ import com.mars.mimarketpurify.Settings
 class FloatingBarHost private constructor(
     private val activity: Activity,
     private val overlayParent: ViewGroup,
-    private val originalBottomContainer: View,
-    private val basicModeContainer: View?,
-    private val nativeTabLayout: View,
-    private val contentView: View,
-    private val navigationBarPlaceholder: View?,
+    initBottomContainer: View,
+    initBasicModeContainer: View?,
+    initTabLayout: View,
+    initContent: View,
+    initNavPlaceholder: View?,
 ) {
+
+    // 商店切页（如进榜单）时会重建底栏 View 实例。这些引用必须可替换，
+    // 否则我们会一直压制那个已脱离视图树的旧实例，新底栏反而不受控。
+    // 构造参数刻意用 initXxx 命名，避免与属性同名造成作用域歧义。
+    private var originalBottomContainer: View = initBottomContainer
+    private var basicModeContainer: View? = initBasicModeContainer
+    private var nativeTabLayout: View = initTabLayout
+    private var contentView: View = initContent
+    private var navigationBarPlaceholder: View? = initNavPlaceholder
 
     private val resources = activity.resources
     private val density = resources.displayMetrics.density
@@ -67,11 +76,14 @@ class FloatingBarHost private constructor(
     /** 上一次同步时的底栏指纹（标签 tag / 选中项 / 可见性），用于跳过无变化帧。 */
     private var lastSignature: String = ""
 
+    /** 上一次判定「不可见」的原因，用于只在原因变化时打日志，避免刷屏。 */
+    private var lastBlocker: String? = null
+
     private val items = ArrayList<View>()
     private val iconViews = ArrayList<ImageView>()
     private val labelViews = ArrayList<TextView>()
+    // 角标是 TextView（要用到 text 属性），不能退化成 View，否则 badgeView.text 无法解析
     private val badgeViews = ArrayList<TextView>()
-
 
     private val preDrawListener = ViewTreeObserver.OnPreDrawListener {
         sync()
@@ -154,16 +166,20 @@ class FloatingBarHost private constructor(
             setOnClickListener { onItemClicked(index) }
         }
 
+        // 容器宽度取 wrap_content 并显式居中：这样角标(TOP|END)贴在图标右上角，
+        // 而不是被推到整列的最右侧，导致「图标居中、角标飘在外」的错位观感。
         val iconHolder = FrameLayout(activity).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(ICON_AREA_DP)
-            )
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(ICON_AREA_DP)
+            ).apply { gravity = Gravity.CENTER_HORIZONTAL }
         }
         val icon = ImageView(activity).apply {
             layoutParams = FrameLayout.LayoutParams(dp(ICON_DP), dp(ICON_DP)).apply {
                 gravity = Gravity.CENTER
             }
-            scaleType = ImageView.ScaleType.FIT_CENTER
+            // CENTER_INSIDE 而非 FIT_CENTER：FIT_CENTER 会把小图标放大，
+            // 商店各图标原始尺寸不同，放大后各 tab 视觉大小不一，看起来就是没对齐。
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
         }
         val badge = TextView(activity).apply {
             gravity = Gravity.CENTER
@@ -181,8 +197,8 @@ class FloatingBarHost private constructor(
                 FrameLayout.LayoutParams.WRAP_CONTENT, dp(15)
             ).apply {
                 gravity = Gravity.TOP or Gravity.END
-                topMargin = dp(2)
-                marginEnd = dp(10)
+                topMargin = dp(1)
+                marginEnd = dp(1)
             }
         }
         iconHolder.addView(icon)
@@ -193,7 +209,16 @@ class FloatingBarHost private constructor(
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
             includeFontPadding = false
-            setPadding(0, dp(1), 0, 0)
+            // 显式居中：标题被 tab 宽度约束时若不设 gravity，文本会左对齐，
+            // 与居中的图标就错开了。
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                topMargin = dp(1)
+            }
         }
 
         item.addView(iconHolder)
@@ -217,10 +242,65 @@ class FloatingBarHost private constructor(
      * 精简模式未启用、且标签数 > 1（少于两个标签没有底栏可言）。
      */
     private fun shouldShow(tabs: List<View>): Boolean =
-        originalBottomContainer.visibility == View.VISIBLE &&
-            nativeTabLayout.visibility == View.VISIBLE &&
-            basicModeContainer?.visibility != View.VISIBLE &&
-            tabs.size > 1
+        visibilityBlocker(tabs) == null
+
+    /**
+     * 返回「当前为何不能显示悬浮底栏」的具体原因，可显示时返回 null。
+     * 关键：**必须判 isAttachedToWindow**——已脱离视图树的旧 View 依然报告
+     * visibility==VISIBLE，只看 visibility 会误判为「可以继续压制」。
+     */
+    private fun visibilityBlocker(tabs: List<View>): String? = when {
+        !originalBottomContainer.isAttachedToWindow -> "底栏容器已脱离视图树"
+        originalBottomContainer.visibility != View.VISIBLE -> "底栏容器不可见"
+        !nativeTabLayout.isAttachedToWindow -> "tab_container 已脱离视图树"
+        nativeTabLayout.visibility != View.VISIBLE -> "tab_container 不可见"
+        basicModeContainer?.visibility == View.VISIBLE -> "精简模式底栏占用"
+        tabs.size <= 1 -> "标签数=${tabs.size}"
+        else -> null
+    }
+
+    /**
+     * 重新解析可能已被商店替换的原生 View 引用。
+     * 找到新实例时一并重置「原始值快照」，并把 suppressing 置回，
+     * 让新实例在下一帧被重新压制。
+     *
+     * @return 是否真的换掉了引用（换掉则本帧数据已过期，应作废重算）
+     */
+    private fun refreshViewRefs(force: Boolean = false): Boolean {
+        var rebound = false
+        // force=true 用于切页时机：部分版本榜单页会另建一套底栏，
+        // 此时旧实例「仍挂在树上」，只靠 isAttachedToWindow 判断换不过来。
+        if (force || !originalBottomContainer.isAttachedToWindow) {
+            NativeTabBar.bottomContainer(activity)
+                ?.takeIf { it !== originalBottomContainer && it.isAttachedToWindow }
+                ?.let {
+                    debugLog("底栏容器实例已切换，重新绑定并重设压制")
+                    originalBottomContainer = it
+                    originalBottomAlpha = it.alpha
+                    originalBottomA11y = it.importantForAccessibility
+                    suppressing = false
+                    rebound = true
+                }
+        }
+        if (force || !nativeTabLayout.isAttachedToWindow) {
+            NativeTabBar.tabContainer(activity)
+                ?.takeIf { it !== nativeTabLayout && it.isAttachedToWindow }
+                ?.let { nativeTabLayout = it; rebound = true }
+        }
+        if (!contentView.isAttachedToWindow) {
+            NativeTabBar.viewByResName(activity, "fragment_container")
+                ?.takeIf { it !== contentView && it.isAttachedToWindow }
+                ?.let {
+                    contentView = it
+                    originalContentBottomMargin = null
+                }
+        }
+        basicModeContainer?.takeIf { !it.isAttachedToWindow }?.let { basicModeContainer = null }
+        return rebound
+    }
+
+    /** 连续多少帧判定不可见才真正还原，避免切页瞬间的单帧空状态把原生底栏放回去。 */
+    private var invisibleFrames = 0
 
     /**
      * 每帧同步：从原生 TabView 读状态 → 回写浮层。
@@ -229,14 +309,35 @@ class FloatingBarHost private constructor(
     private fun sync() {
         if (disposed) return
         runCatching {
-            val tabs = tabViews()
-            val visible = shouldShow(tabs)
-            if (!visible) {
-                if (floatingBar.visibility != View.GONE) floatingBar.visibility = View.GONE
-                if (suppressing) restoreNativeChrome()
+            if (refreshViewRefs()) {
+                // 引用刚换过，本帧读到的还是旧树的数据，直接作废等下一帧
                 lastSignature = ""
                 return
             }
+            val tabs = tabViews()
+            val blocker = visibilityBlocker(tabs)
+            if (blocker != null) {
+                invisibleFrames++
+                if (blocker != lastBlocker) {
+                    debugLog("悬浮底栏暂停（$blocker），连续 $invisibleFrames 帧")
+                    lastBlocker = blocker
+                }
+                // 去抖：连续多帧不可见才还原原生底栏，避免切页瞬间抖动
+                if (invisibleFrames >= RESTORE_AFTER_FRAMES) {
+                    if (floatingBar.visibility != View.GONE) floatingBar.visibility = View.GONE
+                    if (suppressing) {
+                        restoreNativeChrome()
+                        debugLog("已还原原生底栏（$blocker）")
+                    }
+                    lastSignature = ""
+                }
+                return
+            }
+            if (lastBlocker != null) {
+                debugLog("恢复显示悬浮底栏（先前阻塞：$lastBlocker）")
+            }
+            lastBlocker = null
+            invisibleFrames = 0
 
             val selected = NativeTabBar.selectedIndexOf(activity).coerceIn(0, tabs.size - 1)
             val signature = buildSignature(tabs, selected)
@@ -247,6 +348,11 @@ class FloatingBarHost private constructor(
                 return
             }
             lastSignature = signature
+            // 切页时强制重查一次，抓住商店可能另建的那套底栏
+            if (refreshViewRefs(force = true)) {
+                lastSignature = ""
+                return
+            }
 
             if (floatingBar.childCount != tabs.size) {
                 floatingBar.removeAllViews()
@@ -441,6 +547,9 @@ class FloatingBarHost private constructor(
         private val BADGE_RED = 0xFFFF3B30.toInt()
 
         private val FALLBACK_LABELS = listOf("首页", "游戏", "榜单", "我的")
+
+        /** 连续 N 帧不可见才还原原生底栏 */
+        private const val RESTORE_AFTER_FRAMES = 2
 
         /** 每个 Activity 仅允许一个宿主实例。 */
         private val active = WeakHashMapOfActivity()
