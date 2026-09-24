@@ -134,19 +134,15 @@ class FloatingBarHost private constructor(
     private fun barRadiusPx(): Float =
         min(dpf(Settings.floatingBarRadiusDp().toFloat()), dpf(BAR_HEIGHT_DP / 2f))
 
-    /** 底色：深浅色各一套基色，透明度由用户设置（百分比）写入 alpha 通道。 */
+    /**
+     * 底色：深浅色各一套基色。
+     * **不透明**：半透明会透出底栏下方页面的白色背景，在 barRoot 底部形成一条
+     * 横贯的「白条」。这里写死 alpha=255，让整条 barRoot 颜色统一。
+     */
     private fun barFillPx(): Int {
         val custom = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, 0)
         val base = if (custom != 0) custom else if (isNight()) 0xFF1C1C1E.toInt() else 0xFFFFFFFF.toInt()
-        val a = (Settings.floatingBarAlphaPercent() * 255 / 100).coerceIn(0, 255)
-        return (a shl 24) or (base and 0x00FFFFFF)
-    }
-
-    /** 半透明胶囊底色 + 1px 描边；透明度与圆角均为用户可调参数。 */
-    private fun barBackground(): GradientDrawable = GradientDrawable().apply {
-        setColor(barFillPx())
-        cornerRadius = barRadiusPx()
-        setStroke(dp(1), if (isNight()) 0x33FFFFFF else 0x14000000)
+        return 0xFF000000.toInt() or (base and 0x00FFFFFF)
     }
 
     /** 圆角描边 provider：缓存复用，避免每切一次 new。 */
@@ -166,7 +162,8 @@ class FloatingBarHost private constructor(
         barBg.setStroke(dp(1), if (isNight()) 0x33FFFFFF else 0x14000000)
         barRoot.background = barBg
         barRoot.outlineProvider = roundedOutlineProvider
-        pill.configure(selectedColor(), min(barRadiusPx(), dpf(BAR_HEIGHT_DP / 2f)))
+        // 胶囊圆角按胶囊自身高度(44dp)收敛，而非 bar 高(58dp)，避免气泡过胖
+        pill.configure(selectedColor(), min(barRadiusPx(), dpf(PILL_HEIGHT_DP / 2f)))
         pill.visibility = if (liquidOn()) View.VISIBLE else View.GONE
     }
 
@@ -221,7 +218,7 @@ class FloatingBarHost private constructor(
             insets
         }
         // 尺寸变化（旋转 / 导航条收起）后重算液态胶囊几何
-        itemsRow.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+        itemsRow.addOnLayoutChangeListener { _, _, _, _, _, _, _, _ ->
             runCatching { updatePillSlots() }
         }
         return bar
