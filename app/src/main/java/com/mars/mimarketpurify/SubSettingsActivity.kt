@@ -273,7 +273,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) { on -> writeRemote(Settings.KEY_HIDE_UPDATE_ALL, on) }
 
         addSwitchRow(group = group, title = "更新界面自动升级开关",
-            summary = "隐藏更新界面自动升级开关",
+            summary = "隐藏更新界面自动升级开关，也包含设置界面开关",
             checked = readLocal(Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, true), tag = Settings.KEY_HIDE_AUTO_UPDATE_SWITCH
         ) { on -> writeRemote(Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, on) }
         content.addView(group)
