@@ -554,16 +554,16 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
 
     protected fun sectionTitle(text: String): TextView = TextView(this).apply {
         this.text = text
-        textSize = Ui.SECTION_TITLE
+        textSize = Ui.SECTION
         setTypeface(null, android.graphics.Typeface.BOLD)
-        setTextColor(Ui.TEXT_PRIMARY)
+        setTextColor(Ui.TEXT_SECTION)
     }
-
+    
     protected fun groupCard(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
-                setColor(Ui.CARD_BG)
+                setColor(Ui.CARD)
                 cornerRadius = dpf(16f)
             }
             layoutParams = LinearLayout.LayoutParams(
@@ -574,7 +574,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             }
         }
     }
-
+    
     // 扩展：drawable 着色
     private fun android.graphics.drawable.Drawable.tinted(on: Int, off: Int): android.graphics.drawable.Drawable {
         return mutate().apply {

@@ -61,11 +61,6 @@ object Settings {
     // 动效开关
     const val KEY_FLOAT_ANIM_SLIDER = "float_bar_anim_slider"    // 滑块跟随滑动动画
     const val KEY_FLOAT_ANIM_PRESS = "float_bar_anim_press"      // 点击按压缩放动效
-        //悬浮底栏色彩配置
-    const val KEY_FLOAT_BG_COLOR = "float_bg_color"
-    const val KEY_FLOAT_SELECT_BG_COLOR = "float_select_bg_color"
-    const val KEY_FLOAT_TEXT_NORMAL_COLOR = "float_text_normal_color"
-    const val KEY_FLOAT_TEXT_SELECT_COLOR = "float_text_select_color"
     
     /** 透明度可调区间（%）：低于 35 时胶囊几乎看不见，再低无意义 */
     const val FLOATING_ALPHA_MIN = 35

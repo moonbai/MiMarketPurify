@@ -301,7 +301,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             maxValue = Settings.FLOATING_RADIUS_MAX,
             initialValue = readLocalInt(Settings.KEY_FLOATING_BAR_RADIUS, Settings.FLOATING_RADIUS_DEFAULT),
             defaultValue = Settings.FLOATING_RADIUS_DEFAULT,
-            format = { "${v}dp" }
+            format = { "${it}dp" }
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
         content.addView(sizeGroup)
         addFooter("Tips：悬浮底栏参数实时生效，改动后重新进入商店页面即可预览效果。")
