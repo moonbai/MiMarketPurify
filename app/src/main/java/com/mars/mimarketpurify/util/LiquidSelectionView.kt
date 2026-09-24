@@ -117,7 +117,7 @@ class LiquidSelectionView(context: Context) : View(context) {
             this.duration = totalMs
             val lead = OvershootInterpolator(OVERSHOOT_TENSION)
             val trail = DecelerateInterpolator(TRAIL_DECELERATE)
-            addUpdateListener { va ->
+                        addUpdateListener { va ->
                 val t = va.animatedFraction
                 val eLead = lead.getInterpolation(t)
                 val eTrail = trail.getInterpolation(t)
@@ -135,8 +135,11 @@ class LiquidSelectionView(context: Context) : View(context) {
                 }
                 invalidate()
             }
-            // 到位后果冻弹跳：垂直方向轻微挤压再回弹
-            doOnEnd { startSquash() }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    startSquash()
+                }
+            })
             start()
         }
     }

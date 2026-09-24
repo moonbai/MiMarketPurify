@@ -33,6 +33,9 @@ object Settings {
     const val KEY_FLOATING_BAR_LABEL = "floating_bar_label"
     /** 子选项：选中项是否使用 iOS 风格液态高亮胶囊 */
     const val KEY_FLOATING_BAR_LIQUID = "floating_bar_liquid"
+    /** 子选项：选中项是否使用 3D 风格液态高亮胶囊 */
+    const val KEY_FLOATING_BAR_LIQUID_3D = "float_bar_liquid_3d"
+
     /** 自定义：底栏背景不透明度（百分比整数，避免远程偏好跨版本 float 兼容问题） */
     const val KEY_FLOATING_BAR_ALPHA = "floating_bar_alpha"
     /** 自定义：底栏圆角半径（dp 整数） */
