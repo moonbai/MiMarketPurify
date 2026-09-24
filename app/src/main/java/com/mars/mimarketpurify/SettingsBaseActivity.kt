@@ -374,7 +374,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             ).also { it.marginEnd = dp(12) }
         }
         val titleView = rowTitle(title)
-        val summaryView = rowSummary("点击选择颜色")
+        val summaryView = rowSummary("点击选择颜色（支持 #AARRGGBB 带透明度）")
         textWrap.addView(titleView)
         textWrap.addView(summaryView)
 
@@ -408,14 +408,21 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     }
 
     protected fun showColorPickerDialog(initColor: Int, onPick: (Int) -> Unit) {
-        val initHex = String.format("#%06X", 0xFFFFFF and initColor)
+        val initHex = String.format("#%08X", initColor)
         val presetColors = intArrayOf(
+            // 常用实色
             0xFF4080F0.toInt(),
             0xFF34A853.toInt(),
             0xFFFBBC05.toInt(),
             0xFFEA4335.toInt(),
             0xFF222222.toInt(),
-            0xFFFFFFFF.toInt()
+            0xFFFFFFFF.toInt(),
+            // 常用半透明底栏色（AARRGGBB，前两位是透明度）
+            0xE6FFFFFF.toInt(), // 白 90%
+            0xB3FFFFFF.toInt(), // 白 70%
+            0x80FFFFFF.toInt(), // 白 50%
+            0xE61C1C1E.toInt(), // 黑 90%
+            0xB31C1C1E.toInt(), // 黑 70%
         )
 
         val rootLayout = LinearLayout(this).apply {
@@ -424,7 +431,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         }
         val presetRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER
+            gravity = android.view.Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             )
@@ -449,9 +456,10 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         rootLayout.addView(presetRow)
 
         val inputField = android.widget.EditText(this).apply {
-            hint = "#RRGGBB"
+            hint = "#AARRGGBB 或 #RRGGBB（前两位 AA 为透明度）"
             setText(initHex)
             textSize = 16f
+            setSelection(initHex.length)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.topMargin = dp(16) }
@@ -464,12 +472,13 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             .setPositiveButton("确定") { _, _ ->
                 val raw = inputField.text.toString().trim()
                 runCatching {
+                    // Color.parseColor 原生支持 #RRGGBB 与 #AARRGGBB
                     val parsed = android.graphics.Color.parseColor(raw)
                     onPick(parsed)
                 }.onFailure {
                     android.widget.Toast.makeText(
                         this@SettingsBaseActivity,
-                        "颜色格式错误，请输入 #RRGGBB",
+                        "颜色格式错误，请输入 #RRGGBB 或 #AARRGGBB",
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -579,8 +588,6 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
                 else "已恢复桌面图标",
                 Toast.LENGTH_LONG
             ).show()
-        }.onFailure {
-            Toast.makeText(this, "操作失败：${it.message}", Toast.LENGTH_SHORT).show()
         }
     }
 

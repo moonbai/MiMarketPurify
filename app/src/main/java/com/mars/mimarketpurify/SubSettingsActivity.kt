@@ -72,7 +72,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
     }
 
     private fun buildAds() {
-        // addSectionHeader("广告净化", "拦截商店各处的广告与软件推荐")
         val group = groupCard()
         adFeatures.forEach { f ->
             addSwitchRow(group = group, title = f.title, summary = f.summary,
@@ -103,7 +102,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
     }
 
     private fun buildMine() {
-        // addSectionHeader("「我的」页精简", "清理「我的」页中不需要的板块与推荐")
         val group = groupCard()
         addSwitchRow(group = group, title = "应用推荐与推广",
             summary = "隐藏页面顶部推荐卡片与底部推广列表",
@@ -130,11 +128,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
             checked = readLocal(Settings.KEY_ORCHARD_SKIN, true), tag = Settings.KEY_ORCHARD_SKIN
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
 
-        // addSwitchRow(group = group, title = "升级卡片展开",
-        // summary = "升级卡片默认展开显示更多应用更新",
-        // checked = readLocal(Settings.KEY_CARD_EXPAND, true), tag = Settings.KEY_CARD_EXPAND
-        // ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
-
         addSwitchRow(group = group, title = "底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
             checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
@@ -144,18 +137,12 @@ class SubSettingsActivity : SettingsBaseActivity() {
     }
 
     private fun buildTabs() {
-        // addSectionHeader("底部标签栏", "用于控制底栏标签")
         val group = groupCard()
 
         addSwitchRow(group = group, title = "筛选底部标签",
             summary = "选择需要展示的底栏标签",
             checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
-
-        // addSwitchRow(group = group, title = "底栏「更新」入口",
-        // summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口",
-        // checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB
-        // ) { on -> writeRemote(Settings.KEY_UPDATE_TAB, on) }
 
         buildTabSelectBlock(group)
         content.addView(group)
@@ -164,7 +151,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
 
     /** 独立悬浮底栏高级配置页面 PAGE_TAB_BAR */
     private fun buildTabBarConfig() {
-        // addSectionHeader("悬浮底栏高级配置", "胶囊外观、色彩、透明度、尺寸、动效参数")
         val baseGroup = groupCard()
         addSwitchRow(
             group = baseGroup,
@@ -177,11 +163,11 @@ class SubSettingsActivity : SettingsBaseActivity() {
             writeRemote(Settings.KEY_FLOATING_BAR, checked)
             updateGateState()
         }
-        
+
         // ========== 全部子参数放进 floatingOptionsGroup ==========
         val options = groupCard()
-        floatingOptionsGroup = options   // 同时存字段，供 updateGateState 控制显隐
-        
+        floatingOptionsGroup = options
+
         addSwitchRow(
             group = baseGroup,
             title = "液态选中高亮动画",
@@ -211,7 +197,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
         }
         content.addView(baseGroup)
 
-        // addSectionHeader("色彩设置", "自定义胶囊与文字配色", parent = options)
         val colorGroup = groupCard()
         addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, Ui.BG)
         addColorPickerRow(colorGroup, "选中背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
@@ -219,17 +204,8 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, Ui.TEXT_SECONDARY)
         options.addView(colorGroup)
 
-        // addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度", parent = options)
+        // 尺寸：透明度已并入「底栏背景色」的 alpha 通道（#AARRGGBB），不再单独滑块
         val sizeGroup = groupCard()
-        addSliderRow(sizeGroup, title = "背景透明度",
-            summary = "胶囊底色不透明度，越低越通透",
-            key = Settings.KEY_FLOATING_BAR_ALPHA,
-            minValue = Settings.FLOATING_ALPHA_MIN,
-            maxValue = Settings.FLOATING_ALPHA_MAX,
-            initialValue = readLocalInt(Settings.KEY_FLOATING_BAR_ALPHA, Settings.FLOATING_ALPHA_DEFAULT),
-            defaultValue = Settings.FLOATING_ALPHA_DEFAULT,
-            format = { "$it%" }
-        ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_ALPHA, v) }
         addSliderRow(sizeGroup, title = "圆角大小",
             summary = "胶囊圆角半径，0直角，上限建议不超过栏高一半",
             key = Settings.KEY_FLOATING_BAR_RADIUS,
@@ -241,13 +217,11 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
         options.addView(sizeGroup)
 
-
-        // 把整个容器加到content
-        content.addView(options)       
-        addFooter("Tips：悬浮底栏参数实时生效，改动后重新进入商店页面即可预览效果。")
+        content.addView(options)
+        addFooter("Tips：底栏背景色可用 #AARRGGBB 自定义透明度（如 #CCFFFFFF），实时生效。")
     }
+
     private fun buildMisc() {
-        // addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
         val group = groupCard()
         addSwitchRow(group = group, title = "详情页「精选」",
             summary = "按文案匹配，仅在应用详情页生效",
@@ -261,17 +235,14 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "隐藏搜索结果底部的「搜索 xxx 的人也在看」",
             checked = readLocal(Settings.KEY_SEARCH_ALSO_VIEW, true), tag = Settings.KEY_SEARCH_ALSO_VIEW
         ) { on -> writeRemote(Settings.KEY_SEARCH_ALSO_VIEW, on) }
-
         addSwitchRow(group = group, title = "顶栏推广位",
             summary = "清理首页/榜单等页面顶部的云控推广子标签",
             checked = readLocal(Settings.KEY_SUB_TAB_FILTER, true), tag = Settings.KEY_SUB_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_SUB_TAB_FILTER, on) }
-
         addSwitchRow(group = group, title = "更新界面全部升级按钮",
             summary = "隐藏更新界面全部升级按钮",
             checked = readLocal(Settings.KEY_HIDE_UPDATE_ALL, true), tag = Settings.KEY_HIDE_UPDATE_ALL
         ) { on -> writeRemote(Settings.KEY_HIDE_UPDATE_ALL, on) }
-
         addSwitchRow(group = group, title = "更新界面自动升级开关",
             summary = "隐藏更新界面自动升级开关，也包含设置界面开关",
             checked = readLocal(Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, true), tag = Settings.KEY_HIDE_AUTO_UPDATE_SWITCH
@@ -311,7 +282,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
             setPadding(dp(12), 0, 0, 0)
         }
         block.addView(TextView(this).apply {
-            // text = "保留哪些标签（取消勾选 = 隐藏该标签）"
             textSize = Ui.ROW_SUMMARY; setTextColor(Ui.TEXT_SECONDARY)
             setPadding(dp(Ui.ROW_PAD_H), dp(4), dp(Ui.ROW_PAD_H), dp(2))
         })
@@ -347,7 +317,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
         tabSelectBlock?.visibility = if (filterOn) View.VISIBLE else View.GONE
         tabChecks.forEach { it.isEnabled = master && filterOn }
 
-        // 悬浮底栏子选项：仅在总开关与悬浮底栏主开关都开启时才显示
         val floatingOn = master && readLocal(Settings.KEY_FLOATING_BAR, false)
         floatingOptionsGroup?.visibility = if (floatingOn) View.VISIBLE else View.GONE
     }
