@@ -11,6 +11,7 @@ import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.Ui
 import com.mars.mimarketpurify.init.BaseHook
 import com.mars.mimarketpurify.util.getFieldValue
+import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 object TabStyleCustom : BaseHook() {
@@ -68,7 +69,7 @@ object TabStyleCustom : BaseHook() {
             ClassUtil.loadClass("com.miui.market.widget.TabLayout")
         }.getOrNull() ?: return
 
-        // 拦截setSelectedIndicatorColor，替换颜色 + 控制隐藏
+        // 拦截 setSelectedIndicatorColor，替换颜色 + 控制隐藏
         tabLayoutClz.methodFinder()
             .filterByName("setSelectedIndicatorColor")
             .filterByParamCount(1)
@@ -77,7 +78,8 @@ object TabStyleCustom : BaseHook() {
                 if (!enableMaster) return@hooked proceed()
 
                 val indicatorVisible = Settings.isEnabled(Settings.KEY_TAB_INDICATOR_VISIBLE, true)
-                val indicatorView = getFieldValue(thisObject, "mSelectedIndicator") as? android.view.View
+                val thiz = thisObject ?: return@hooked proceed()
+                val indicatorView = getFieldValue(thiz, "mSelectedIndicator") as? android.view.View
                 if (!indicatorVisible) {
                     indicatorView?.visibility = android.view.View.GONE
                     return@hooked proceed()
@@ -88,7 +90,7 @@ object TabStyleCustom : BaseHook() {
                 return@hooked proceed()
             }
 
-        // onLayout页面重绘时恢复状态，防止滑动/页面重建覆盖指示器
+        // onLayout 页面重绘时恢复状态，防止滑动/页面重建覆盖指示器
         tabLayoutClz.methodFinder()
             .filterByName("onLayout")
             .filterByParamCount(5)
@@ -97,7 +99,8 @@ object TabStyleCustom : BaseHook() {
                 if (!enableMaster) return@hooked proceed()
 
                 val indicatorVisible = Settings.isEnabled(Settings.KEY_TAB_INDICATOR_VISIBLE, true)
-                val indicatorView = getFieldValue(thisObject, "mSelectedIndicator") as? android.view.View
+                val thiz = thisObject ?: return@hooked proceed()
+                val indicatorView = getFieldValue(thiz, "mSelectedIndicator") as? android.view.View
                     ?: return@hooked proceed()
 
                 if (!indicatorVisible) {

@@ -169,9 +169,13 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         )
     }
 
-    protected fun addSectionHeader(title: String, subtitle: String) {
-        content.addView(sectionTitle(title))
-        content.addView(TextView(this).apply {
+    protected fun addSectionHeader(
+        title: String,
+        subtitle: String,
+        parent: LinearLayout = content
+    ) {
+        parent.addView(sectionTitle(title))
+        parent.addView(TextView(this).apply {
             text = subtitle
             textSize = Ui.MICRO
             setTextColor(Ui.TEXT_TERTIARY)
@@ -354,7 +358,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         if (gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
     }
 
-    // ===================== 新增：颜色选择行 =====================
+    // ===================== 颜色选择行 =====================
     protected fun addColorPickerRow(
         group: LinearLayout,
         title: String,
@@ -388,23 +392,19 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         row.tappable(this, R.drawable.bg_row_ripple)
         row.setOnClickListener {
             val current = readLocalInt(tag, defaultColor)
-            showColorPickerDialog(currentColor) { newColor ->
-                // 1. 写入持久化
-                saveLocal(Settings.KEY_BAR_HIGHLIGHT_COLOR, newColor)
-                // 2. 更新当前内存变量
-                currentColor = newColor
-                // 3. 刷新预览View，强制重绘
-                previewBar?.setBackgroundColor(newColor)
-                previewBar?.invalidate()
-                // 4. 如果是live数据，通知模块刷新（可选）
-                // notifyModuleReload()
+            showColorPickerDialog(current) { newColor ->
+                writeRemoteInt(tag, newColor)
+                previewBox.background = GradientDrawable().apply {
+                    setColor(newColor)
+                    cornerRadius = dpf(8f)
+                }
             }
         }
         if (group.childCount > 0) {
             (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(Ui.ROW_GAP)
         }
         group.addView(row)
-        if(gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
+        if (gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
     }
 
     protected fun showColorPickerDialog(initColor: Int, onPick: (Int) -> Unit) {
@@ -417,7 +417,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             0xFF222222.toInt(),
             0xFFFFFFFF.toInt()
         )
-    
+
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(8))
@@ -447,7 +447,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             presetRow.addView(box)
         }
         rootLayout.addView(presetRow)
-    
+
         val inputField = android.widget.EditText(this).apply {
             hint = "#RRGGBB"
             setText(initHex)
@@ -457,7 +457,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             ).also { it.topMargin = dp(16) }
         }
         rootLayout.addView(inputField)
-    
+
         val dialog = android.app.AlertDialog.Builder(this)
             .setTitle("选择颜色")
             .setView(rootLayout)
@@ -467,7 +467,11 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
                     val parsed = android.graphics.Color.parseColor(raw)
                     onPick(parsed)
                 }.onFailure {
-                    android.widget.Toast.makeText(this@SettingsBaseActivity, "颜色格式错误，请输入 #RRGGBB", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(
+                        this@SettingsBaseActivity,
+                        "颜色格式错误，请输入 #RRGGBB",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
             .setNegativeButton("取消", null)
@@ -475,7 +479,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         dialogRef = dialog
         dialog.show()
     }
-        
+
     protected open fun updateGateState() {
         val master = readLocal(Settings.KEY_MASTER, true)
         sliderEntries.forEach { it.seek.isEnabled = master }
@@ -580,7 +584,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         }
     }
 
-    // ==================== 工具辅助函数（原有项目依赖） ====================
+    // ==================== 工具辅助函数 ====================
     protected fun dp(value: Int): Int = resources.displayMetrics.density.times(value).toInt()
     protected fun dpf(value: Float): Float = resources.displayMetrics.density * value
 
@@ -605,7 +609,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         this.text = text
         textSize = Ui.ROW_SUMMARY
         setTextColor(Ui.TEXT_SECONDARY)
-        setPadding(0, dp(2),0,0)
+        setPadding(0, dp(2), 0, 0)
     }
 
     protected fun sectionTitle(text: String): TextView = TextView(this).apply {
@@ -614,7 +618,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         setTypeface(null, android.graphics.Typeface.BOLD)
         setTextColor(Ui.TEXT_SECTION)
     }
-    
+
     protected fun groupCard(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -630,7 +634,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             }
         }
     }
-    
+
     // 扩展：drawable 着色
     private fun android.graphics.drawable.Drawable.tinted(on: Int, off: Int): android.graphics.drawable.Drawable {
         return mutate().apply {
