@@ -308,3 +308,49 @@ LSPosed 日志：挂载成功 3 次（50.481/50.494/50.495），**之后再无�
   在非子类文件中是否被引用 —— 结果：宿主内仅剩自带的 `debugLog`，无其它泄漏，
   排除了"下轮再报第三个同类错"；
 - **跨包符号 ↔ import**：`HookEnv` / `TAG` / `Settings` / `NativeTabBar` 等逐个核对。
+
+---
+
+## 八、榜单/游戏页回退真因（日志确证，推翻第七章假设）
+
+### 决定性证据
+新埋点直接给出答案：
+```
+[悬浮底栏] 悬浮底栏暂停（标签数=1），连续 1 帧
+[悬浮底栏] 已还原原生底栏（标签数=1）
+```
+时间点严丝合缝：08:34:57.144/145 日志先出现 `PagerTabsInfo: parentTag=native_market_rank_game`
+与 `native_market_rank_software`（**榜单页正在 inflate 自己的子标签栏**），
+3ms 后 57.149 悬浮底栏就报「标签数=1」。
+用户侧表现也吻合：首页/我的正常，榜单/游戏回退。
+
+### 真因：资源名 `tab_container` 在整棵 Activity 树里不唯一
+`NativeTabBar.tabViews()` 每帧用 `activity.findViewById(R.id.tab_container)` 全局查找容器。
+榜单、游戏这类页面自建的**子标签栏复用了同一个资源名 `tab_container`**，
+一旦这些页面进入视图树，全局查找就会被子标签栏抢走 → 只读到 1 个子 View
+→ `tabs.size > 1` 判定失败 → 放回原生底栏。
+首页/我的页没有同名视图，因此不受影响。
+
+**第七章的「旧实例脱离视图树」假设是错的**——它确实防住了一类风险，但不是本次症状的成因。
+这也说明上一轮的 `isAttachedToWindow` 重查反而**放大了**本 bug：
+重查走的仍是全局 `findViewById`，只会更快被同名视图抢走。
+
+### 修复：查找一律限定在底栏容器子树内
+1. `NativeTabBar` 新增 `tabContainerIn(scope)`：只在 `tab_container_layout` 子树内 DFS 找
+   `tab_container`（含自身），带 `MAX_DEPTH=24` 防异常深布局；
+   新增 `tabViewsOf(container)` / `selectedIndexOf(container)`，**读取时不再重新查找容器**。
+2. `FloatingBarHost` 只读自己绑定的 `nativeTabLayout`
+   （`tabViews()` → `NativeTabBar.tabViewsOf(nativeTabLayout)`，
+   `selectedIndexOf(nativeTabLayout)`），彻底与全局查找解耦。
+3. `attach()` 与 `refreshViewRefs()` 改为**先在底栏容器子树内定位**，
+   仅在该路径失败时才退回全局查找，并用 `isInside(bottom, tabLayout)` 校验兜底结果
+   确实位于底栏子树内，否则放弃挂载（宁可不显示，也不压制错对象）。
+   `isInside` 定义在 `companion object` 内——唯一调用方 `attach()` 是 companion 成员，
+   放成实例方法会直接 Unresolved reference。
+4. 角标链路（`hideAllBadges`）同步走作用域版本，**顺带修好了角标可能被清到子标签栏的隐患**。
+5. 判定日志补上容器类名，下次一眼可辨读到了哪个容器。
+6. 删除未被调用的 `hideBadgesInScope`（本次新增的死代码）。
+
+### 第七章修复的保留价值
+`refreshViewRefs` / `visibilityBlocker` / 还原去抖仍然有意义：它们覆盖的是
+「商店真的重建底栏」这一类场景，只是本次症状另有其因。

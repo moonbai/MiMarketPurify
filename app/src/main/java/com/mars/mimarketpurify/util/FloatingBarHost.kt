@@ -249,7 +249,12 @@ class FloatingBarHost private constructor(
 
     // ═══════════════════════ 同步 ═══════════════════════
 
-    private fun tabViews(): List<View> = NativeTabBar.tabViews(activity)
+    /**
+     * 读取原生 TabView：**只用宿主绑定的那个容器**，不再按资源名全局查找。
+     * 榜单/游戏页会自建同名 `tab_container` 的子标签栏，全局查找会读到它
+     * （实测「标签数=1」），从而误判底栏不存在并把原生底栏放回去。
+     */
+    private fun tabViews(): List<View> = NativeTabBar.tabViewsOf(nativeTabLayout)
 
     /**
      * 悬浮底栏是否应当显示。
@@ -270,7 +275,7 @@ class FloatingBarHost private constructor(
         !nativeTabLayout.isAttachedToWindow -> "tab_container 已脱离视图树"
         nativeTabLayout.visibility != View.VISIBLE -> "tab_container 不可见"
         basicModeContainer?.visibility == View.VISIBLE -> "精简模式底栏占用"
-        tabs.size <= 1 -> "标签数=${tabs.size}"
+        tabs.size <= 1 -> "标签数=${tabs.size} container=${nativeTabLayout.javaClass.simpleName}/${tabs.size}"
         else -> null
     }
 
@@ -298,7 +303,9 @@ class FloatingBarHost private constructor(
                 }
         }
         if (force || !nativeTabLayout.isAttachedToWindow) {
-            NativeTabBar.tabContainer(activity)
+            // 同样只在底栏容器子树内找，找不到再退回全局（兼容结构不同的版本）
+            (NativeTabBar.tabContainerIn(originalBottomContainer)
+                ?: NativeTabBar.tabContainer(activity))
                 ?.takeIf { it !== nativeTabLayout && it.isAttachedToWindow }
                 ?.let { nativeTabLayout = it; rebound = true }
         }
@@ -354,7 +361,7 @@ class FloatingBarHost private constructor(
             lastBlocker = null
             invisibleFrames = 0
 
-            val selected = NativeTabBar.selectedIndexOf(activity).coerceIn(0, tabs.size - 1)
+            val selected = NativeTabBar.selectedIndexOf(nativeTabLayout).coerceIn(0, tabs.size - 1)
             val signature = buildSignature(tabs, selected)
             if (signature == lastSignature) {
                 // 状态未变：仅确保压制与可见性处于目标态
@@ -563,6 +570,20 @@ class FloatingBarHost private constructor(
 
         private val FALLBACK_LABELS = listOf("首页", "游戏", "榜单", "我的")
 
+        /**
+         * target 是否确实位于 scope 子树内。
+         * 定义在 companion 内，因为唯一调用方 attach() 是 companion 成员，
+         * 放成实例方法会直接 Unresolved reference。
+         */
+        private fun isInside(scope: View, target: View): Boolean {
+            var p: View? = target
+            while (p != null) {
+                if (p === scope) return true
+                p = p.parent as? View
+            }
+            return false
+        }
+
         /** 连续 N 帧不可见才还原原生底栏 */
         private const val RESTORE_AFTER_FRAMES = 2
 
@@ -578,7 +599,11 @@ class FloatingBarHost private constructor(
             active.get(activity)?.let { return it }
 
             val bottom = NativeTabBar.bottomContainer(activity) ?: return null
-            val tabLayout = NativeTabBar.tabContainer(activity) ?: return null
+            // 关键：先只在底栏容器子树内定位 tab_container。
+            // 直接全局 findViewById 会命中榜单/游戏页自建的同名子标签栏。
+            val tabLayout = NativeTabBar.tabContainerIn(bottom)
+                ?: NativeTabBar.tabContainer(activity) ?: return null
+            if (tabLayout !== bottom && !isInside(bottom, tabLayout)) return null
             val content = NativeTabBar.viewByResName(activity, "fragment_container") ?: return null
             val overlay = activity.findViewById<View>(android.R.id.content) as? ViewGroup ?: return null
 

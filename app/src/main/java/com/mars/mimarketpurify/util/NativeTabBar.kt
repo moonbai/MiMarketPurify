@@ -28,6 +28,9 @@ object NativeTabBar {
     /** 承载 TabView 的原生容器（其 `getTabViews()` 返回 TabView 列表）。 */
     private const val ID_TAB_CONTAINER = "tab_container"
 
+    /** 子树查找深度上限，防御异常深的布局。 */
+    private const val MAX_DEPTH = 24
+
     /** 底栏最外层容器（用于整体可见性 / alpha 判断）。 */
     private const val ID_TAB_CONTAINER_LAYOUT = "tab_container_layout"
 
@@ -51,30 +54,45 @@ object NativeTabBar {
     fun bottomContainer(activity: Activity): View? =
         resId(activity, ID_TAB_CONTAINER_LAYOUT).takeIf { it != 0 }?.let(activity::findViewById)
 
-    /** 承载 TabView 的容器（tab_container），找不到返回 null。 */
+    /**
+     * 承载 TabView 的容器（tab_container）。
+     *
+     * **注意：不能只按资源名在全 Activity 树里 findViewById。**
+     * 榜单 / 游戏这类页面会自建子标签栏，且复用了同名资源 id `tab_container`，
+     * 全局查找会被它抢走（实测表现为「标签数=1」）。
+     * 需要正确结果时请用 [tabContainerIn] 把查找限定在底栏容器子树内。
+     */
     fun tabContainer(activity: Activity): View? =
         resId(activity, ID_TAB_CONTAINER).takeIf { it != 0 }?.let(activity::findViewById)
+
+    /** 底栏容器内的 tab_container（含自身），只在该子树内查找，规避同名子标签栏。 */
+    fun tabContainerIn(scope: View): View? {
+        val id = runCatching {
+            scope.resources.getIdentifier(ID_TAB_CONTAINER, "id", scope.context.packageName)
+        }.getOrDefault(0)
+        if (id == 0) return null
+        if (scope.id == id) return scope
+        return findViewInside(scope, id, 0)
+    }
+
+    private fun findViewInside(view: View, targetId: Int, depth: Int): View? {
+        if (depth > MAX_DEPTH) return null
+        if (view.id == targetId) return view
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                val hit = findViewInside(view.getChildAt(i) ?: continue, targetId, depth + 1)
+                if (hit != null) return hit
+            }
+        }
+        return null
+    }
 
     /** 按资源名定位商店底栏相关 View，找不到返回 null（供悬浮底栏宿主复用）。 */
     fun viewByResName(activity: Activity, name: String): View? =
         resId(activity, name).takeIf { it != 0 }?.let(activity::findViewById)
 
-    /**
-     * 原生底栏当前选中项下标。
-     * 优先反射容器的 `getSelectedIndex()`，失败回退为按 selected 状态查找。
-     */
-    fun selectedIndexOf(activity: Activity): Int {
-        val container = tabContainer(activity) ?: return -1
-        (invoke(container, "getSelectedIndex") as? Int)?.let { return it }
-        return tabViews(activity).indexOfFirst { it.isSelected }
-    }
-
-    /**
-     * 枚举底栏的原生 TabView 列表。
-     * 优先反射容器的 `getTabViews()`；失败则回退为遍历容器直接子 View。
-     */
-    fun tabViews(activity: Activity): List<View> {
-        val container = tabContainer(activity) ?: return emptyList()
+    /** 读取指定容器的原生 TabView 列表（不重新查找容器，杜绝同名抢占）。 */
+    fun tabViewsOf(container: View): List<View> {
         (invoke(container, "getTabViews") as? List<*>)
             ?.filterIsInstance<View>()
             ?.takeIf { it.isNotEmpty() }
@@ -84,6 +102,28 @@ object NativeTabBar {
         } else {
             emptyList()
         }
+    }
+
+    /**
+     * 原生底栏当前选中项下标。
+     * 优先反射容器的 `getSelectedIndex()`，失败回退为按 selected 状态查找。
+     */
+    fun selectedIndexOf(container: View): Int {
+        (invoke(container, "getSelectedIndex") as? Int)?.let { return it }
+        return tabViewsOf(container).indexOfFirst { it.isSelected }
+    }
+
+    /**
+     * 枚举底栏的原生 TabView 列表。
+     * 先定位底栏外层容器 `tab_container_layout`，**在其子树内**找 tab_container，
+     * 找不到才退回全局查找（兼容资源结构不同的版本）。
+     */
+    fun tabViews(activity: Activity): List<View> {
+        bottomContainer(activity)?.let { scoped ->
+            tabContainerIn(scoped)?.let { return tabViewsOf(it) }
+        }
+        val container = tabContainer(activity) ?: return emptyList()
+        return tabViewsOf(container)
     }
 
     // ═══════════════ TabView 状态读取（反射，带缓存） ═══════════════
@@ -162,6 +202,7 @@ object NativeTabBar {
     /** 隐藏整个底栏所有 TabView 的角标，返回本次清除的角标 View 总数。 */
     fun hideAllBadges(activity: Activity): Int =
         tabViews(activity).sumOf { hideBadgesOn(it) }
+
 
     // ═══════════════ 反射底座 ═══════════════
 
