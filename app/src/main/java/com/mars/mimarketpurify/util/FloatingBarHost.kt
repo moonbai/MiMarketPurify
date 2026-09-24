@@ -166,7 +166,7 @@ class FloatingBarHost private constructor(
         barBg.setStroke(dp(1), if (isNight()) 0x33FFFFFF else 0x14000000)
         barRoot.background = barBg
         barRoot.outlineProvider = roundedOutlineProvider
-        pill.configure(selectedColor(), min(barRadiusPx(), dpf(PILL_HEIGHT_DP / 2f)))
+        pill.configure(selectedColor(), min(barRadiusPx(), dpf(BAR_HEIGHT_DP / 2f)))
         pill.visibility = if (liquidOn()) View.VISIBLE else View.GONE
     }
 

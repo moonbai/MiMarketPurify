@@ -23,6 +23,10 @@ import kotlin.math.min
  * 3. **玻璃质感**：竖向渐变（上深下浅）+ 顶部一道高光泽 + 外圈柔光晕，
  *    模拟薄玻璃的受光面。
  *
+ * **方案A（已实施）**：不再保留上下 padY 留白——胶囊直接填满整个宿主高度
+ * （pill 在宿主中是 MATCH_PARENT），彻底消除胶囊底部裸露宿主白背景造成的
+ * 「白色条」。圆角仍由宿主按栏高收敛传入。
+ *
  * 关于「真·背景折射」：iOS 液态玻璃会把胶囊背后的内容采样并扭曲，
  * 在 Android 上等价的 backdrop blur 只有 Compose 的 GraphicsLayer 或
  * 反射 uikit 私有 API 才拿得到，纯原生 View 无法采样兄弟视图之后的内容。
@@ -51,7 +55,6 @@ class LiquidSelectionView(context: Context) : View(context) {
 
     private var color: Int = DEFAULT_COLOR
     private var radiusPx: Float = 22f * density
-    private var padY: Float = 7f * density
 
     /** 当前绘制中的胶囊左右边界（px）。 */
     private var left = 0f
@@ -157,8 +160,9 @@ class LiquidSelectionView(context: Context) : View(context) {
         val h = height.toFloat()
         if (h <= 0f) return
 
-        val top = padY
-        val bottom = h - padY
+        // 方案A：胶囊填满整个高度（宿主为 MATCH_PARENT），不再上下留白
+        val top = 0f
+        val bottom = h
         if (bottom - top <= 0f) return
 
         rect.set(left, top, right, bottom)
