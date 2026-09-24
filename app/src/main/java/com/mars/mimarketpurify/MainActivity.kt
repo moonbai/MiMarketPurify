@@ -187,7 +187,7 @@ class MainActivity : SettingsBaseActivity() {
         statusTitle.text = "已激活 · ${service.frameworkName} ${service.frameworkVersion}"
         statusTitle.setTextColor(Ui.STATE_ACTIVE)
         statusBody.text = if (remote) {
-            "支持远程偏好：开关改动实时生效，一般无需重启应用商店。\n\n插件调试基于应用商店版本：4.126.s.2，其余版本不保证适用性"
+            "支持远程偏好：开关改动实时生效，一般无需重启应用商店。\n\n插件调试基于应用商店版本：4.126.xx，其余版本不保证适用性"
         } else {
             "当前框架不支持远程偏好，开关可能不会立即生效，建议重启一次应用商店。"
         }
@@ -244,9 +244,9 @@ class MainActivity : SettingsBaseActivity() {
         // ====== 新增：悬浮底栏高级配置入口 =====
         addNavRow(
             group = uiGroup,
-            title = "悬浮底栏高级配置",
-            summary = "胶囊色彩、透明度、手势滑动与动效参数",
-            value = { "外观自定义" }
+            title = "悬浮底栏配置",
+            summary = "底栏颜色、透明度、显示效果参数",
+            value = { tabbarText()  }
         ) { openPage(SubSettingsActivity.PAGE_TAB_BAR) }
 
         addNavRow(
@@ -330,7 +330,20 @@ class MainActivity : SettingsBaseActivity() {
         return parts.joinToString(" · ")
     }
     
+    
+    /**
+     * TabBar状态文本
+     * 悬浮底栏迁移至其他页面，展示当前底栏状态
+     */
+    private fun tabbarText(): String {
+        return if (readLocal(Settings.KEY_FLOATING_BAR, true)) {
+            "悬浮已开启"
+        } else {
+            "原版底栏"
+        }
+    }
 
+    
     private fun moduleText(): String {
         val debug = readLocal(Settings.KEY_RANK_DEBUG, false)
         return if (debug) "调试已开" else "2 项"

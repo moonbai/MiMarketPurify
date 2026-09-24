@@ -67,7 +67,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         PAGE_TABS -> "底部标签栏"
         PAGE_MISC -> "其他界面精简"
         PAGE_EXTRA -> "高级净化"
-        PAGE_TAB_BAR -> "悬浮底栏高级配置"
+        PAGE_TAB_BAR -> "悬浮底栏配置"
         else -> "模块功能"
     }
 
@@ -168,7 +168,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         val baseGroup = groupCard()
         addSwitchRow(
             group = baseGroup,
-            title = "启用悬浮胶囊底栏",
+            title = "启用悬浮底栏",
             summary = "在小米应用商店底部渲染胶囊风格Tab导航栏",
             checked = readLocal(Settings.KEY_FLOATING_BAR, false),
             tag = Settings.KEY_FLOATING_BAR,
@@ -177,6 +177,11 @@ class SubSettingsActivity : SettingsBaseActivity() {
             writeRemote(Settings.KEY_FLOATING_BAR, checked)
             updateGateState()
         }
+        
+        // ========== 全部子参数放进 floatingOptionsGroup ==========
+        val options = groupCard()
+        floatingOptionsGroup = options   // 同时存字段，供 updateGateState 控制显隐
+        
         addSwitchRow(
             group = baseGroup,
             title = "液态选中高亮动画",
@@ -206,16 +211,12 @@ class SubSettingsActivity : SettingsBaseActivity() {
         }
         content.addView(baseGroup)
 
-        // ========== 全部子参数放进 floatingOptionsGroup ==========
-        val options = groupCard()
-        floatingOptionsGroup = options   // 同时存字段，供 updateGateState 控制显隐
-
         // addSectionHeader("色彩设置", "自定义胶囊与文字配色", parent = options)
         val colorGroup = groupCard()
         addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, Ui.BG)
-        addColorPickerRow(colorGroup, "选中胶囊背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
-        addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, Ui.TEXT_SECONDARY)
+        addColorPickerRow(colorGroup, "选中背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
         addColorPickerRow(colorGroup, "选中文字/图标高亮色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFFFFFFFF.toInt())
+        addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, Ui.TEXT_SECONDARY)
         options.addView(colorGroup)
 
         // addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度", parent = options)
@@ -240,17 +241,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
         options.addView(sizeGroup)
 
-        // 底部提示也放到组内
-        val tipText = TextView(this).apply {
-            text = "Tips：悬浮底栏参数实时生效，改动后重新进入商店页面即可预览效果。"
-            textSize = Ui.MICRO
-            setTextColor(Ui.TEXT_TERTIARY)
-            setPadding(dp(4), dp(2), dp(4), dp(16))
-        }
-        options.addView(tipText)
 
         // 把整个容器加到content
-        content.addView(options)
+        content.addView(options)       
+        addFooter("Tips：悬浮底栏参数实时生效，改动后重新进入商店页面即可预览效果。")
     }
     private fun buildMisc() {
         // addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")

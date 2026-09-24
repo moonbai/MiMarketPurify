@@ -65,7 +65,7 @@ object Settings {
     /** 透明度可调区间（%）：低于 35 时胶囊几乎看不见，再低无意义 */
     const val FLOATING_ALPHA_MIN = 35
     const val FLOATING_ALPHA_MAX = 100
-    const val FLOATING_ALPHA_DEFAULT = 95
+    const val FLOATING_ALPHA_DEFAULT = 75
     
     //===== 原生Tab栏样式自定义 =====
     const val KEY_TAB_SELECT_COLOR = "tab_select_color"

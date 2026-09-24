@@ -218,7 +218,7 @@ class FloatingBarHost private constructor(
             insets
         }
         // 尺寸变化（旋转 / 导航条收起）后重算液态胶囊几何
-        itemsRow.addOnLayoutChangeListener { _, _, _, _, _, _, _, _ ->
+        itemsRow.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             runCatching { updatePillSlots() }
         }
         return bar
