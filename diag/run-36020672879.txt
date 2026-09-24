@@ -1,0 +1,882 @@
+=== CI diagnostics ===
+generated at : 2026-09-24T15:31:02Z
+workflow run : 36020672879 attempt 1
+head sha     : 01c93ad6efea7c25d14383f1313c820fb22c16eb
+build outcome: failure
+
+=== toolchain versions ===
+openjdk version "21.0.12.1" 2026-08-18 LTS
+OpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)
+-- gradlew --version --
+
+------------------------------------------------------------
+Gradle 9.4.0
+------------------------------------------------------------
+
+Build time:    2026-03-04 10:36:00 UTC
+Revision:      b631911858264c0b6e4d6603d677ff5218766cee
+
+Kotlin:        2.3.0
+Groovy:        4.0.29
+Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
+Launcher JVM:  21.0.12.1 (Eclipse Adoptium 21.0.12.1+1-LTS)
+Daemon JVM:    Compatible with Java 21, any vendor, nativeImageCapable=false (from gradle/gradle-daemon-jvm.properties)
+OS:            Linux 6.17.0-1022-azure amd64
+
+
+=== produced apk / aab ===
+
+=== app/build/outputs tree ===
+app/build/outputs
+app/build/outputs/logs
+app/build/outputs/logs/manifest-merger-debug-report.txt
+
+=== kotlin compile error lines (e:) ===
+37:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:77:41 Unresolved reference 'release'.
+38:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:94:40 Unresolved reference 'get'.
+39:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:99:33 Unresolved reference 'release'.
+40:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:109:29 Unresolved reference 'get'.
+41:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:115:39 Unresolved reference 'get'.
+42:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:116:20 Cannot infer type for this parameter. Specify it explicitly.
+43:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:116:50 Unresolved reference 'attach'.
+44:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:95:64 Unresolved reference 'BAR_HEIGHT_DP'.
+45:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:125:64 Unresolved reference 'PILL_HEIGHT_DP'.
+46:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:146:58 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
+47:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:147:34 Unresolved reference 'ev'.
+48:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:148:34 Unresolved reference 'ev'.
+49:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:149:64 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+50:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:150:49 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/text/compareTo' in 'compareTo'.
+51:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:154:17 Missing return statement.
+52:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:155:17 Syntax error: Expecting member declaration.
+53:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:155:24 Syntax error: Expecting member declaration.
+54:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:9 Syntax error: Expecting a top level declaration.
+55:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:10 Syntax error: Expecting a top level declaration.
+56:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:11 Syntax error: Expecting a top level declaration.
+57:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:17 Syntax error: Expecting a top level declaration.
+58:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:17 Function declaration must have a name.
+59:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:158:13 Unresolved reference 'background'.
+60:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:158:26 Unresolved reference 'barBg'.
+61:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:159:13 Unresolved reference 'elevation'.
+62:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:159:25 Unresolved reference 'dpf'.
+63:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:160:13 Unresolved reference 'outlineProvider'.
+64:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:160:31 Unresolved reference 'roundedOutlineProvider'.
+65:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:161:13 Unresolved reference 'clipToOutline'.
+66:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:162:13 Unresolved reference 'visibility'.
+67:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:164:9 Syntax error: Expecting a top level declaration.
+68:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:164:12 Syntax error: Expecting a top level declaration.
+69:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:164:13 Syntax error: Expecting a top level declaration.
+70:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:164:20 Syntax error: Expecting a top level declaration.
+71:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:165:13 Syntax error: Expecting a top level declaration.
+72:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:165:17 Syntax error: Expecting a top level declaration.
+73:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:166:13 Syntax error: Expecting a top level declaration.
+74:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:166:24 Syntax error: Expecting a top level declaration.
+75:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:166:25 Syntax error: Expecting a top level declaration.
+76:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:166:37 Syntax error: Expecting a top level declaration.
+77:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:17 Syntax error: Expecting a top level declaration.
+78:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:28 Syntax error: Expecting a top level declaration.
+79:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:29 Syntax error: Expecting a top level declaration.
+80:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:41 Syntax error: Expecting a top level declaration.
+81:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:42 Syntax error: Expecting a top level declaration.
+82:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:54 Syntax error: Expecting a top level declaration.
+83:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:56 Syntax error: Expecting a top level declaration.
+84:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:67 Syntax error: Expecting a top level declaration.
+85:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:68 Syntax error: Expecting a top level declaration.
+86:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:80 Syntax error: Expecting a top level declaration.
+87:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:81 Syntax error: Expecting a top level declaration.
+88:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:168:13 Syntax error: Expecting a top level declaration.
+89:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:169:9 Syntax error: Expecting a top level declaration.
+90:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:9 Syntax error: Expecting a top level declaration.
+91:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:12 Syntax error: Expecting a top level declaration.
+92:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:13 Syntax error: Expecting a top level declaration.
+93:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:20 Syntax error: Expecting a top level declaration.
+94:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:21 Syntax error: Expecting a top level declaration.
+95:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:29 Syntax error: Expecting a top level declaration.
+96:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:9 Syntax error: Expecting a top level declaration.
+97:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:12 Syntax error: Expecting a top level declaration.
+98:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:13 Syntax error: Expecting a top level declaration.
+99:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:32 Syntax error: Expecting a top level declaration.
+100:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:32 Function declaration must have a name.
+101:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:34 Unresolved reference '_'.
+102:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:35 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
+103:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:174:19 Unresolved reference 'ev'.
+104:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:176:34 Unresolved reference 'ev'.
+105:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:177:34 Unresolved reference 'ev'.
+106:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:183:30 Unresolved reference 'ev'.
+107:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:184:30 Unresolved reference 'ev'.
+108:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:186:45 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+109:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:186:47 Unresolved reference 'dp'.
+110:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:187:45 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/text/compareTo' in 'compareTo'.
+111:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:189:25 Unresolved reference 'pill'.
+112:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:192:25 Unresolved reference 'pill'.
+113:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:199:34 Unresolved reference 'ev'.
+114:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:200:41 Unresolved reference 'items'.
+115:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:200:61 Unresolved reference 'bar'.
+116:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:200:73 Unresolved reference 'items'.
+117:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:203:32 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+118:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:203:48 Unresolved reference 'lastSelected'.
+119:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:203:63 Unresolved reference 'items'.
+120:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:204:47 Unresolved reference 'lastSelected'.
+121:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:205:32 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+122:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:205:47 Unresolved reference 'lastSelected'.
+123:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:206:47 Unresolved reference 'lastSelected'.
+124:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:208:33 Unresolved reference 'pill'.
+125:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:208:45 Unresolved reference 'lastSelected'.
+126:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:212:37 Unresolved reference 'bar'.
+127:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:212:49 Unresolved reference 'items'.
+128:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:213:36 Unresolved reference 'ev'.
+129:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:213:70 Unresolved reference 'items'.
+130:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:221:37 Unresolved reference 'pill'.
+131:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:221:49 Unresolved reference 'lastSelected'.
+132:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:232:13 Unresolved reference 'dp'.
+133:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:232:16 Unresolved reference 'BAR_HEIGHT_DP'.
+134:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:235:27 Unresolved reference 'dp'.
+135:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:235:30 Unresolved reference 'BAR_MARGIN_DP'.
+136:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:236:25 Unresolved reference 'dp'.
+137:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:236:28 Unresolved reference 'BAR_MARGIN_DP'.
+138:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:237:28 Unresolved reference 'dp'.
+139:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:237:31 Unresolved reference 'BAR_BOTTOM_DP'.
+140:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:9 Syntax error: Expecting a top level declaration.
+141:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:22 Syntax error: Expecting a top level declaration.
+142:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:23 Syntax error: Expecting a top level declaration.
+143:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:30 Syntax error: Expecting a top level declaration.
+144:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:31 Syntax error: Expecting a top level declaration.
+145:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:34 Syntax error: Expecting a top level declaration.
+146:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:36 Syntax error: Expecting a top level declaration.
+147:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:42 Syntax error: Expecting a top level declaration.
+148:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:9 Syntax error: Expecting a top level declaration.
+149:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:19 Syntax error: Expecting a top level declaration.
+150:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:20 Syntax error: Expecting a top level declaration.
+151:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:50 Syntax error: Expecting a top level declaration.
+152:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:51 Syntax error: Expecting a top level declaration.
+153:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:54 Syntax error: Expecting a top level declaration.
+154:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:56 Syntax error: Expecting a top level declaration.
+155:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:56 Function declaration must have a name.
+156:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:58 Unresolved reference 'v'.
+grep: write error: Broken pipe
+
+=== gradle 'What went wrong' block ===
+
+=== gradle '* Exception is:' block ===
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:135)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:288)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:133)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:121)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.DefaultNodeExecutor.executeLocalTaskNode(DefaultNodeExecutor.java:55)
+	at org.gradle.execution.plan.DefaultNodeExecutor.execute(DefaultNodeExecutor.java:34)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:355)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:343)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:289)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+	at org.gradle.internal.Factories$1.create(Factories.java:30)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withoutLocks$2(DefaultWorkerLeaseService.java:350)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:348)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:332)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:337)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:267)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:244)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:227)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:210)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:176)
+
+=== gradle 'Build failed' / 'FAILURE' block ===
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:135)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:288)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:133)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:121)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.DefaultNodeExecutor.executeLocalTaskNode(DefaultNodeExecutor.java:55)
+	at org.gradle.execution.plan.DefaultNodeExecutor.execute(DefaultNodeExecutor.java:34)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:355)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:343)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:289)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+	at org.gradle.internal.Factories$1.create(Factories.java:30)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withoutLocks$2(DefaultWorkerLeaseService.java:350)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:348)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:332)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:337)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+
+=== gradle-build.log tail (1000) ===
+Starting a Gradle Daemon (subsequent builds will be faster)
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDebugBuildConfig
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:processDebugNavigationResources
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:javaPreCompileDebug
+> Task :app:mergeDebugAssets
+> Task :app:compressDebugAssets
+> Task :app:desugarDebugFileDependencies
+> Task :app:mapDebugSourceSetPaths
+> Task :app:checkDebugAarMetadata
+> Task :app:compileDebugNavigationResources
+> Task :app:parseDebugLocalResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:generateDebugRFile
+> Task :app:mergeDebugResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:checkDebugDuplicateClasses
+> Task :app:mergeDebugJniLibFolders
+> Task :app:processDebugManifestForPackage
+> Task :app:mergeLibDexDebug
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:processDebugResources
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:mergeExtDexDebug
+
+> Task :app:compileDebugKotlin
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:77:41 Unresolved reference 'release'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:94:40 Unresolved reference 'get'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:99:33 Unresolved reference 'release'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:109:29 Unresolved reference 'get'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:115:39 Unresolved reference 'get'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:116:20 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/hooks/market/FloatingBottomBar.kt:116:50 Unresolved reference 'attach'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:95:64 Unresolved reference 'BAR_HEIGHT_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:125:64 Unresolved reference 'PILL_HEIGHT_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:146:58 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:147:34 Unresolved reference 'ev'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:148:34 Unresolved reference 'ev'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:149:64 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:150:49 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/text/compareTo' in 'compareTo'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:154:17 Missing return statement.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:155:17 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:155:24 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:9 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:10 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:11 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:17 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:157:17 Function declaration must have a name.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:158:13 Unresolved reference 'background'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:158:26 Unresolved reference 'barBg'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:159:13 Unresolved reference 'elevation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:159:25 Unresolved reference 'dpf'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:160:13 Unresolved reference 'outlineProvider'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:160:31 Unresolved reference 'roundedOutlineProvider'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:161:13 Unresolved reference 'clipToOutline'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:162:13 Unresolved reference 'visibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:164:9 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:164:12 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:164:13 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:164:20 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:165:13 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:165:17 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:166:13 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:166:24 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:166:25 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:166:37 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:17 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:28 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:29 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:41 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:42 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:54 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:56 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:67 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:68 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:80 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:167:81 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:168:13 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:169:9 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:9 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:12 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:13 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:20 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:21 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:170:29 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:9 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:12 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:13 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:32 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:32 Function declaration must have a name.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:34 Unresolved reference '_'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:173:35 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:174:19 Unresolved reference 'ev'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:176:34 Unresolved reference 'ev'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:177:34 Unresolved reference 'ev'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:183:30 Unresolved reference 'ev'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:184:30 Unresolved reference 'ev'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:186:45 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:186:47 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:187:45 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/text/compareTo' in 'compareTo'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:189:25 Unresolved reference 'pill'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:192:25 Unresolved reference 'pill'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:199:34 Unresolved reference 'ev'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:200:41 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:200:61 Unresolved reference 'bar'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:200:73 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:203:32 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:203:48 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:203:63 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:204:47 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:205:32 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:205:47 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:206:47 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:208:33 Unresolved reference 'pill'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:208:45 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:212:37 Unresolved reference 'bar'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:212:49 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:213:36 Unresolved reference 'ev'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:213:70 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:221:37 Unresolved reference 'pill'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:221:49 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:232:13 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:232:16 Unresolved reference 'BAR_HEIGHT_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:235:27 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:235:30 Unresolved reference 'BAR_MARGIN_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:236:25 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:236:28 Unresolved reference 'BAR_MARGIN_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:237:28 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:237:31 Unresolved reference 'BAR_BOTTOM_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:9 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:22 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:23 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:30 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:31 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:34 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:36 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:239:42 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:9 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:19 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:20 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:50 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:51 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:54 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:56 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:56 Function declaration must have a name.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:58 Unresolved reference 'v'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:241:59 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:242:23 Unresolved reference 'insets'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:243:14 Unresolved reference 'v'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:244:30 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:244:33 Unresolved reference 'BAR_BOTTOM_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:247:21 Unresolved reference 'v'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:250:13 Unresolved reference 'insets'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:252:9 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:252:17 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:252:18 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:252:44 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:252:44 Function declaration must have a name.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:252:46 Unresolved reference '_'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:252:47 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:255:9 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:255:16 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:256:5 Syntax error: Expecting a top level declaration.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:259:33 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:268:38 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:270:57 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:270:60 Unresolved reference 'ICON_AREA_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:273:30 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:274:53 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:274:56 Unresolved reference 'ICON_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:274:66 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:274:69 Unresolved reference 'ICON_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:274:79 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:274:79 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> T.apply(block: T.() -> Unit): T
+    [R|Contract description]
+     <
+        CallsInPlace(block, EXACTLY_ONCE)
+    >
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:274:85 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:275:17 Unresolved reference 'gravity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:279:30 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:281:24 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:282:24 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:282:34 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:287:26 Unresolved reference 'BADGE_RED'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:288:32 Unresolved reference 'dpf'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:292:56 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:295:29 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:296:29 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:302:30 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:313:29 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:320:9 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:321:9 Unresolved reference 'iconViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:322:9 Unresolved reference 'labelViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:323:9 Unresolved reference 'badgeViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:329:66 Unresolved reference 'nativeTabLayout'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:332:10 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:333:9 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:334:10 Unresolved reference 'nativeTabLayout'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:335:9 Unresolved reference 'nativeTabLayout'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:336:9 Unresolved reference 'basicModeContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:337:57 Unresolved reference 'nativeTabLayout'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:337:73 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:337:73 'val <T : Any> KClass<T>.javaClass: Class<KClass<T>>' is deprecated. Use 'java' property to get Java class corresponding to this Kotlin class or cast this instance to Any if you really want to get the runtime Java class of this implementation of KClass.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:343:23 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:344:42 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:345:35 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:347:21 Unresolved reference 'debugLog'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:348:21 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:349:21 Unresolved reference 'originalBottomAlpha'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:350:21 Unresolved reference 'originalBottomA11y'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:351:21 Unresolved reference 'suppressing'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:355:23 Unresolved reference 'nativeTabLayout'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:356:42 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:357:46 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:358:35 Unresolved reference 'nativeTabLayout'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:359:25 Unresolved reference 'nativeTabLayout'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:361:14 Unresolved reference 'contentView'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:362:40 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:363:35 Unresolved reference 'contentView'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:365:21 Unresolved reference 'contentView'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:366:21 Unresolved reference 'originalContentBottomMargin'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:369:9 Unresolved reference 'basicModeContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:369:29 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:369:36 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:369:42 Unresolved reference 'isAttachedToWindow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:369:64 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:369:64 Not enough information to infer type argument for 'T'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:369:64 Not enough information to infer type argument for 'R'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:369:68 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:369:70 Unresolved reference 'basicModeContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:376:13 Unresolved reference 'disposed'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:379:17 Unresolved reference 'lastSignature'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:386:32 Unresolved reference 'lastBlocker'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:387:21 Unresolved reference 'debugLog'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:388:21 Unresolved reference 'lastBlocker'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:390:40 Unresolved reference 'RESTORE_AFTER_FRAMES'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:391:25 Unresolved reference 'barRoot'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:391:58 Unresolved reference 'barRoot'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:392:25 Unresolved reference 'suppressing'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:394:25 Unresolved reference 'debugLog'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:396:21 Unresolved reference 'lastSignature'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:400:17 Unresolved reference 'lastBlocker'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:401:17 Unresolved reference 'debugLog'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:401:42 Unresolved reference 'lastBlocker'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:403:13 Unresolved reference 'lastBlocker'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:406:57 Unresolved reference 'nativeTabLayout'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:407:36 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:409:30 Unresolved reference 'lastSignature'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:410:21 Unresolved reference 'barRoot'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:410:57 Unresolved reference 'barRoot'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:414:13 Unresolved reference 'lastSignature'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:417:17 Unresolved reference 'lastSignature'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:421:27 Unresolved reference 'itemsRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:424:17 Unresolved reference 'itemsRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:425:17 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:425:32 Unresolved reference 'iconViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:425:51 Unresolved reference 'labelViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:425:71 Unresolved reference 'badgeViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:426:37 Unresolved reference 'itemsRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:429:17 Unresolved reference 'refreshBarStyle'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:434:58 Unresolved reference 'FALLBACK_LABELS'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:435:17 Unresolved reference 'labelViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:435:42 Unresolved reference 'text'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:438:33 Unresolved reference 'badgeViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:443:35 Unresolved reference 'text'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:444:35 Unresolved reference 'visibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:447:35 Unresolved reference 'text'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:448:35 Unresolved reference 'visibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:450:39 Unresolved reference 'visibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:460:17 Unresolved reference 'labelViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:460:42 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:460:42 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> T.apply(block: T.() -> Unit): T
+    [R|Contract description]
+     <
+        CallsInPlace(block, EXACTLY_ONCE)
+    >
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:460:48 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:461:21 Unresolved reference 'setTextColor'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:462:21 Unresolved reference 'visibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:464:17 Unresolved reference 'iconViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:464:41 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:464:41 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T, R> T.let(block: (T) -> R): R
+    [R|Contract description]
+     <
+        CallsInPlace(block, EXACTLY_ONCE)
+    >
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:464:47 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:465:24 Unresolved reference 'alpha'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:466:24 Unresolved reference 'setColorFilter'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:479:28 Unresolved reference 'setImageState'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:481:52 Unresolved reference 'ICON_SCALE_SELECTED'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:483:28 Unresolved reference 'animate'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:484:42 Unresolved reference 'ICON_ANIM_MS'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:485:68 Unresolved reference 'ICON_OVERSHOOT'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:488:28 Unresolved reference 'scaleX'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:488:47 Unresolved reference 'scaleY'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:494:17 Unresolved reference 'barRoot'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:495:49 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:496:21 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:499:21 Unresolved reference 'pill'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:500:21 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:503:17 Unresolved reference 'pill'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:504:17 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:507:13 Unresolved reference 'barRoot'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:513:13 Unresolved reference 'itemsRow'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:513:36 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:514:13 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:514:26 Unresolved reference 'it'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:515:21 Unresolved reference 'dp'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:515:24 Unresolved reference 'PILL_INSET_DP'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:516:21 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:516:33 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:517:26 Unresolved reference 'left'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:518:27 Unresolved reference 'right'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:521:9 Unresolved reference 'pill'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:521:30 Unresolved reference 'lastSelected'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:521:61 Unresolved reference 'size'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:545:18 Unresolved reference 'iconViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:547:26 Unresolved reference 'drawable'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:550:58 Unresolved reference 'resources'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:550:69 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:552:16 Unresolved reference 'setImageDrawable'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:562:16 Unresolved reference 'ACCENT_FALLBACK'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:568:20 Unresolved reference 'isNight'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:574:16 Unresolved reference 'ON_PILL_CONTENT'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:599:18 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:600:13 Unresolved reference 'activity'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:607:13 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:607:50 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:608:13 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:611:13 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:614:14 Unresolved reference 'suppressing'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:615:13 Unresolved reference 'suppressing'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:616:14 Unresolved reference 'contentView'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:617:21 Unresolved reference 'originalContentBottomMargin'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:617:58 Unresolved reference 'originalContentBottomMargin'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:620:21 Unresolved reference 'contentView'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:623:13 Unresolved reference 'navigationBarPlaceholder'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:623:39 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:623:45 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:624:21 Unresolved reference 'originalPlaceholderVisibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:625:21 Unresolved reference 'originalPlaceholderVisibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:625:56 Unresolved reference 'visibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:627:24 Unresolved reference 'visibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:627:52 Unresolved reference 'visibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:633:9 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:633:41 Unresolved reference 'originalBottomAlpha'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:634:9 Unresolved reference 'originalBottomContainer'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:634:61 Unresolved reference 'originalBottomA11y'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:635:9 Unresolved reference 'originalContentBottomMargin'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:635:38 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:635:44 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:636:14 Unresolved reference 'contentView'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:639:21 Unresolved reference 'contentView'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:643:9 Unresolved reference 'originalPlaceholderVisibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:643:40 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:643:44 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:643:46 Unresolved reference 'navigationBarPlaceholder'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:644:9 Unresolved reference 'suppressing'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:652:9 Unresolved reference 'barRoot'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:652:38 Unresolved reference 'lastSignature'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:658:13 Unresolved reference 'disposed'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:659:9 Unresolved reference 'overlayParent'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:659:40 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:659:47 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:659:52 Unresolved reference 'isAlive'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:660:15 Unresolved reference 'addOnPreDrawListener'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:660:36 Unresolved reference 'preDrawListener'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:665:13 Unresolved reference 'disposed'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:666:9 Unresolved reference 'disposed'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:668:17 Unresolved reference 'overlayParent'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:669:17 Unresolved reference 'overlayParent'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:669:72 Unresolved reference 'preDrawListener'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:671:14 Unresolved reference 'barRoot'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:671:56 Unresolved reference 'barRoot'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:674:9 Unresolved reference 'items'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:674:24 Unresolved reference 'iconViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:674:43 Unresolved reference 'labelViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:674:63 Unresolved reference 'badgeViews'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:677:5 Modifier 'companion' is not applicable inside 'file'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:677:21 Syntax error: Name expected.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:746:24 Cannot access 'constructor(activity: Activity, overlayParent: ViewGroup, initBottomContainer: View, initBasicModeContainer: View?, initTabLayout: View, initContent: View, initNavPlaceholder: View?): FloatingBarHost': it is private in 'com/mars/mimarketpurify/util/FloatingBarHost'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:756:18 Unresolved reference 'start'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:763:38 Unresolved reference 'dispose'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/src/main/java/com/mars/mimarketpurify/util/FloatingBarHost.kt:778:1 Syntax error: Expecting a top level declaration.
+
+> Task :app:compileDebugKotlin FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1790263834839.json
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:135)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:288)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:133)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:121)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.DefaultNodeExecutor.executeLocalTaskNode(DefaultNodeExecutor.java:55)
+	at org.gradle.execution.plan.DefaultNodeExecutor.execute(DefaultNodeExecutor.java:34)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:355)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:343)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:339)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:289)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+	at org.gradle.internal.Factories$1.create(Factories.java:30)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withoutLocks$2(DefaultWorkerLeaseService.java:350)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:348)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:332)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:337)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:267)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:244)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:227)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:210)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:176)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:167)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:47)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:137)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:134)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:134)
+	at org.gradle.internal.execution.steps.ExecuteStep$Mutable.execute(ExecuteStep.java:80)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:51)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:29)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.executeMutable(RemovePreviousOutputsStep.java:67)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.executeMutable(RemovePreviousOutputsStep.java:39)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:42)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:24)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.executeMutable(ResolveInputChangesStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.executeMutable(ResolveInputChangesStep.java:28)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:76)
+	at org.gradle.internal.Either$Right.fold(Either.java:176)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:74)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:49)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.executeMutable(StoreExecutionStateStep.java:46)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.executeMutable(StoreExecutionStateStep.java:35)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveMutableCachingStateStep.executeDelegate(ResolveMutableCachingStateStep.java:70)
+	at org.gradle.internal.execution.steps.ResolveMutableCachingStateStep.executeDelegate(ResolveMutableCachingStateStep.java:32)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:69)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:37)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.executeMutable(ResolveChangesStep.java:63)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.executeMutable(ResolveChangesStep.java:34)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.ValidateStep$Mutable.executeDelegate(ValidateStep.java:79)
+	at org.gradle.internal.execution.steps.ValidateStep$Mutable.executeDelegate(ValidateStep.java:65)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:99)
+	at org.gradle.internal.execution.steps.ValidateStep$Mutable.execute(ValidateStep.java:65)
+	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.executeMutable(CaptureMutableStateBeforeExecutionStep.java:86)
+	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.execute(CaptureMutableStateBeforeExecutionStep.java:65)
+	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.execute(CaptureMutableStateBeforeExecutionStep.java:45)
+	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeWithNonEmptySources(SkipEmptyMutableWorkStep.java:210)
+	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeMutable(SkipEmptyMutableWorkStep.java:90)
+	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeMutable(SkipEmptyMutableWorkStep.java:53)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.executeMutable(LoadPreviousExecutionStateStep.java:36)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.executeMutable(LoadPreviousExecutionStateStep.java:23)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.executeMutable(HandleStaleOutputsStep.java:77)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.executeMutable(HandleStaleOutputsStep.java:43)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$executeMutable$0(AssignMutableWorkspaceStep.java:34)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:305)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.executeMutable(AssignMutableWorkspaceStep.java:30)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.executeMutable(AssignMutableWorkspaceStep.java:21)
+	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:56)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:38)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:68)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:132)
+	... 30 more
+Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:119)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:74)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:68)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:64)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:61)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:102)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:61)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:58)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:176)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:30)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:275)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:273)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:265)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:128)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:133)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	... 2 more
+
+
+BUILD FAILED in 32s
+28 actionable tasks: 28 executed
