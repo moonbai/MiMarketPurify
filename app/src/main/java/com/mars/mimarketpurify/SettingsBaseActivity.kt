@@ -621,8 +621,8 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         isClickable = true
         isFocusable = true
     }
-    
-        // ===================== 内置颜色取色器（色相条 + SV 面板 + Alpha 条） =====================
+
+    // ===================== 内置颜色取色器（色相条 + SV 面板 + Alpha 条） =====================
     protected inner class ColorPickerView(context: android.content.Context) : View(context) {
         private val densityF = resources.displayMetrics.density
 
@@ -637,16 +637,16 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         private var hueRect = android.graphics.RectF()
         private var alphaRect = android.graphics.RectF()
 
-        private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         private var svBitmap: android.graphics.Bitmap? = null
         private var hueShader: android.graphics.Shader? = null
         private var alphaShader: android.graphics.Shader? = null
-        private var svBitmapHue = -1f  // 缓存：仅 hue 变化才重建昂贵的 SV 位图
+        private var svBitmapHue = -1f
 
-        private val borderPaint = android.graphics.Paint().apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 1f * densityF
-            color = 0x33000000
+        private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).also {
+            it.strokeWidth = 1f * densityF
+            it.color = 0x33000000
+            it.style = Paint.Style.STROKE
         }
 
         fun setColor(argb: Int) {
@@ -663,17 +663,15 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             svRect.set(0f, 0f, w - hueBarW, h - alphaBarH)
             hueRect.set(w - hueBarW, 0f, w.toFloat(), h - alphaBarH)
             alphaRect.set(0f, h - alphaBarH, w.toFloat(), h.toFloat())
-            svBitmapHue = -1f  // 尺寸变了强制重建
+            svBitmapHue = -1f
             rebuildAll()
         }
 
-        /** 全量重建：仅在初始化、尺寸变化、或 hue 变化时调用（昂贵） */
         private fun rebuildAll() {
             val w = svRect.width().toInt()
             val h = svRect.height().toInt()
             if (w <= 0 || h <= 0) return
 
-            // SV 面板位图：只在 hue 变化时重建
             if (svBitmap == null || svBitmapHue != hsv[0]) {
                 svBitmap?.recycle()
                 val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
@@ -712,7 +710,6 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             invalidate()
         }
 
-        /** 拖 s/v 或 alpha 时调用：只刷新 alpha shader + 手柄，不重建 SV 位图 */
         private fun refreshAfterSVPan() {
             val opaque = android.graphics.Color.HSVToColor(255, hsv)
             alphaShader = android.graphics.LinearGradient(
@@ -763,19 +760,19 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         }
 
         private fun drawHandle(canvas: android.graphics.Canvas, cx: Float, cy: Float) {
-            paint.style = android.graphics.Paint.Style.FILL
+            paint.style = Paint.Style.FILL
             paint.color = android.graphics.Color.WHITE
             paint.setShadowLayer(3f * densityF, 0f, 1f, 0x66000000)
             canvas.drawCircle(cx, cy, 9f * densityF, paint)
             paint.clearShadowLayer()
-            paint.style = Paint.STROKE
+            paint.style = Paint.Style.STROKE
             paint.strokeWidth = 2f * densityF
             paint.color = 0xFF333333.toInt()
             canvas.drawCircle(cx, cy, 9f * densityF, paint)
             paint.style = Paint.Style.FILL
         }
 
-        private var dragging = 0  // 0=none 1=sv 2=hue 3=alpha
+        private var dragging = 0
 
         override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
             when (event.action) {
@@ -803,11 +800,11 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
                 1 -> {
                     hsv[1] = ((x - svRect.left) / svRect.width()).coerceIn(0f, 1f)
                     hsv[2] = (1f - (y - svRect.top) / svRect.height()).coerceIn(0f, 1f)
-                    refreshAfterSVPan()  // 不重建 SV 位图，只更新 alpha shader
+                    refreshAfterSVPan()
                 }
                 2 -> {
                     hsv[0] = ((y - hueRect.top) / hueRect.height() * 360f).coerceIn(0f, 360f)
-                    rebuildAll()  // hue 变了才重建 SV 位图
+                    rebuildAll()
                 }
                 3 -> {
                     alpha = ((x - alphaRect.left) / alphaRect.width() * 255f).coerceIn(0f, 255f)
@@ -818,7 +815,6 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             onColorChanged?.invoke(color)
         }
     }
-
 
     // ==================== 数据结构 ====================
 
