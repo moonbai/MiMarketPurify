@@ -10,7 +10,6 @@ import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.Ui
 import com.mars.mimarketpurify.init.BaseHook
-import com.mars.mimarketpurify.util.getFieldValue
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
@@ -79,7 +78,7 @@ object TabStyleCustom : BaseHook() {
 
                 val indicatorVisible = Settings.isEnabled(Settings.KEY_TAB_INDICATOR_VISIBLE, true)
                 val thiz = thisObject ?: return@hooked proceed()
-                val indicatorView = getFieldValue(thiz, "mSelectedIndicator") as? android.view.View
+                val indicatorView = indicatorViewOf(thiz)
                 if (!indicatorVisible) {
                     indicatorView?.visibility = android.view.View.GONE
                     return@hooked proceed()
@@ -100,8 +99,7 @@ object TabStyleCustom : BaseHook() {
 
                 val indicatorVisible = Settings.isEnabled(Settings.KEY_TAB_INDICATOR_VISIBLE, true)
                 val thiz = thisObject ?: return@hooked proceed()
-                val indicatorView = getFieldValue(thiz, "mSelectedIndicator") as? android.view.View
-                    ?: return@hooked proceed()
+                val indicatorView = indicatorViewOf(thiz) ?: return@hooked proceed()
 
                 if (!indicatorVisible) {
                     indicatorView.visibility = android.view.View.GONE
@@ -115,4 +113,12 @@ object TabStyleCustom : BaseHook() {
             }
         HookEnv.base.log(Log.DEBUG, TAG, "[TabStyleCustom] hooked TabLayout indicator")
     }
+
+    /** 反射读取 TabLayout 的指示器 View，字段被混淆时返回 null（静默降级）。 */
+    private fun indicatorViewOf(target: Any): android.view.View? = runCatching {
+        val f = target.javaClass.getDeclaredField("mSelectedIndicator")
+        f.isAccessible = true
+        f.get(target) as? android.view.View
+    }.getOrNull()
+
 }

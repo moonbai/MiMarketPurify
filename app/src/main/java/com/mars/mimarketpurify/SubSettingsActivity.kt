@@ -223,17 +223,18 @@ class SubSettingsActivity : SettingsBaseActivity() {
         content.addView(baseGroup)
 
         // ========== 全部子参数放进 floatingOptionsGroup ==========
-        floatingOptionsGroup = groupCard()
+        val options = groupCard()
+        floatingOptionsGroup = options   // 同时存字段，供 updateGateState 控制显隐
 
-        addSectionHeader("色彩设置", "自定义胶囊与文字配色", parent = floatingOptionsGroup)
+        addSectionHeader("色彩设置", "自定义胶囊与文字配色", parent = options)
         val colorGroup = groupCard()
         addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, Ui.BG)
         addColorPickerRow(colorGroup, "选中胶囊背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
         addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, Ui.TEXT_SECONDARY)
         addColorPickerRow(colorGroup, "选中文字/图标高亮色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFFFFFFFF.toInt())
-        floatingOptionsGroup?.addView(colorGroup)
+        options.addView(colorGroup)
 
-        addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度", parent = floatingOptionsGroup)
+        addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度", parent = options)
         val sizeGroup = groupCard()
         addSliderRow(sizeGroup, title = "背景透明度",
             summary = "胶囊底色不透明度，越低越通透",
@@ -253,7 +254,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             defaultValue = Settings.FLOATING_RADIUS_DEFAULT,
             format = { "${it}dp" }
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
-        floatingOptionsGroup?.addView(sizeGroup)
+        options.addView(sizeGroup)
 
         // 底部提示也放到组内
         val tipText = TextView(this).apply {
@@ -262,12 +263,11 @@ class SubSettingsActivity : SettingsBaseActivity() {
             setTextColor(Ui.TEXT_TERTIARY)
             setPadding(dp(4), dp(2), dp(4), dp(16))
         }
-        floatingOptionsGroup?.addView(tipText)
+        options.addView(tipText)
 
         // 把整个容器加到content
-        content.addView(floatingOptionsGroup)
+        content.addView(options)
     }
-
     private fun buildMisc() {
         // addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
         val group = groupCard()
