@@ -116,16 +116,6 @@ class FloatingBarHost private constructor(
     /** 悬浮底栏根容器（圆角胶囊背景 + 阴影 + 系统导航避让）。 */
     private val barRoot: FrameLayout = buildBarRoot()
 
-    /** 复用圆角背景与描边，避免每次切换 new GradientDrawable。 */
-    private val barBg = GradientDrawable()
-
-    /** 复用圆角裁剪轮廓，避免每次切换 new ViewOutlineProvider。 */
-    private val roundedOutlineProvider = object : ViewOutlineProvider() {
-        override fun getOutline(view: View, outline: Outline) {
-            outline.setRoundRect(0, 0, view.width, view.height, barRadiusPx())
-        }
-    }
-
     /** 上一次同步的选中项，用于判断是否需要播放液态过渡动画。 */
     private var lastSelected = -1
 
@@ -144,25 +134,37 @@ class FloatingBarHost private constructor(
     private fun barRadiusPx(): Float =
         min(dpf(Settings.floatingBarRadiusDp().toFloat()), dpf(BAR_HEIGHT_DP / 2f))
 
-    /** 底色：优先用户自定义背景色，否则深浅色默认；透明度按设置写入。 */
+    /** 底色：深浅色各一套基色，透明度由用户设置（百分比）写入 alpha 通道。 */
     private fun barFillPx(): Int {
         val custom = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, 0)
-        val base = if (custom != 0) custom
-            else (if (isNight()) 0xFF1C1C1E.toInt() else 0xFFFFFFFF.toInt())
+        val base = if (custom != 0) custom else if (isNight()) 0xFF1C1C1E.toInt() else 0xFFFFFFFF.toInt()
         val a = (Settings.floatingBarAlphaPercent() * 255 / 100).coerceIn(0, 255)
         return (a shl 24) or (base and 0x00FFFFFF)
     }
 
-    /** 复用圆角背景：只更新颜色/圆角/描边，不重建对象。 */
-    private fun applyBarBackground() {
-        barBg.setColor(barFillPx())
-        barBg.cornerRadius = barRadiusPx()
-        barBg.setStroke(dp(1), if (isNight()) 0x33FFFFFF else 0x14000000)
+    /** 半透明胶囊底色 + 1px 描边；透明度与圆角均为用户可调参数。 */
+    private fun barBackground(): GradientDrawable = GradientDrawable().apply {
+        setColor(barFillPx())
+        cornerRadius = barRadiusPx()
+        setStroke(dp(1), if (isNight()) 0x33FFFFFF else 0x14000000)
     }
+
+    /** 圆角描边 provider：缓存复用，避免每切一次 new。 */
+    private val roundedOutlineProvider = object : ViewOutlineProvider() {
+        override fun getOutline(view: View, outline: Outline) {
+            outline.setRoundRect(0, 0, view.width, view.height, barRadiusPx())
+        }
+    }
+
+    /** 胶囊底色 drawable：缓存复用，避免每切一次 new GradientDrawable。 */
+    private val barBg: GradientDrawable = GradientDrawable()
 
     /** 参数变化时重绘外观（透明度 / 圆角 / 液态开关）。 */
     private fun refreshBarStyle() {
-        applyBarBackground()
+        barBg.setColor(barFillPx())
+        barBg.cornerRadius = barRadiusPx()
+        barBg.setStroke(dp(1), if (isNight()) 0x33FFFFFF else 0x14000000)
+        barRoot.background = barBg
         barRoot.outlineProvider = roundedOutlineProvider
         pill.configure(selectedColor(), min(barRadiusPx(), dpf(PILL_HEIGHT_DP / 2f)))
         pill.visibility = if (liquidOn()) View.VISIBLE else View.GONE
@@ -178,7 +180,6 @@ class FloatingBarHost private constructor(
     }
 
     private fun buildBarRoot(): FrameLayout {
-        applyBarBackground()
         val bar = FrameLayout(activity).apply {
             background = barBg
             elevation = dpf(12f)
@@ -470,8 +471,8 @@ class FloatingBarHost private constructor(
 
                 val onPill = liquidOn() && selected == i
                 val color = when {
-                    onPill -> selectedContentColor()          // 胶囊上的内容用自定义选中色
-                    selected == i -> selectedColor()          // 无胶囊时退回选中胶囊色
+                    onPill -> selectedContentColor()         // 胶囊上的内容反白/高亮色
+                    selected == i -> selectedColor()         // 无胶囊时退回强调色
                     else -> unselectedColor()
                 }
                 val showLabel = labelsAllowed()
@@ -541,14 +542,15 @@ class FloatingBarHost private constructor(
 
     private fun buildSignature(tabs: List<View>, selected: Int): String {
         val sb = StringBuilder(tabs.size * 8)
-        // 子开关与用户自定义颜色变化都要触发重绘，故一并纳入指纹
+        // 子开关变化也要触发重绘，故一并纳入指纹
         sb.append(if (badgesAllowed()) 'b' else '-').append(if (labelsAllowed()) 'l' else '-')
             .append(if (liquidOn()) 'q' else '-').append(Settings.floatingBarAlphaPercent())
             .append(Settings.floatingBarRadiusDp())
-            .append('#').append(Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, 0))
-            .append('#').append(Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, 0))
-            .append('#').append(Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0))
-            .append('#').append(Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0))
+        // 颜色自定义变化也要触发重绘
+        sb.append(Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, 0)).append('|')
+            .append(Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, 0)).append('|')
+            .append(Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0)).append('|')
+            .append(Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0))
         tabs.forEachIndexed { i, tab ->
             sb.append(NativeTabBar.tagOf(tab) ?: "?").append('|')
                 .append(NativeTabBar.titleOf(tab) ?: '?').append('|')
@@ -581,22 +583,23 @@ class FloatingBarHost private constructor(
     private val tintWhenSelected: Boolean get() = true
 
     private fun selectedColor(): Int {
-        val custom = Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, 0)
-        if (custom != 0) return custom
+        Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, 0)
+            .takeIf { it != 0 }?.let { return it }
         resolveAccent()?.let { return it }
         return ACCENT_FALLBACK
     }
 
     private fun unselectedColor(): Int {
-        val custom = Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0)
-        if (custom != 0) return custom
+        Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0)
+            .takeIf { it != 0 }?.let { return it }
         return if (isNight()) 0xFF9B9BA0.toInt() else 0xFF8E8E93.toInt()
     }
 
-    /** 胶囊上的选中文字/图标色：优先用户自定义，否则反白。 */
+    /** 液态胶囊上的内容（文字/图标）颜色：优先用户自定义的选中高亮色。 */
     private fun selectedContentColor(): Int {
-        val custom = Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0)
-        return if (custom != 0) custom else ON_PILL_CONTENT
+        Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0)
+            .takeIf { it != 0 }?.let { return it }
+        return ON_PILL_CONTENT
     }
 
     /** 悬浮底栏是否展示角标：受自身子开关与「隐藏底栏角标」共同约束。 */
@@ -713,7 +716,7 @@ class FloatingBarHost private constructor(
         private const val PILL_INSET_DP = 5
         private const val PILL_HEIGHT_DP = 44
 
-        /** 液态胶囊上的内容色（白），仅在未自定义选中内容色时兜底。 */
+        /** 液态胶囊上的内容色（白），与强调色底形成反差。 */
         private val ON_PILL_CONTENT = 0xFFFFFFFF.toInt()
         private const val ICON_SCALE_SELECTED = 1.12f
         private const val ICON_ANIM_MS = 240L
@@ -723,6 +726,15 @@ class FloatingBarHost private constructor(
         private val BADGE_RED = 0xFFFF3B30.toInt()
 
         private val FALLBACK_LABELS = listOf("首页", "游戏", "榜单", "我的")
+
+        /** attach 阶段的诊断日志（静态，供 companion 内使用）。 */
+        private fun diag(msg: String) {
+            runCatching {
+                if (Settings.isEnabled(Settings.KEY_RANK_DEBUG, false)) {
+                    HookEnv.base.log(android.util.Log.DEBUG, TAG, "[悬浮底栏] $msg")
+                }
+            }
+        }
 
         /**
          * target 是否确实位于 scope 子树内。
@@ -752,14 +764,33 @@ class FloatingBarHost private constructor(
             if (activity.isFinishing || activity.isDestroyed) return null
             active.get(activity)?.let { return it }
 
-            val bottom = NativeTabBar.bottomContainer(activity) ?: return null
+            val bottom = NativeTabBar.bottomContainer(activity)
+            if (bottom == null) {
+                diag("attach 失败：bottomContainer(tab_container_layout) 未找到")
+                return null
+            }
             // 关键：先只在底栏容器子树内定位 tab_container。
             // 直接全局 findViewById 会命中榜单/游戏页自建的同名子标签栏。
             val tabLayout = NativeTabBar.tabContainerIn(bottom)
-                ?: NativeTabBar.tabContainer(activity) ?: return null
-            if (tabLayout !== bottom && !isInside(bottom, tabLayout)) return null
-            val content = NativeTabBar.viewByResName(activity, "fragment_container") ?: return null
-            val overlay = activity.findViewById<View>(android.R.id.content) as? ViewGroup ?: return null
+                ?: NativeTabBar.tabContainer(activity)
+            if (tabLayout == null) {
+                diag("attach 失败：tabContainer(tab_container) 未找到（bottom 存在）")
+                return null
+            }
+            if (tabLayout !== bottom && !isInside(bottom, tabLayout)) {
+                diag("attach 失败：tab_container 不在 bottom 子树内，class=${tabLayout.javaClass.simpleName}")
+                return null
+            }
+            val content = NativeTabBar.viewByResName(activity, "fragment_container")
+            if (content == null) {
+                diag("attach 失败：fragment_container 未找到")
+                return null
+            }
+            val overlay = activity.findViewById<View>(android.R.id.content) as? ViewGroup
+            if (overlay == null) {
+                diag("attach 失败：android.R.id.content 非 ViewGroup")
+                return null
+            }
 
             val host = FloatingBarHost(
                 activity = activity,
