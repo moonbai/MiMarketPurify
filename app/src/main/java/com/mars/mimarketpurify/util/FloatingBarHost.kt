@@ -95,27 +95,17 @@ class FloatingBarHost private constructor(
         min(dpf(Settings.floatingBarRadiusDp().toFloat()), dpf(BAR_HEIGHT_DP / 2f))
 
     /**
-     * 底色与透明度。
-     * 关键：背景用不透明实色（否则半透明会透出底栏下方页面的白色，形成横贯白条）；
-     * 透明度改为整体作用在 barRoot.alpha 上，让整个胶囊（含选中高亮）统一变淡，
-     * 上下颜色一致，不再出现色差白条。
-     * 颜色格式为 #AARRGGBB：RGB 做实色背景，AA 做整体透明度。
+     * 底栏背景色。
+     * 直接返回用户设置的完整 #AARRGGBB：alpha 通道只作用于背景 drawable，
+     * 不再整体设 barRoot.alpha（那样会连带选中胶囊一起透明）。
+     * 选中胶囊的透明度由 KEY_FLOAT_SELECT_BG_COLOR 自己的 alpha 独立控制。
      */
     private fun barFillPx(): Int {
+        // 确保不残留之前的整体透明
+        if (barRoot.alpha != 1f) barRoot.alpha = 1f
         val custom = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, -1)
-        val rgb: Int
-        val alpha: Int
-        if (custom != -1) {
-            rgb = custom and 0x00FFFFFF
-            alpha = custom ushr 24
-        } else {
-            rgb = if (isNight()) 0x1C1C1E else 0xFFFFFF
-            alpha = 0xE6
-        }
-        // 整体透明度作用在 barRoot 上（含选中胶囊，统一玻璃感）
-        barRoot.alpha = alpha / 255f
-        // 背景本身强制不透明
-        return 0xFF000000.toInt() or rgb
+        if (custom != -1) return custom
+        return if (isNight()) 0xE61C1C1E.toInt() else 0xE6FFFFFF.toInt()
     }
 
     private val roundedOutlineProvider = object : ViewOutlineProvider() {
