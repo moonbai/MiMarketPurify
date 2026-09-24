@@ -147,7 +147,8 @@ class FloatingBarHost private constructor(
     /** 底色：优先用户自定义背景色，否则深浅色默认；透明度按设置写入。 */
     private fun barFillPx(): Int {
         val custom = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, 0)
-        val base = if (custom != 0) custom else (if (isNight()) 0xFF1C1C1E else 0xFFFFFFFF)
+        val base = if (custom != 0) custom
+            else (if (isNight()) 0xFF1C1C1E.toInt() else 0xFFFFFFFF.toInt())
         val a = (Settings.floatingBarAlphaPercent() * 255 / 100).coerceIn(0, 255)
         return (a shl 24) or (base and 0x00FFFFFF)
     }
