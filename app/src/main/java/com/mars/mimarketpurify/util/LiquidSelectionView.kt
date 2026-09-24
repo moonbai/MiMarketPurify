@@ -39,6 +39,12 @@ class LiquidSelectionView(context: Context) : View(context) {
     private val haloPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val sheenPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
+    /** 高光泽内缩矩形，复用避免每帧分配。 */
+    private val sheenRect = RectF()
+
+    /** 竖向渐变缓存：胶囊垂直范围恒定，仅颜色变化时重建，避免动画每帧 new。 */
+    private var fillGradient: LinearGradient? = null
+    private var lastGradientColor = 0
 
     /** 每一项的 [centerX, halfWidth]，由宿主在布局完成后写入。 */
     private var slots: List<FloatArray> = emptyList()
@@ -167,12 +173,16 @@ class LiquidSelectionView(context: Context) : View(context) {
             r + GLOW_INSET_PX, r + GLOW_INSET_PX, haloPaint
         )
 
-        // 2) 主体：上深下浅竖向渐变，模拟受光
-        fillPaint.shader = LinearGradient(
-            0f, rect.top, 0f, rect.bottom,
-            intArrayOf(withAlpha(color, 255), withAlpha(color, FILL_BOTTOM_ALPHA)),
-            floatArrayOf(0f, 1f), Shader.TileMode.CLAMP
-        )
+        // 2) 主体：上深下浅竖向渐变（垂直范围恒定，仅颜色变化时重建）
+        if (fillGradient == null || lastGradientColor != color) {
+            fillGradient = LinearGradient(
+                0f, rect.top, 0f, rect.bottom,
+                intArrayOf(withAlpha(color, 255), withAlpha(color, FILL_BOTTOM_ALPHA)),
+                floatArrayOf(0f, 1f), Shader.TileMode.CLAMP
+            )
+            lastGradientColor = color
+        }
+        fillPaint.shader = fillGradient
         canvas.drawRoundRect(rect, r, r, fillPaint)
         fillPaint.shader = null
 
@@ -181,9 +191,9 @@ class LiquidSelectionView(context: Context) : View(context) {
         val insetX = min(r * 0.5f, rect.width() / 2f - 1f)
         val insetY = min(r * 0.5f, rect.height() / 2f - 1f)
         if (insetX > 0f && insetY > 0f) {
-            val tempRect = RectF(rect) // 复制一份，不修改主rect
-            tempRect.inset(insetX, insetY)
-            canvas.drawRoundRect(tempRect, r * 0.5f, r * 0.5f, sheenPaint)
+            sheenRect.set(rect)
+            sheenRect.inset(insetX, insetY)
+            canvas.drawRoundRect(sheenRect, r * 0.5f, r * 0.5f, sheenPaint)
         }
     }
 
@@ -198,15 +208,15 @@ class LiquidSelectionView(context: Context) : View(context) {
 
     companion object {
         private val DEFAULT_COLOR = 0xFFD7F0FF.toInt()
-    
+
         private const val BASE_DURATION_MS = 210f
         private const val MS_PER_PX = 0.42f
         private const val MIN_DURATION_MS = 210f
         private const val MAX_DURATION_MS = 430f
-    
+
         private const val OVERSHOOT_TENSION = 1.45f
         private const val TRAIL_DECELERATE = 1.6f
-    
+
         private const val HALO_ALPHA = 22        // 外圈光晕进一步降低
         private const val FILL_BOTTOM_ALPHA = 230 // 底部高度透明，玻璃感拉满
         private const val SHEEN_ALPHA = 46
