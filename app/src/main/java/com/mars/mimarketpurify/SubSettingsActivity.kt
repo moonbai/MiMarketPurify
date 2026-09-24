@@ -207,10 +207,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
         content.addView(baseGroup)
 
         val colorGroup = groupCard()
-        addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, Ui.BG)
+        addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xE6FFFFFF.toInt())
         addColorPickerRow(colorGroup, "选中背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
         addColorPickerRow(colorGroup, "选中文字/图标高亮色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFFFFFFFF.toInt())
-        addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, Ui.TEXT_SECONDARY)
+        addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0xFF8E8E93.toInt())
         options.addView(colorGroup)
 
         // 尺寸：透明度已并入「底栏背景色」的 alpha 通道（#AARRGGBB），不再单独滑块

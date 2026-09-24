@@ -360,7 +360,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     }
 
     // ===================== 颜色选择行 =====================
-    protected fun addColorPickerRow(
+        protected fun addColorPickerRow(
         group: LinearLayout,
         title: String,
         tag: String,
@@ -380,25 +380,30 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         textWrap.addView(summaryView)
 
         val previewBox = View(this).apply {
-            val colorVal = readLocalInt(tag, defaultColor)
-            background = GradientDrawable().apply {
-                setColor(colorVal)
-                cornerRadius = dpf(8f)
-            }
             layoutParams = LinearLayout.LayoutParams(dp(32), dp(32))
         }
+
+        // -1 表示未自定义，预览用 defaultColor（但写入时仍写 -1）
+        fun renderPreview() {
+            val stored = readLocalInt(tag, -1)
+            val shown = if (stored == -1) defaultColor else stored
+            previewBox.background = GradientDrawable().apply {
+                setColor(shown)
+                cornerRadius = dpf(8f)
+            }
+        }
+        renderPreview()
 
         row.addView(textWrap)
         row.addView(previewBox)
         row.tappable(this, R.drawable.bg_row_ripple)
         row.setOnClickListener {
-            val current = readLocalInt(tag, defaultColor)
+            val stored = readLocalInt(tag, -1)
+            val current = if (stored == -1) defaultColor else stored
             showColorPickerDialog(current, defaultColor) { newColor ->
+                // newColor == defaultColor 视为恢复默认，写 -1
                 writeRemoteInt(tag, newColor)
-                previewBox.background = GradientDrawable().apply {
-                    setColor(newColor)
-                    cornerRadius = dpf(8f)
-                }
+                renderPreview()
             }
         }
         if (group.childCount > 0) {
@@ -409,7 +414,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     }
 
     protected fun showColorPickerDialog(initColor: Int, defaultColor: Int, onPick: (Int) -> Unit) {
-        val rootLayout = LinearLayout(this).apply {
+            val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(12), dp(12), dp(8))
         }
@@ -447,7 +452,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
                 runCatching { onPick(android.graphics.Color.parseColor(raw)) }
                     .onFailure { onPick(picker.color) }
             }
-            .setNeutralButton("恢复默认") { _, _ -> onPick(defaultColor) }
+            .setNeutralButton("恢复默认") { _, _ -> onPick(-1) }
             .setNegativeButton("取消", null)
             .show()
     }

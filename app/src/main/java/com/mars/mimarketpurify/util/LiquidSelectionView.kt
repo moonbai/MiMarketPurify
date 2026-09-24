@@ -229,6 +229,39 @@ class LiquidSelectionView(context: Context) : View(context) {
         canvas.drawRoundRect(rect, r, r, fillPaint)
         fillPaint.shader = null
 
+        // 水珠立体效果（liquid3D 开启时）：顶部椭圆高光 + 底部暗边
+        if (liquid3D) {
+            // 顶部高光：一个半透明白色椭圆，偏上
+            val hiPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = withAlpha(0xFFFFFFFF, 90)
+            }
+            val hiRect = RectF(
+                rect.left + r * 0.4f,
+                rect.top + rect.height() * 0.12f,
+                rect.right - r * 0.4f,
+                rect.top + rect.height() * 0.55f
+            )
+            canvas.save()
+            canvas.clipRect(rect)
+            canvas.drawOval(hiRect, hiPaint)
+            canvas.restore()
+
+            // 底部暗边：增强厚度
+            val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = withAlpha(0x000000, 40)
+            }
+            val shadowRect = RectF(
+                rect.left,
+                rect.bottom - rect.height() * 0.35f,
+                rect.right,
+                rect.bottom
+            )
+            canvas.save()
+            canvas.clipRect(rect)
+            canvas.drawRect(shadowRect, shadowPaint)
+            canvas.restore()
+        }
+
         // 3) 顶部高光泽线
         sheenPaint.color = withAlpha(0xFFFFFFFF.toInt(), SHEEN_ALPHA)
         val insetX = min(r * 0.5f, rect.width() / 2f - 1f)
