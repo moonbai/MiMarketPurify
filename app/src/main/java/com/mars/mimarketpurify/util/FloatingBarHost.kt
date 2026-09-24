@@ -123,6 +123,7 @@ class FloatingBarHost private constructor(
         barRoot.background = barBg
         barRoot.outlineProvider = roundedOutlineProvider
         pill.configure(selectedColor(), min(barRadiusPx(), dpf(PILL_HEIGHT_DP / 2f)))
+        pill.liquid3D = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LIQUID_3D, true)  // ← 加这行
         pill.visibility = if (liquidOn()) View.VISIBLE else View.GONE
     }
 
@@ -172,7 +173,7 @@ class FloatingBarHost private constructor(
             )
         )
         bar.addView(itemsRow)
-
+        
         // 只处理被 onInterceptTouchEvent 拦截后的滑动事件；
         // 非滑动时事件透给 item，由 item 自己的 onClickListener 处理点击
         bar.setOnTouchListener { _, ev ->
@@ -192,9 +193,11 @@ class FloatingBarHost private constructor(
                         val slotW = if (items.isNotEmpty()) bar.width / items.size else 0
                         val threshold = slotW * 0.3f
                         when {
-                            dx < -threshold && lastSelected < items.size - 1 ->
+                            // 手指右滑 → pill 右移到右边 tab → 切右边
+                            dx > threshold && lastSelected < items.size - 1 ->
                                 onItemClicked(lastSelected + 1)
-                            dx > threshold && lastSelected > 0 ->
+                            // 手指左滑 → pill 左移到左边 tab → 切左边
+                            dx < -threshold && lastSelected > 0 ->
                                 onItemClicked(lastSelected - 1)
                             else ->
                                 pill.select(lastSelected, animated = true)
@@ -207,6 +210,7 @@ class FloatingBarHost private constructor(
                 else -> false
             }
         }
+
 
         val params = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,

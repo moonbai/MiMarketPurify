@@ -179,6 +179,15 @@ class SubSettingsActivity : SettingsBaseActivity() {
         }
         addSwitchRow(
             group = baseGroup,
+            title = "3D液态效果",
+            summary = "选中项显示跟随移动的3D液态胶囊，图标带弹性缩放",
+            checked = readLocal(Settings.KEY_FLOATING_BAR_LIQUID_3D, true),
+            tag = Settings.KEY_FLOATING_BAR_LIQUID_3D
+        ) { checked ->
+            writeRemote(Settings.KEY_FLOATING_BAR_LIQUID_3D, checked)
+        }
+        addSwitchRow(
+            group = baseGroup,
             title = "显示标签文字",
             summary = "关闭后悬浮底栏只保留图标，栏体更矮更清爽",
             checked = readLocal(Settings.KEY_FLOATING_BAR_LABEL, true),

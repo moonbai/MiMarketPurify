@@ -10,21 +10,19 @@ import android.graphics.Shader
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * iOS 风格的**液态选中高亮胶囊**，纯原生 Canvas 实现（不依赖 Compose / 第三方动画库）。
+ * iOS 风格的**液态选中高亮胶囊**，纯原生 Canvas 实现。
  *
- * 观感来自三件事的叠加，缺一就像普通色块切换：
- * 1. **非对称插值**：移动时「前导边快、尾随边慢」，胶囊在飞行途中被拉长，
- *    到位后再收回来 —— 这是液态感的主体；
- * 2. **落点过冲**：前导边用过冲插值，到位瞬间轻微越界再回弹，像果冻落地；
- * 3. **玻璃质感**：竖向渐变（上深下浅）+ 顶部一道高光泽 + 外圈柔光晕，
- *    模拟薄玻璃的受光面。
- *
- * 用法：宿主在布局完成后调用 [setSlots] 传入各项的中心 x 与半宽，
- * 选中变化时调用 [select]。
+ * 液态感来自：
+ * 1. 非对称插值（前导边快、尾随边慢，飞行中拉丝）；
+ * 2. 落点过冲 + 果冻二次弹跳；
+ * 3. 拖动时按速度形变（前导边拉长、尾随边压缩）；
+ * 4. 玻璃质感：竖向渐变 + 顶部高光 + 方向光晕尾巴；
+ * 5. [liquid3D] 开关：更夸张的形变与光晕。
  */
 class LiquidSelectionView(context: Context) : View(context) {
 
@@ -34,30 +32,38 @@ class LiquidSelectionView(context: Context) : View(context) {
     private val haloPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val sheenPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
-    /** 高光泽内缩矩形，复用避免每帧分配。 */
     private val sheenRect = RectF()
 
-    /** 竖向渐变缓存：胶囊垂直范围恒定，仅颜色变化时重建，避免动画每帧 new。 */
     private var fillGradient: LinearGradient? = null
     private var lastGradientColor = 0
 
-    /** 每一项的 [centerX, halfWidth]，由宿主在布局完成后写入。 */
     private var slots: List<FloatArray> = emptyList()
 
     private var color: Int = DEFAULT_COLOR
     private var radiusPx: Float = 22f * density
-    /** 上下留白：胶囊在 barRoot(58dp) 内居中呈 44dp 高，避免又高又胖。 */
     private var padY: Float = 7f * density
 
-    /** 当前绘制中的胶囊左右边界（px）。 */
     private var left = 0f
     private var right = 0f
     private var hasGeometry = false
 
     private var animator: ValueAnimator? = null
+    private var squashAnimator: ValueAnimator? = null
+
+    // ── 拖动形变状态 ──
+    private var dragVelocity = 0f
+    private var lastDragTime = 0L
+    /** 果冻弹跳时的垂直挤压系数（1=正常，<1 压扁） */
+    private var squashY = 1f
+
+    /** 3D 液态模式：更夸张的形变与光晕，由宿主从设置写入 */
+    var liquid3D: Boolean = true
+        set(value) {
+            field = value
+            invalidate()
+        }
 
     init {
-        // 高亮层本身不吃触摸，点击交给上层各项
         isClickable = false
         isFocusable = false
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -66,18 +72,12 @@ class LiquidSelectionView(context: Context) : View(context) {
         sheenPaint.strokeWidth = max(0.6f, 0.4f * density)
     }
 
-    /** 配置主色与圆角（dp→px 由宿主换算后传入）。 */
     fun configure(color: Int, radiusPx: Float) {
         this.color = color
         this.radiusPx = radiusPx
         invalidate()
     }
 
-    /**
-     * 写入各选中位的几何。
-     * @param slots 每项为 floatArrayOf(centerX, halfWidth)
-     * @param index 当前应处于的选中位（首帧不做动画）
-     */
     fun setSlots(slots: List<FloatArray>, index: Int) {
         this.slots = slots
         val slot = slots.getOrNull(index)
@@ -91,10 +91,6 @@ class LiquidSelectionView(context: Context) : View(context) {
         invalidate()
     }
 
-    /**
-     * 切换到第 [index] 项。
-     * @param animated false 用于首帧、重建或开关变化，直接落位不走动画。
-     */
     fun select(index: Int, animated: Boolean = true) {
         val target = slots.getOrNull(index) ?: return
         val tl = target[0] - target[1]
@@ -104,25 +100,21 @@ class LiquidSelectionView(context: Context) : View(context) {
             invalidate()
             return
         }
-        // 先终止上一次动画：连点时若让两条动画同时写 left/right 会互相打架
         animator?.cancel()
+        squashAnimator?.cancel()
+        dragVelocity = 0f
         if (!animated) {
-            left = tl; right = tr; hasGeometry = true; invalidate(); return
+            left = tl; right = tr; hasGeometry = true; squashY = 1f; invalidate(); return
         }
         val fl = left
         val fr = right
         val movingRight = tr >= fr
-        val distance = kotlin.math.abs(tr - fr) + kotlin.math.abs(tl - fl)
-        // 全链路 Float：Kotlin 不做隐式数值转换，Float 结果不能拿去 coerceIn(Long, Long)
+        val distance = abs(tr - fr) + abs(tl - fl)
         val totalMs = (BASE_DURATION_MS + distance * MS_PER_PX)
             .coerceIn(MIN_DURATION_MS, MAX_DURATION_MS).toLong()
 
         animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            // 必须用独立名字 totalMs：在 apply 里写 `this.duration = duration`，
-            // 右侧 duration 会解析成 ValueAnimator.duration（隐式接收者成员优先于外层局部变量），
-            // 变成自赋值，距离插值就静默失效了
             this.duration = totalMs
-            // 前导边带过冲（果冻落位），尾随边缓出（产生飞行中的拉伸）
             val lead = OvershootInterpolator(OVERSHOOT_TENSION)
             val trail = DecelerateInterpolator(TRAIL_DECELERATE)
             addUpdateListener { va ->
@@ -136,7 +128,6 @@ class LiquidSelectionView(context: Context) : View(context) {
                     left = fl + (tl - fl) * eLead
                     right = fr + (tr - fr) * eTrail
                 }
-                // 数值扰动下别出现负宽度
                 if (right - left < MIN_WIDTH_PX) {
                     val c = (left + right) / 2f
                     left = c - MIN_WIDTH_PX / 2f
@@ -144,23 +135,54 @@ class LiquidSelectionView(context: Context) : View(context) {
                 }
                 invalidate()
             }
+            // 到位后果冻弹跳：垂直方向轻微挤压再回弹
+            doOnEnd { startSquash() }
             start()
         }
     }
 
-    /** 取消进行中的位移动画（拖动切换前调用） */
+    /** 到位后垂直挤压回弹，模拟果冻落地 */
+    private fun startSquash() {
+        if (!liquid3D) return
+        squashAnimator?.cancel()
+        squashAnimator = ValueAnimator.ofFloat(1f, 0.90f, 1f).apply {
+            duration = SQUASH_DURATION
+            interpolator = OvershootInterpolator(SQUASH_TENSION)
+            addUpdateListener { av ->
+                squashY = av.animatedValue as Float
+                invalidate()
+            }
+            start()
+        }
+    }
+
     fun cancelAnimation() {
         animator?.cancel()
+        dragVelocity = 0f
     }
 
     /**
-     * 拖动中：胶囊整体水平平移 deltaX px（跟手）。
-     * 由宿主根据触摸增量逐帧调用，松手后由 select() 决定落位或回弹。
+     * 拖动中：胶囊水平平移 deltaX，并按速度形变（前导边拉长、尾随边压缩）。
      */
     fun dragBy(deltaX: Float) {
         if (!hasGeometry) return
         left += deltaX
         right += deltaX
+        dragVelocity = deltaX
+        lastDragTime = System.currentTimeMillis()
+
+        if (liquid3D && abs(deltaX) > 0.5f) {
+            val stretch = abs(deltaX) * STRETCH_FACTOR
+            val midX = (left + right) / 2f
+            val halfW = (right - left) / 2f
+            if (deltaX > 0) {
+                left = midX - halfW + stretch * 0.3f
+                right = midX + halfW + stretch
+            } else {
+                left = midX - halfW - stretch
+                right = midX + halfW - stretch * 0.3f
+            }
+        }
         invalidate()
     }
 
@@ -169,24 +191,29 @@ class LiquidSelectionView(context: Context) : View(context) {
         val h = height.toFloat()
         if (h <= 0f) return
 
-        // 胶囊在 barRoot 内居中：上下各留 padY，高 44dp，避免又高又胖
-        val top = padY
-        val bottom = h - padY
+        // 果冻弹跳：垂直挤压（上下边距动态调整）
+        val effectivePadY = padY / squashY
+        val top = effectivePadY
+        val bottom = h - effectivePadY
         if (bottom - top <= 0f) return
 
         rect.set(left, top, right, bottom)
         val r = min(radiusPx, min(rect.width() / 2f, rect.height() / 2f))
 
-        // 1) 外圈柔光晕：让胶囊边缘像玻璃那样有溢出的光
+        // 1) 外圈光晕：拖动时按速度方向偏移，形成液体尾巴
         haloPaint.shader = null
         haloPaint.color = withAlpha(color, HALO_ALPHA)
+        val tailBoost = if (liquid3D) 2.2f else 1.0f
+        val tailX = dragVelocity * TAIL_FACTOR * tailBoost
         canvas.drawRoundRect(
-            rect.left - GLOW_INSET_PX, rect.top - GLOW_INSET_PX,
-            rect.right + GLOW_INSET_PX, rect.bottom + GLOW_INSET_PX,
+            rect.left - GLOW_INSET_PX + tailX * 0.3f,
+            rect.top - GLOW_INSET_PX,
+            rect.right + GLOW_INSET_PX + tailX,
+            rect.bottom + GLOW_INSET_PX,
             r + GLOW_INSET_PX, r + GLOW_INSET_PX, haloPaint
         )
 
-        // 2) 主体：上深下浅竖向渐变（垂直范围恒定，仅颜色变化时重建）
+        // 2) 主体：上深下浅竖向渐变
         if (fillGradient == null || lastGradientColor != color) {
             fillGradient = LinearGradient(
                 0f, rect.top, 0f, rect.bottom,
@@ -199,7 +226,7 @@ class LiquidSelectionView(context: Context) : View(context) {
         canvas.drawRoundRect(rect, r, r, fillPaint)
         fillPaint.shader = null
 
-        // 3) 顶部高光泽线：薄玻璃的反光（内缩后尺寸仍需为正，否则跳过）
+        // 3) 顶部高光泽线
         sheenPaint.color = withAlpha(0xFFFFFFFF.toInt(), SHEEN_ALPHA)
         val insetX = min(r * 0.5f, rect.width() / 2f - 1f)
         val insetY = min(r * 0.5f, rect.height() / 2f - 1f)
@@ -212,7 +239,9 @@ class LiquidSelectionView(context: Context) : View(context) {
 
     override fun onDetachedFromWindow() {
         animator?.cancel()
+        squashAnimator?.cancel()
         animator = null
+        squashAnimator = null
         super.onDetachedFromWindow()
     }
 
@@ -227,13 +256,22 @@ class LiquidSelectionView(context: Context) : View(context) {
         private const val MIN_DURATION_MS = 210f
         private const val MAX_DURATION_MS = 430f
 
-        private const val OVERSHOOT_TENSION = 1.45f
-        private const val TRAIL_DECELERATE = 1.6f
+        // 更Q弹的过冲与拉丝
+        private const val OVERSHOOT_TENSION = 1.8f
+        private const val TRAIL_DECELERATE = 2.2f
 
-        private const val HALO_ALPHA = 22        // 外圈光晕进一步降低
-        private const val FILL_BOTTOM_ALPHA = 230 // 底部高度透明，玻璃感拉满
+        private const val HALO_ALPHA = 22
+        private const val FILL_BOTTOM_ALPHA = 230
         private const val SHEEN_ALPHA = 46
         private const val MIN_WIDTH_PX = 8f
         private const val GLOW_INSET_PX = 2f
+
+        // 拖动形变
+        private const val STRETCH_FACTOR = 0.6f
+        // 光晕尾巴
+        private const val TAIL_FACTOR = 1.5f
+        // 果冻弹跳
+        private const val SQUASH_DURATION = 220L
+        private const val SQUASH_TENSION = 1.6f
     }
 }
