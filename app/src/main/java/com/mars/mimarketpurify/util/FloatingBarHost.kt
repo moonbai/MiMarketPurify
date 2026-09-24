@@ -95,14 +95,27 @@ class FloatingBarHost private constructor(
         min(dpf(Settings.floatingBarRadiusDp().toFloat()), dpf(BAR_HEIGHT_DP / 2f))
 
     /**
-     * 底色：直接使用用户自定义的 ARGB 颜色（透明度由颜色自带的 alpha 决定）。
-     * 未自定义时给半透明默认值（浅色 90% 白 / 深色 90% 黑）。
-     * 哨兵用 -1（颜色值本身可能带 alpha=0，不能再用 0 当未设置）。
+     * 底色与透明度。
+     * 关键：背景用不透明实色（否则半透明会透出底栏下方页面的白色，形成横贯白条）；
+     * 透明度改为整体作用在 barRoot.alpha 上，让整个胶囊（含选中高亮）统一变淡，
+     * 上下颜色一致，不再出现色差白条。
+     * 颜色格式为 #AARRGGBB：RGB 做实色背景，AA 做整体透明度。
      */
     private fun barFillPx(): Int {
         val custom = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, -1)
-        if (custom != -1) return custom
-        return if (isNight()) 0xE61C1C1E.toInt() else 0xE6FFFFFF.toInt()
+        val rgb: Int
+        val alpha: Int
+        if (custom != -1) {
+            rgb = custom and 0x00FFFFFF
+            alpha = custom ushr 24
+        } else {
+            rgb = if (isNight()) 0x1C1C1E else 0xFFFFFF
+            alpha = 0xE6
+        }
+        // 整体透明度作用在 barRoot 上（含选中胶囊，统一玻璃感）
+        barRoot.alpha = alpha / 255f
+        // 背景本身强制不透明
+        return 0xFF000000.toInt() or rgb
     }
 
     private val roundedOutlineProvider = object : ViewOutlineProvider() {

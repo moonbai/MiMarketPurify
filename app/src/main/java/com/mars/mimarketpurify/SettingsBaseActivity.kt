@@ -408,79 +408,48 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     }
 
     protected fun showColorPickerDialog(initColor: Int, onPick: (Int) -> Unit) {
-        val initHex = String.format("#%08X", initColor)
-        val presetColors = intArrayOf(
-            // 常用实色
-            0xFF4080F0.toInt(),
-            0xFF34A853.toInt(),
-            0xFFFBBC05.toInt(),
-            0xFFEA4335.toInt(),
-            0xFF222222.toInt(),
-            0xFFFFFFFF.toInt(),
-            // 常用半透明底栏色（AARRGGBB，前两位是透明度）
-            0xE6FFFFFF.toInt(), // 白 90%
-            0xB3FFFFFF.toInt(), // 白 70%
-            0x80FFFFFF.toInt(), // 白 50%
-            0xE61C1C1E.toInt(), // 黑 90%
-            0xB31C1C1E.toInt(), // 黑 70%
-        )
-
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(16), dp(16), dp(8))
+            setPadding(dp(12), dp(12), dp(12), dp(8))
         }
-        val presetRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
+
+        val picker = ColorPickerView(this).apply {
+            setColor(initColor)
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT, (300 * resources.displayMetrics.density).toInt()
             )
         }
-        var dialogRef: android.app.AlertDialog? = null
-        presetColors.forEachIndexed { _, color ->
-            val box = View(this@SettingsBaseActivity).apply {
-                background = GradientDrawable().apply {
-                    setColor(color)
-                    cornerRadius = dpf(6f)
-                }
-                layoutParams = LinearLayout.LayoutParams(dp(36), dp(36)).also {
-                    it.marginEnd = dp(8)
-                }
-                setOnClickListener {
-                    onPick(color)
-                    dialogRef?.dismiss()
-                }
-            }
-            presetRow.addView(box)
-        }
-        rootLayout.addView(presetRow)
+        rootLayout.addView(picker)
 
+        // 当前颜色 hex 显示 + 可手动微调
         val inputField = android.widget.EditText(this).apply {
-            hint = "#AARRGGBB 或 #RRGGBB（前两位 AA 为透明度）"
-            setText(initHex)
+            hint = "#AARRGGBB"
+            setText(String.format("#%08X", initColor))
             textSize = 16f
-            setSelection(initHex.length)
+            gravity = android.view.Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = dp(16) }
+            ).also { it.topMargin = dp(12) }
         }
         rootLayout.addView(inputField)
 
+        // 拖动取色器时同步 hex 文本
+        picker.onColorChanged = { argb ->
+            inputField.setText(String.format("#%08X", argb))
+        }
+
+        var dialogRef: android.app.AlertDialog? = null
         val dialog = android.app.AlertDialog.Builder(this)
             .setTitle("选择颜色")
             .setView(rootLayout)
             .setPositiveButton("确定") { _, _ ->
                 val raw = inputField.text.toString().trim()
                 runCatching {
-                    // Color.parseColor 原生支持 #RRGGBB 与 #AARRGGBB
+                    // 优先用手动输入；解析失败则用取色器当前色
                     val parsed = android.graphics.Color.parseColor(raw)
                     onPick(parsed)
                 }.onFailure {
-                    android.widget.Toast.makeText(
-                        this@SettingsBaseActivity,
-                        "颜色格式错误，请输入 #RRGGBB 或 #AARRGGBB",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
+                    onPick(picker.color)
                 }
             }
             .setNegativeButton("取消", null)
@@ -657,6 +626,221 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         isClickable = true
         isFocusable = true
     }
+    
+        // ===================== 内置颜色取色器（色相条 + SV 面板 + Alpha 条） =====================
+    protected inner class ColorPickerView(context: android.content.Context) : View(context) {
+        private val density = resources.displayMetrics.density
+        private val densityF = resources.displayMetrics.density
+
+        /** 当前选中色（ARGB） */
+        var color: Int = android.graphics.Color.WHITE
+            private set
+
+        /** 拖动时回调 */
+        var onColorChanged: ((Int) -> Unit)? = null
+
+        private val hsv = floatArrayOf(0f, 0f, 1f)
+        private var alpha = 255f
+
+        // 各区域几何（onSizeChanged 后计算）
+        private var svRect = android.graphics.RectF()
+        private var hueRect = android.graphics.RectF()
+        private var alphaRect = android.graphics.RectF()
+
+        private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        private var svBitmap: android.graphics.Bitmap? = null
+        private var hueShader: android.graphics.Shader? = null
+        private var alphaShader: android.graphics.Shader? = null
+
+        private val borderPaint = android.graphics.Paint().apply {
+            style = android.graphics.Paint.Style.STROKE
+            strokeWidth = 1f * densityF
+            color = 0x33000000
+        }
+
+        fun setColor(argb: Int) {
+            android.graphics.Color.colorToHSV(argb, hsv)
+            alpha = android.graphics.Color.alpha(argb).toFloat()
+            rebuildShaders()
+            invalidate()
+        }
+
+        override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+            super.onSizeChanged(w, h, oldw, oldh)
+            val pad = 0f
+            val hueBarW = 26f * densityF
+            val alphaBarH = 26f * densityF
+            svRect.set(pad, pad, w - hueBarW - pad, h - alphaBarH - pad)
+            hueRect.set(w - hueBarW - pad, pad, w - pad, h - alphaBarH - pad)
+            alphaRect.set(pad, h - alphaBarH - pad, w - pad, h - pad)
+            rebuildShaders()
+        }
+
+        private fun rebuildShaders() {
+            // SV 面板位图：横向 Saturation，纵向 Value
+            if (svRect.width() <= 0 || svRect.height() <= 0) return
+            val w = svRect.width().toInt()
+            val h = svRect.height().toInt()
+            if (w <= 0 || h <= 0) return
+            svBitmap?.recycle()
+            svBitmap = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+            val hueColor = android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], 1f, 1f))
+            val pixels = IntArray(w * h)
+            for (y in 0 until h) {
+                val v = 1f - y.toFloat() / (h - 1)
+                for (x in 0 until w) {
+                    val s = x.toFloat() / (w - 1)
+                    pixels[y * w + x] = blendWhiteBlack(hueColor, s, v)
+                }
+            }
+            svBitmap!!.setPixels(pixels, 0, w, 0, 0, w, h)
+
+            // 色相条：彩虹渐变
+            hueShader = android.graphics.LinearGradient(
+                0f, hueRect.top, 0f, hueRect.bottom,
+                intArrayOf(
+                    android.graphics.Color.RED,
+                    android.graphics.Color.YELLOW,
+                    android.graphics.Color.GREEN,
+                    android.graphics.Color.CYAN,
+                    android.graphics.Color.BLUE,
+                    android.graphics.Color.MAGENTA,
+                    android.graphics.Color.RED
+                ),
+                null, android.graphics.Shader.TileMode.CLAMP
+            )
+
+            // alpha 条：棋盘格底 + 当前不透明色渐变
+            val opaque = android.graphics.Color.HSVToColor(255, hsv)
+            alphaShader = android.graphics.LinearGradient(
+                alphaRect.left, 0f, alphaRect.right, 0f,
+                android.graphics.Color.argb(0,
+                    android.graphics.Color.red(opaque),
+                    android.graphics.Color.green(opaque),
+                    android.graphics.Color.blue(opaque)),
+                opaque,
+                android.graphics.Shader.TileMode.CLAMP
+            )
+            invalidate()
+        }
+
+        /** SV 面板取色：给定 s/v 返回对应 RGB */
+        private fun blendWhiteBlack(hueColor: Int, s: Float, v: Float): Int {
+            // 标准 HSV 转 RGB
+            return android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], s, v))
+        }
+
+        override fun onDraw(canvas: android.graphics.Canvas) {
+            super.onDraw(canvas)
+            // 1) SV 面板
+            svBitmap?.let { canvas.drawBitmap(it, svRect.left, svRect.top, paint) }
+            canvas.drawRect(svRect, borderPaint)
+            // SV 手柄
+            val sx = svRect.left + hsv[1] * svRect.width()
+            val sy = svRect.top + (1f - hsv[2]) * svRect.height()
+            drawHandle(canvas, sx, sy)
+
+            // 2) 色相条
+            paint.shader = hueShader
+            canvas.drawRect(hueRect, paint)
+            paint.shader = null
+            canvas.drawRect(hueRect, borderPaint)
+            val hy = hueRect.top + (hsv[0] / 360f) * hueRect.height()
+            drawHandle(canvas, hueRect.centerX(), hy)
+
+            // 3) alpha 条：先画棋盘格底
+            drawCheckerboard(canvas, alphaRect)
+            paint.shader = alphaShader
+            canvas.drawRect(alphaRect, paint)
+            paint.shader = null
+            canvas.drawRect(alphaRect, borderPaint)
+            val ax = alphaRect.left + (alpha / 255f) * alphaRect.width()
+            drawHandle(canvas, ax, alphaRect.centerY())
+        }
+
+        private fun drawCheckerboard(canvas: android.graphics.Canvas, rect: android.graphics.RectF) {
+            val cell = 6f * densityF
+            paint.color = 0xFFDDDDDD.toInt()
+            var row = 0
+            var y = rect.top
+            while (y < rect.bottom) {
+                var col = 0
+                var x = rect.left
+                while (x < rect.right) {
+                    if ((row + col) % 2 == 0) canvas.drawRect(x, y, x + cell, y + cell, paint)
+                    x += cell; col++
+                }
+                y += cell; row++
+            }
+        }
+
+        private fun drawHandle(canvas: android.graphics.Canvas, cx: Float, cy: Float) {
+            paint.style = android.graphics.Paint.Style.FILL
+            paint.color = android.graphics.Color.WHITE
+            paint.setShadowLayer(3f * densityF, 0f, 1f, 0x66000000)
+            canvas.drawCircle(cx, cy, 9f * densityF, paint)
+            paint.clearShadowLayer()
+            paint.style = android.graphics.Paint.Style.STROKE
+            paint.strokeWidth = 2f * densityF
+            paint.color = 0xFF333333.toInt()
+            canvas.drawCircle(cx, cy, 9f * densityF, paint)
+            paint.style = android.graphics.Paint.Style.FILL
+        }
+
+        private enum class DragTarget { NONE, SV, HUE, ALPHA }
+        private var dragging = DragTarget.NONE
+
+        override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    dragging = hitTest(event.x, event.y)
+                    if (dragging != DragTarget.NONE) {
+                        updateFromTouch(event.x, event.y)
+                        return true
+                    }
+                    return false
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    if (dragging != DragTarget.NONE) {
+                        updateFromTouch(event.x, event.y)
+                        return true
+                    }
+                }
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_CANCEL -> dragging = DragTarget.NONE
+            }
+            return super.onTouchEvent(event)
+        }
+
+        private fun hitTest(x: Float, y: Float): DragTarget {
+            if (alphaRect.contains(x, y)) return DragTarget.ALPHA
+            if (hueRect.contains(x, y)) return DragTarget.HUE
+            if (svRect.contains(x, y)) return DragTarget.SV
+            return DragTarget.NONE
+        }
+
+        private fun updateFromTouch(x: Float, y: Float) {
+            when (dragging) {
+                DragTarget.SV -> {
+                    hsv[1] = ((x - svRect.left) / svRect.width()).coerceIn(0f, 1f)
+                    hsv[2] = (1f - (y - svRect.top) / svRect.height()).coerceIn(0f, 1f)
+                    rebuildShaders()
+                }
+                DragTarget.HUE -> {
+                    hsv[0] = ((y - hueRect.top) / hueRect.height() * 360f).coerceIn(0f, 360f)
+                    rebuildShaders()
+                }
+                DragTarget.ALPHA -> {
+                    alpha = ((x - alphaRect.left) / alphaRect.width() * 255f).coerceIn(0f, 255f)
+                    invalidate()
+                }
+                DragTarget.NONE -> {}
+            }
+            color = android.graphics.Color.HSVToColor(alpha.toInt(), hsv)
+            onColorChanged?.invoke(color)
+        }
+    }
+
 
     // ==================== 数据结构 ====================
 
