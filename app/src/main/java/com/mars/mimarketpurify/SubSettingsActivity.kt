@@ -158,22 +158,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
         // ) { on -> writeRemote(Settings.KEY_UPDATE_TAB, on) }
 
         buildTabSelectBlock(group)
-
-        // ========== 新增：原生Tab 选中色 + 底部白色横线（方案A）==========
-        addSectionHeader("原生Tab样式自定义", "仅作用于原版底部标签栏，不影响悬浮胶囊底栏", parent = group)
-        val tabColorGroup = groupCard()
-        // 选中文字/图标自定义颜色
-        addColorPickerRow(tabColorGroup, "Tab选中文字/图标颜色", Settings.KEY_TAB_SELECT_COLOR, Ui.ACCENT)
-        // 方案A：Tab指示器（底部白色横线）开关 + 颜色自定义
-        addSwitchRow(group = tabColorGroup, title = "显示Tab底部指示横线",
-            summary = "方案A：控制原生底栏下方选中项白色下划线显示/隐藏",
-            checked = readLocal(Settings.KEY_TAB_INDICATOR_VISIBLE, true),
-            tag = Settings.KEY_TAB_INDICATOR_VISIBLE
-        ) { on -> writeRemote(Settings.KEY_TAB_INDICATOR_VISIBLE, on) }
-        addColorPickerRow(tabColorGroup, "Tab指示横线颜色", Settings.KEY_TAB_INDICATOR_COLOR, 0xFFFFFFFF.toInt())
-        group.addView(tabColorGroup)
-        // =============================================================
-
         content.addView(group)
         addFooter("Tips：隐藏标签后需重启一次应用商店才会生效；悬浮底栏及其参数为实时生效。")
     }
@@ -226,7 +210,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         val options = groupCard()
         floatingOptionsGroup = options   // 同时存字段，供 updateGateState 控制显隐
 
-        addSectionHeader("色彩设置", "自定义胶囊与文字配色", parent = options)
+        // addSectionHeader("色彩设置", "自定义胶囊与文字配色", parent = options)
         val colorGroup = groupCard()
         addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, Ui.BG)
         addColorPickerRow(colorGroup, "选中胶囊背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
@@ -234,7 +218,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addColorPickerRow(colorGroup, "选中文字/图标高亮色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFFFFFFFF.toInt())
         options.addView(colorGroup)
 
-        addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度", parent = options)
+        // addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度", parent = options)
         val sizeGroup = groupCard()
         addSliderRow(sizeGroup, title = "背景透明度",
             summary = "胶囊底色不透明度，越低越通透",
