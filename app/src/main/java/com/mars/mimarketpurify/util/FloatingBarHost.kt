@@ -174,6 +174,13 @@ class FloatingBarHost private constructor(
         // 滑动切换触摸处理
         bar.setOnTouchListener { _, ev ->
             when (ev.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    touchDownX = ev.x
+                    touchDownY = ev.y
+                    lastDragDx = 0f
+                    isDragging = false
+                    false
+                }
                 android.view.MotionEvent.ACTION_MOVE -> {
                     if (isDragging) {
                         val dx = ev.x - touchDownX
@@ -187,14 +194,16 @@ class FloatingBarHost private constructor(
                 android.view.MotionEvent.ACTION_CANCEL -> {
                     if (isDragging) {
                         val dx = ev.x - touchDownX
-                        val threshold = dp(40).toFloat()
+                        val threshold = dp(30).toFloat()
+                        var target = lastSelected
                         when {
-                            dx > threshold && lastSelected > 0 ->
-                                onItemClicked(lastSelected - 1)
-                            dx < -threshold && lastSelected < items.size - 1 ->
-                                onItemClicked(lastSelected + 1)
-                            else ->
-                                pill.select(lastSelected, animated = true)
+                            dx < -threshold && lastSelected < items.size - 1 -> target = lastSelected + 1
+                            dx > threshold && lastSelected > 0 -> target = lastSelected - 1
+                        }
+                        if (target != lastSelected) {
+                            onItemClicked(target)
+                        } else {
+                            pill.select(lastSelected, animated = true)
                         }
                     }
                     isDragging = false
@@ -204,7 +213,7 @@ class FloatingBarHost private constructor(
                 else -> false
             }
         }
-
+        
         val params = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             dp(BAR_HEIGHT_DP)
@@ -442,15 +451,12 @@ class FloatingBarHost private constructor(
                 iconViews.getOrNull(i)?.let { iv ->
                     iv.alpha = 1f
                     iv.setColorFilter(color)
-                    // 选中态强制 checked/enabled state，触发原生图标的 pressed 填充变体
-                    // （原生 tab 图标在 pressed 时会从线描变成实心，移植到选中态常驻）
-                    iv.setImageState(
-                        if (selected == i)
-                            intArrayOf(android.R.attr.state_enabled, android.R.attr.state_checked)
-                        else
-                            intArrayOf(android.R.attr.state_enabled),
-                        false
-                    )
+                    // 选中态：仅在切换时强制 checked state（触发填充变体），
+                    // 平时不碰 imageState，让 ImageView 自己响应 pressed（按压填充）
+                    if (selectionChanged) {
+                        iv.isSelected = (selected == i)
+                        iv.isActivated = (selected == i)
+                    }
                     val scale = if (selected == i) ICON_SCALE_SELECTED else 1f
                     if (selectionChanged && !rebuilt) {
                         iv.animate().scaleX(scale).scaleY(scale)
@@ -622,6 +628,8 @@ class FloatingBarHost private constructor(
     private fun onItemClicked(index: Int) {
         val tab = tabViews().getOrNull(index) ?: return
         runCatching { tab.performClick() }
+        lastSelected = index
+        pill.select(index, animated = true)
         barRoot.post { runCatching { lastSignature = ""; sync() } }
     }
 
