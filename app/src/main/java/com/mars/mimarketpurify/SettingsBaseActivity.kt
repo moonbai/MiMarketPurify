@@ -404,7 +404,6 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     }
 
     protected fun showColorPickerDialog(initColor: Int, onPick: (Int) -> Unit) {
-        // 提取初始颜色的十六进制字符串
         val initHex = String.format("#%06X", 0xFFFFFF and initColor)
         val presetColors = intArrayOf(
             0xFF4080F0.toInt(),
@@ -414,22 +413,20 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             0xFF222222.toInt(),
             0xFFFFFFFF.toInt()
         )
-        val presetLabels = arrayOf("蓝色", "绿色", "黄色", "红色", "黑色", "白色")
     
-        // 布局：预设色块 + 输入框
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(8))
         }
         val presetRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
+            gravity = android.view.Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             )
         }
-        // 生成预设色块按钮
-        presetColors.forEachIndexed { idx, color ->
+        var dialogRef: android.app.AlertDialog? = null
+        presetColors.forEachIndexed { _, color ->
             val box = View(this@SettingsBaseActivity).apply {
                 background = GradientDrawable().apply {
                     setColor(color)
@@ -440,7 +437,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
                 }
                 setOnClickListener {
                     onPick(color)
-                    dialog?.dismiss()
+                    dialogRef?.dismiss()
                 }
             }
             presetRow.addView(box)
@@ -463,18 +460,18 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             .setPositiveButton("确定") { _, _ ->
                 val raw = inputField.text.toString().trim()
                 runCatching {
-                    // 解析 #RRGGBB，强制 Alpha=FF
                     val parsed = android.graphics.Color.parseColor(raw)
                     onPick(parsed)
                 }.onFailure {
-                    Toast.makeText(this@SettingsBaseActivity, "颜色格式错误，请输入 #RRGGBB", Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(this@SettingsBaseActivity, "颜色格式错误，请输入 #RRGGBB", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("取消", null)
             .create()
+        dialogRef = dialog
         dialog.show()
     }
-    
+        
     protected open fun updateGateState() {
         val master = readLocal(Settings.KEY_MASTER, true)
         sliderEntries.forEach { it.seek.isEnabled = master }

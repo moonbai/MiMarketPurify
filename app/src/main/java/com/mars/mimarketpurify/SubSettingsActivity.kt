@@ -159,9 +159,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
 
         buildTabSelectBlock(group)
         content.addView(group)
-
-        buildFloatingSwitch()
-        buildFloatingOptions()
         addFooter("Tips：隐藏标签后需重启一次应用商店才会生效；悬浮底栏及其参数为实时生效。")
     }
 
