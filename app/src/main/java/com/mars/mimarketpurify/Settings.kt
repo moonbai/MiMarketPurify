@@ -66,7 +66,12 @@ object Settings {
     const val FLOATING_ALPHA_MIN = 35
     const val FLOATING_ALPHA_MAX = 100
     const val FLOATING_ALPHA_DEFAULT = 95
-
+    
+    //===== 原生Tab栏样式自定义 =====
+    const val KEY_TAB_SELECT_COLOR = "tab_select_color"
+    const val KEY_TAB_INDICATOR_VISIBLE = "tab_indicator_visible"
+    const val KEY_TAB_INDICATOR_COLOR = "tab_indicator_color"
+    
     /** 圆角可调区间（dp）：0=直角，上限取胶囊高度一半 */
     const val FLOATING_RADIUS_MIN = 0
     const val FLOATING_RADIUS_MAX = 29
@@ -215,16 +220,19 @@ object Settings {
      * 读取整型配置（悬浮底栏的透明度、圆角等）。
      * 与 [isEnabled] 同一套优先级：远程偏好 → 目标 app SP → 默认值。
      */
-    fun getInt(key: String, def: Int): Int {
+     /**
+ * 读取颜色整型，用于Tab颜色自定义
+ */
+    fun getInt(key: String, defColor: Int): Int {
         val remote = getRemotePrefs()
         if (remote != null) {
-            return remote.getInt(key, def)
+            return remote.getInt(key, defColor)
         }
         val raw = readFromTargetSp(key)
         raw?.toIntOrNull()?.let { return it }
-        return def
+        return defColor
     }
-
+    
     /** 透明度百分比 → 0..255 alpha 通道值。 */
     fun floatingBarAlphaPercent(): Int =
         getInt(KEY_FLOATING_BAR_ALPHA, FLOATING_ALPHA_DEFAULT)

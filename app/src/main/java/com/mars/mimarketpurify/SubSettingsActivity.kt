@@ -131,10 +131,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
 
         // addSwitchRow(group = group, title = "升级卡片展开",
-            // summary = "升级卡片默认展开显示更多应用更新",
-            // checked = readLocal(Settings.KEY_CARD_EXPAND, true), tag = Settings.KEY_CARD_EXPAND
+        // summary = "升级卡片默认展开显示更多应用更新",
+        // checked = readLocal(Settings.KEY_CARD_EXPAND, true), tag = Settings.KEY_CARD_EXPAND
         // ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
-                            
+
         addSwitchRow(group = group, title = "底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
             checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE
@@ -151,17 +151,33 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "选择需要展示的底栏标签",
             checked = readLocal(Settings.KEY_TAB_FILTER, true), tag = Settings.KEY_TAB_FILTER
         ) { on -> writeRemote(Settings.KEY_TAB_FILTER, on); updateGateState() }
-        
+
         // addSwitchRow(group = group, title = "底栏「更新」入口",
-            // summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口",
-            // checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB
+        // summary = "在底栏标签栏添加直达「应用更新」页面的快捷入口",
+        // checked = readLocal(Settings.KEY_UPDATE_TAB, false), tag = Settings.KEY_UPDATE_TAB
         // ) { on -> writeRemote(Settings.KEY_UPDATE_TAB, on) }
 
         buildTabSelectBlock(group)
+
+        // ========== 新增：原生Tab 选中色 + 底部白色横线（方案A）==========
+        addSectionHeader("原生Tab样式自定义", "仅作用于原版底部标签栏，不影响悬浮胶囊底栏", parent = group)
+        val tabColorGroup = groupCard()
+        // 选中文字/图标自定义颜色
+        addColorPickerRow(tabColorGroup, "Tab选中文字/图标颜色", Settings.KEY_TAB_SELECT_COLOR, Ui.ACCENT)
+        // 方案A：Tab指示器（底部白色横线）开关 + 颜色自定义
+        addSwitchRow(group = tabColorGroup, title = "显示Tab底部指示横线",
+            summary = "方案A：控制原生底栏下方选中项白色下划线显示/隐藏",
+            checked = readLocal(Settings.KEY_TAB_INDICATOR_VISIBLE, true),
+            tag = Settings.KEY_TAB_INDICATOR_VISIBLE
+        ) { on -> writeRemote(Settings.KEY_TAB_INDICATOR_VISIBLE, on) }
+        addColorPickerRow(tabColorGroup, "Tab指示横线颜色", Settings.KEY_TAB_INDICATOR_COLOR, 0xFFFFFFFF.toInt())
+        group.addView(tabColorGroup)
+        // =============================================================
+
         content.addView(group)
         addFooter("Tips：隐藏标签后需重启一次应用商店才会生效；悬浮底栏及其参数为实时生效。")
     }
-    
+
     /** 独立悬浮底栏高级配置页面 PAGE_TAB_BAR */
     private fun buildTabBarConfig() {
         // addSectionHeader("悬浮底栏高级配置", "胶囊外观、色彩、透明度、尺寸、动效参数")
@@ -205,10 +221,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
             writeRemote(Settings.KEY_FLOATING_BAR_BADGE, checked)
         }
         content.addView(baseGroup)
-    
+
         // ========== 全部子参数放进 floatingOptionsGroup ==========
         floatingOptionsGroup = groupCard()
-    
+
         addSectionHeader("色彩设置", "自定义胶囊与文字配色", parent = floatingOptionsGroup)
         val colorGroup = groupCard()
         addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, Ui.BG)
@@ -216,7 +232,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, Ui.TEXT_SECONDARY)
         addColorPickerRow(colorGroup, "选中文字/图标高亮色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFFFFFFFF.toInt())
         floatingOptionsGroup?.addView(colorGroup)
-    
+
         addSectionHeader("尺寸与透明度", "胶囊几何参数、背景通透度", parent = floatingOptionsGroup)
         val sizeGroup = groupCard()
         addSliderRow(sizeGroup, title = "背景透明度",
@@ -238,7 +254,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             format = { "${it}dp" }
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
         floatingOptionsGroup?.addView(sizeGroup)
-    
+
         // 底部提示也放到组内
         val tipText = TextView(this).apply {
             text = "Tips：悬浮底栏参数实时生效，改动后重新进入商店页面即可预览效果。"
@@ -247,11 +263,11 @@ class SubSettingsActivity : SettingsBaseActivity() {
             setPadding(dp(4), dp(2), dp(4), dp(16))
         }
         floatingOptionsGroup?.addView(tipText)
-    
+
         // 把整个容器加到content
         content.addView(floatingOptionsGroup)
     }
-    
+
     private fun buildMisc() {
         // addSectionHeader("其他界面精简", "各类零散页面、弹窗的冗余内容清理")
         val group = groupCard()

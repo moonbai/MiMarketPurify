@@ -22,6 +22,7 @@ import com.mars.mimarketpurify.hooks.market.SearchAds
 import com.mars.mimarketpurify.hooks.market.SplashAds
 import com.mars.mimarketpurify.hooks.market.FloatingBottomBar
 import com.mars.mimarketpurify.hooks.market.TabFilter
+import com.mars.mimarketpurify.hooks.market.TabStyleCustom
 import com.mars.mimarketpurify.hooks.market.SubTabFilter
 import com.mars.mimarketpurify.hooks.market.UiCleanup
 import com.mars.mimarketpurify.hooks.market.UpdateDownloadAds
@@ -49,6 +50,7 @@ object Market : AppRegister() {
             HideAutoUpdateSwitch,
             HideFruitEntry,
             TabFilter,
+            TabStyleCustom, // 新增这里！
             FloatingBottomBar,
             SubTabFilter,
             RankAds,
