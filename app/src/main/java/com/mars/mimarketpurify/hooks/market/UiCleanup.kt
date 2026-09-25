@@ -183,7 +183,7 @@ object UiCleanup : BaseHook() {
     }
 
     /**
-     * 统一胶囊按钮样式方法（图二效果：圆角胶囊、宽度限制、居中）
+     * 统一胶囊按钮样式方法（图二效果：圆角胶囊、宽度限制、居中，移除maximumWidth）
      */
     private fun applyBtnStyle(view: View?) {
         view ?: return
@@ -195,7 +195,7 @@ object UiCleanup : BaseHook() {
         }
         view.background = btnDrawable
 
-        // 修改布局参数，取消MATCH_PARENT/weight，设置WRAP_CONTENT+最大宽度
+        // 修改布局参数，取消MATCH_PARENT/weight，设置WRAP_CONTENT
         view.layoutParams?.let { lp ->
             when (lp) {
                 is android.widget.LinearLayout.LayoutParams -> {
@@ -209,6 +209,7 @@ object UiCleanup : BaseHook() {
                 is android.widget.FrameLayout.LayoutParams -> {
                     lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    lp.gravity = android.view.Gravity.CENTER_HORIZONTAL
                     lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
                     lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
                     view.layoutParams = lp
@@ -227,7 +228,6 @@ object UiCleanup : BaseHook() {
                 }
             }
         }
-        view.maximumWidth = (UPDATE_BTN_MAX_WIDTH_DP * density).toInt()
 
         // 清除MaterialButton tint干扰
         runCatching {
