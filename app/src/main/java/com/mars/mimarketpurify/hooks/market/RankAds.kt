@@ -51,8 +51,12 @@ object RankAds : BaseHook() {
     
                 // 判断是否是榜单v4接口返回，从上层请求url匹配
                 val stackTrace = Thread.currentThread().stackTrace
-                val isRankV4Api = stackTrace.any { element ->
-                    element.className.contains("toplist") || element.methodName.contains("toplist")
+                var isRankV4Api = false
+                for (stackElement in stackTrace) {
+                    if(stackElement.className.contains("toplist") || stackElement.methodName.contains("toplist")){
+                        isRankV4Api = true
+                        break
+                    }
                 }
                 if (!isRankV4Api) return@hooked rawResp
     
