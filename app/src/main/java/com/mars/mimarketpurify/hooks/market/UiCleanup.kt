@@ -5,8 +5,11 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.TextView
 import java.util.Collections
 import com.mars.mimarketpurify.HookEnv
@@ -92,6 +95,10 @@ object UiCleanup : BaseHook() {
                         val resName = getResourceName(it)
                         if(resName == "update_button_layout" || resName == "update_button_parent_layout"){
                             applyBtnStyle(it)
+                            // ===== 明暗切换重建View，重新执行文字角标居中 =====
+                            it.postDelayed({
+                                reCenterButtonContent(it)
+                            },100)
                         }
                     }
                     result
@@ -180,6 +187,57 @@ object UiCleanup : BaseHook() {
         root.postDelayed({ applyBtnStyle(btnLayout); applyBtnStyle(btnParent) }, 800)
 
         HookEnv.base.log(Log.INFO, TAG, "btnParent=$btnParent, btnLayout=$btnLayout")
+
+        // =====================【文字+角标整体居中逻辑】=====================
+        btnLayout?.postDelayed({
+            reCenterButtonContent(btnLayout)
+        },100)
+    }
+
+    /**
+     * 复用：按钮文字+角标居中逻辑，明暗切换重建View时调用
+     */
+    private fun reCenterButtonContent(btnLayout: View) {
+        val textView = findViewByResName(btnLayout, "update_button_text") as? TextView
+        val badgeView = findViewByResName(btnLayout, "update_button_red_badge")
+        if(textView == null || badgeView == null) return
+
+        val parentText = textView.parent as? ViewGroup
+        parentText?.removeView(textView)
+        val parentBadge = badgeView.parent as? ViewGroup
+        parentBadge?.removeView(badgeView)
+
+        // 新建水平容器，放置文字 + 角标
+        val horizontalContainer = LinearLayout(btnLayout.context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val hlp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        horizontalContainer.addView(textView, hlp)
+        // 文字和角标之间小间距
+        val badgeLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            marginStart = dp2px(4f)
+        }
+        horizontalContainer.addView(badgeView, badgeLp)
+
+        // 将水平容器放入按钮，全局居中
+        val flp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            gravity = Gravity.CENTER
+        }
+        if(btnLayout is FrameLayout){
+            btnLayout.addView(horizontalContainer, flp)
+        }else{
+            val frame = FrameLayout(btnLayout.context)
+            frame.addView(horizontalContainer, flp)
+            val frameLp = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            btnLayout.addView(frame, frameLp)
+        }
+    }
+
+    private fun dp2px(dp: Float): Int{
+        return (dp * resources.displayMetrics.density).toInt()
     }
 
     /**
@@ -263,6 +321,7 @@ object UiCleanup : BaseHook() {
     }
 
     // ═══════════════ 果园皮肤 ═══════════════
+    // 【修复】把 mine_update_dark_bg、mine_update_dark_arrow 加入拦截列表
     private val orchardDrawableNames = setOf(
         "mine_update_orchard_bg",
         "mine_update_orchard_tree_bg",
@@ -317,7 +376,7 @@ object UiCleanup : BaseHook() {
             }
         }
 
-        // hook Resources.getDrawable：命中即替换 drawable，不加载原图
+        // hook Resources.getDrawable：命中即替换 drawable，【修复】强制拦截，只要开关开启就处理dark_bg
         runCatching {
             ClassUtil.loadClass("android.content.res.Resources")
                 .methodFinder()
@@ -336,29 +395,27 @@ object UiCleanup : BaseHook() {
                             ?: return@hooked proceed()
                         if (id <= 0) return@hooked proceed()
 
-                        if (!orchardIdsResolved) {
-                            orchardDrawableIds.clear()
-                            orchardIconIds.clear()
-                            orchardDrawableNames.forEach { name ->
-                                runCatching {
-                                    val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
-                                    if (rid > 0) orchardDrawableIds.add(rid)
-                                }
+                        // 每次获取资源时重新解析，修复明暗切换资源ID缓存问题
+                        orchardDrawableIds.clear()
+                        orchardIconIds.clear()
+                        orchardDrawableNames.forEach { name ->
+                            runCatching {
+                                val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
+                                if (rid > 0) orchardDrawableIds.add(rid)
                             }
-                            orchardIconNames.forEach { name ->
-                                runCatching {
-                                    val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
-                                    if (rid > 0) orchardIconIds.add(rid)
-                                }
+                        }
+                        orchardIconNames.forEach { name ->
+                            runCatching {
+                                val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
+                                if (rid > 0) orchardIconIds.add(rid)
                             }
-                            orchardIdsResolved = true
                         }
 
                         if (id in orchardIconIds) {
                             return@hooked android.graphics.drawable.ColorDrawable(0)
                         }
                         if (id in orchardDrawableIds) {
-                            // 替换为带圆角的背景，替代原来ColorDrawable
+                            // 替换为带圆角的背景，替代原来的dark_bg原图
                             return@hooked getCardBackgroundDrawable(res, isNightResources(res))
                         }
                         proceed()
@@ -407,6 +464,7 @@ object UiCleanup : BaseHook() {
                             val btnLayout = findViewByResName(decor, "update_button_layout")
                             applyBtnStyle(btnLayout)
                             applyBtnStyle(btnParent)
+                            btnLayout?.let { reCenterButtonContent(it) }
                         }
                         schedule(300L) { scanTree(decor, 0) }
                         schedule(800L) { scanTree(decor, 0) }

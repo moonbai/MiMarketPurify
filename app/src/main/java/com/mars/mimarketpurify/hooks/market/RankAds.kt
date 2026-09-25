@@ -10,6 +10,8 @@ import com.mars.mimarketpurify.util.getFieldValue
 import dalvik.system.DexFile
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
+import org.json.JSONArray
+import org.json.JSONObject
 
 object RankAds : BaseHook() {
 
@@ -28,16 +30,92 @@ object RankAds : BaseHook() {
 
     override fun init() {
         hookAdEngine()
-        // 诊断扫描是调试工具：全量枚举 dex、反射打印每个类的方法签名并给所有 onBindData
-        // 挂日志拦截器，属于高开销路径。原实现无条件执行，等于把调试代码跑在生产环境。
-        // 这里收进调试开关（KEY_RANK_DEBUG），默认关闭时不产生任何诊断开销。
+        hookTopListV4Api() // 新增：拦截apm/toplist/v4接口返回，剔除ads=1广告
+        // 诊断扫描仅调试开关开启才执行，正式关闭
         if (isDebug()) {
             diagnosticScan()
         }
     }
 
-    // = = = = 诊断扫描（只读 + 日志观察，仅调试开关开启时执行） = = = =
+    // ===================== 新增：拦截 toplist/v4 接口返回JSON，过滤广告条目 =====================
+    private fun hookTopListV4Api() {
+        runCatching {
+            // 小米市场通用网络回调类：处理api json response
+            val apiRespClz = ClassUtil.loadClass("com.xiaomi.market.network.ApiResponse")
+            val parseMethod = apiRespClz.methodFinder()
+                .filter { it.name.contains("parse") || it.name.contains("getData") }
+                .firstOrNull()
+            parseMethod?.hooked {
+                val rawResp = proceed()
+                if(rawResp !is String) return@hooked rawResp
 
+                // 判断是否是榜单v4接口返回，从上层请求url匹配
+                val stackTrace = Thread.currentThread().stackTrace
+                val isRankV4Api = stackTrace.any {
+                    it.className.contains("toplist") || it.methodName.contains("toplist")
+                }
+                if (!isRankV4Api) return@hooked rawResp
+
+                runCatching {
+                    val root = JSONObject(rawResp)
+                    val data = root.optJSONObject("data") ?: return@runCatching
+                    val listJson: JSONArray = data.optJSONArray("list") ?: return@runCatching
+
+                    val newList = JSONArray()
+                    for (i in 0 until listJson.length()) {
+                        val item = listJson.optJSONObject(i) ?: continue
+                        val ads = item.optInt("ads", 0)
+                        val adType = item.optInt("adType", -1)
+                        // ads=1 && adType=0 广告条目直接跳过不加入新列表
+                        if (ads == 1 && adType == 0) {
+                            debugLog("[榜单广告过滤] 剔除广告条目 ads=$ads,adType=$adType")
+                            continue
+                        }
+                        newList.put(item)
+                    }
+                    data.put("list", newList)
+                    return@hooked root.toString()
+                }.onFailure {
+                    HookEnv.base.log(Log.ERROR, TAG, "[榜单接口过滤] json解析异常", it)
+                }
+                rawResp
+            }
+            HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hook toplist/v4 ApiResponse.parse ✓")
+        }.onFailure {
+            HookEnv.base.log(Log.WARN, TAG, "[榜单广告] toplist/v4 hook失败，切换兜底Binder方案: ${it.message}")
+            hookRankItemBindFilter()
+        }
+    }
+
+    // ===================== 兜底方案：Binder onBindData 读取model，隐藏广告item =====================
+    private fun hookRankItemBindFilter() {
+        realRankClasses.forEach { className ->
+            runCatching {
+                val clz = ClassUtil.loadClass(className)
+                clz.methodFinder()
+                    .filterByName("onBindData")
+                    .forEach { m ->
+                        m.hooked {
+                            val dataModel = args[0]
+                            runCatching {
+                                val ads = dataModel.getFieldValue("ads") as? Int ?: 0
+                                val adType = dataModel.getFieldValue("adType") as? Int ?: -1
+                                if (ads == 1 && adType == 0) {
+                                    // 广告项，跳过渲染
+                                    val view = args[1] as? View
+                                    view?.visibility = View.GONE
+                                    return@hooked null
+                                }
+                            }
+                            proceed()
+                        }
+                        HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked $className.onBindData 兜底过滤")
+                    }
+            }.onFailure {}
+        }
+    }
+
+    // = = = = 诊断扫描（只读 + 日志观察，仅调试开关开启时执行） = = = =
     private fun diagnosticScan() {
         var discovered = listOf<String>()
         runCatching { discovered = discoverRankClasses() }
@@ -79,7 +157,7 @@ object RankAds : BaseHook() {
             HookEnv.base.log(Log.WARN, TAG, "[诊断] AdReRankEngine 不存在: ${it.message}")
         }
 
-        // ★ 只 hook onBindData（精确方法名），不 hook 其他方法
+        // ★ debug模式下onBindData日志打印
         (realRankClasses + discovered).distinct().forEach { className ->
             runCatching {
                 val clz = ClassUtil.loadClass(className)
@@ -106,8 +184,7 @@ object RankAds : BaseHook() {
         HookEnv.base.log(Log.WARN, TAG, "=== 诊断扫描结束 ===")
     }
 
-    // = = = = AI 广告引擎拦截 = = = =
-
+    // = = = = AI 广告引擎拦截（保留，处理AI重排插入广告） = = = =
     private fun hookAdEngine() {
         runCatching {
             val engineClz = ClassUtil.loadClass("com.xiaomi.market.ai.ClientAIAdReRankEngine")
@@ -118,11 +195,9 @@ object RankAds : BaseHook() {
                 val returnType = computeMethod.returnType
                 computeMethod.hooked {
                     debugLog("[广告引擎] compute 被调用，返回安全空值")
-                    // 原实现一律返回 null：若 compute 返回 List，调用方拿到 null 可能直接 NPE。
-                    // 这里按真实返回类型返回安全空值，避免下游空指针。
                     return@hooked when {
                         returnType == java.lang.Boolean.TYPE ||
-                            returnType == java.lang.Boolean::class.java -> false
+                                returnType == java.lang.Boolean::class.java -> false
                         List::class.java.isAssignableFrom(returnType) -> emptyList<Any>()
                         else -> null
                     }
