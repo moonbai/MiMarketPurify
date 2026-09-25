@@ -53,6 +53,9 @@ object UpdateCardUi : BaseHook() {
     }
 
     private fun hookCardExpand() {
+        // 和旧代码对齐：开关关闭不hook
+        if (!Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)) return
+
         runCatching {
             val cls = ClassUtil.loadClass("com.xiaomi.market.business_ui.main.mine.view.MineUpdateView")
             cls?.methodFinder()
@@ -83,6 +86,7 @@ object UpdateCardUi : BaseHook() {
         }
     }
 
+    
     private fun flattenUpdateIcons(root: View) {
         val icons = MinePageClean.findViewByResName(root, "update_icon_layout") as? ViewGroup ?: return
         if (icons is android.widget.GridLayout) {

@@ -151,6 +151,7 @@ object MinePageClean : BaseHook() {
 
     override fun init() {
         hookVisibilityMonitor()
+        hookViewAttach() // ✅补回 onAttachedToWindow 钩子！
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
     }
@@ -175,6 +176,24 @@ object MinePageClean : BaseHook() {
                 }
         }.onFailure {
             HookEnv.base.log(Log.ERROR, TAG, "$name: setVisibility 挂钩失败", it)
+        }
+    }
+
+    // ✅【新增补回】onAttachedToWindow，每一个View加载到窗口立刻执行inspect，修复mineSecurityView/mine_middle_menu_container不隐藏
+    private fun hookViewAttach() {
+        runCatching {
+            val viewCls = ClassUtil.loadClass("android.view.View")
+            viewCls?.methodFinder()
+                ?.filterByName("onAttachedToWindow")
+                ?.first()
+                ?.hooked {
+                    val result = proceed()
+                    val v = thisObject as? View
+                    v?.let { runCatching { inspect(it) } }
+                    result
+                }
+        }.onFailure {
+            HookEnv.base.log(Log.ERROR, TAG, "$name: onAttachedToWindow 挂钩失败", it)
         }
     }
 
