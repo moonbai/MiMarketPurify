@@ -42,12 +42,16 @@ object UiCleanup : BaseHook() {
     private fun getCleanupIdSet(v: View): Set<Int> = idSet(v, "cleanup", mineCleanupIds)
     private fun getCleanupTitleIdSet(v: View): Set<Int> = idSet(v, "cleanup_title", mineCleanupTitleIds)
 
-    // ================= 常量定义：圆角 & 颜色 =================
+    // ================= 常量定义：圆角 & 颜色 & 按钮尺寸【适配图二胶囊按钮】 =================
     // 更新卡片背景圆角 dp
     private const val CARD_RADIUS_DP = 16f
     // 一键更新按钮颜色 #FF0DAE73
     private const val UPDATE_BTN_COLOR = 0xFF0DAE73.toInt()
-    private const val BTN_RADIUS_DP = 12f
+    private const val BTN_RADIUS_DP = 24f
+    // 胶囊按钮最大宽度，匹配图二效果
+    private const val UPDATE_BTN_MAX_WIDTH_DP = 200f
+    // 按钮左右外边距
+    private const val UPDATE_BTN_MARGIN_HORIZONTAL_DP = 12f
 
     // ═══════════════ init ═══════════════
     override fun init() {
@@ -84,22 +88,10 @@ object UiCleanup : BaseHook() {
                     v?.let {
                         runCatching { inspect(it) }
 
-                        // ========== 一键更新按钮attach时强制重绘背景 ==========
+                        // ========== 一键更新按钮attach时强制重绘背景+布局参数 ==========
                         val resName = getResourceName(it)
                         if(resName == "update_button_layout" || resName == "update_button_parent_layout"){
-                            val density = it.resources.displayMetrics.density
-                            val btnDrawable = GradientDrawable().apply {
-                                shape = GradientDrawable.RECTANGLE
-                                setColor(UPDATE_BTN_COLOR)
-                                cornerRadius = BTN_RADIUS_DP * density
-                            }
-                            it.background = btnDrawable
-                            // 清除MaterialButton tint
-                            runCatching {
-                                val setTint = it::class.java.getDeclaredMethod("setBackgroundTintList", android.content.res.ColorStateList::class.java)
-                                setTint.isAccessible = true
-                                setTint.invoke(it, null)
-                            }
+                            applyBtnStyle(it)
                         }
                     }
                     result
@@ -179,31 +171,70 @@ object UiCleanup : BaseHook() {
         val btnParent = findViewByResName(root, "update_button_parent_layout")
         val btnLayout = findViewByResName(root, "update_button_layout")
 
-        fun applyBg(view: View?) {
-            view ?: return
-            val density = view.resources.displayMetrics.density
-            val btnDrawable = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                setColor(UPDATE_BTN_COLOR)
-                cornerRadius = BTN_RADIUS_DP * density
-            }
-            view.background = btnDrawable
-            runCatching {
-                val setTint = view::class.java.getDeclaredMethod("setBackgroundTintList", android.content.res.ColorStateList::class.java)
-                setTint.isAccessible = true
-                setTint.invoke(view, null)
-            }
-        }
-
-        // 立刻应用
-        applyBg(btnLayout)
-        applyBg(btnParent)
+        // 立刻应用胶囊样式
+        applyBtnStyle(btnLayout)
+        applyBtnStyle(btnParent)
         // 延迟多次覆盖，对抗Market原生UI刷新
-        root.postDelayed({ applyBg(btnLayout); applyBg(btnParent) }, 150)
-        root.postDelayed({ applyBg(btnLayout); applyBg(btnParent) }, 400)
-        root.postDelayed({ applyBg(btnLayout); applyBg(btnParent) }, 800)
+        root.postDelayed({ applyBtnStyle(btnLayout); applyBtnStyle(btnParent) }, 150)
+        root.postDelayed({ applyBtnStyle(btnLayout); applyBtnStyle(btnParent) }, 400)
+        root.postDelayed({ applyBtnStyle(btnLayout); applyBtnStyle(btnParent) }, 800)
 
         HookEnv.base.log(Log.INFO, TAG, "btnParent=$btnParent, btnLayout=$btnLayout")
+    }
+
+    /**
+     * 统一胶囊按钮样式方法（图二效果：圆角胶囊、宽度限制、居中）
+     */
+    private fun applyBtnStyle(view: View?) {
+        view ?: return
+        val density = view.resources.displayMetrics.density
+        val btnDrawable = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(UPDATE_BTN_COLOR)
+            cornerRadius = BTN_RADIUS_DP * density
+        }
+        view.background = btnDrawable
+
+        // 修改布局参数，取消MATCH_PARENT/weight，设置WRAP_CONTENT+最大宽度
+        view.layoutParams?.let { lp ->
+            when (lp) {
+                is android.widget.LinearLayout.LayoutParams -> {
+                    lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    lp.weight = 0f
+                    lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                    lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                    view.layoutParams = lp
+                }
+                is android.widget.FrameLayout.LayoutParams -> {
+                    lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                    lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                    view.layoutParams = lp
+                }
+                is android.widget.RelativeLayout.LayoutParams -> {
+                    lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                    lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                    view.layoutParams = lp
+                }
+                else -> {
+                    lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    view.layoutParams = lp
+                }
+            }
+        }
+        view.maximumWidth = (UPDATE_BTN_MAX_WIDTH_DP * density).toInt()
+
+        // 清除MaterialButton tint干扰
+        runCatching {
+            val setTint = view::class.java.getDeclaredMethod("setBackgroundTintList", android.content.res.ColorStateList::class.java)
+            setTint.isAccessible = true
+            setTint.invoke(view, null)
+        }
     }
 
     private fun findViewByResName(root: View, resName: String): View? {
@@ -353,27 +384,12 @@ object UiCleanup : BaseHook() {
                         }
 
                         scanTree(decor, 0)
-                        // 页面恢复时，重新给一键升级按钮上色
+                        // 页面恢复时，重新给一键升级按钮上色+布局
                         schedule(400L) {
                             val btnParent = findViewByResName(decor, "update_button_parent_layout")
                             val btnLayout = findViewByResName(decor, "update_button_layout")
-                            fun applyBg(view: View?) {
-                                view ?: return
-                                val density = view.resources.displayMetrics.density
-                                val btnDrawable = GradientDrawable().apply {
-                                    shape = GradientDrawable.RECTANGLE
-                                    setColor(UPDATE_BTN_COLOR)
-                                    cornerRadius = BTN_RADIUS_DP * density
-                                }
-                                view.background = btnDrawable
-                                runCatching {
-                                    val setTint = view::class.java.getDeclaredMethod("setBackgroundTintList", android.content.res.ColorStateList::class.java)
-                                    setTint.isAccessible = true
-                                    setTint.invoke(view, null)
-                                }
-                            }
-                            applyBg(btnLayout)
-                            applyBg(btnParent)
+                            applyBtnStyle(btnLayout)
+                            applyBtnStyle(btnParent)
                         }
                         schedule(300L) { scanTree(decor, 0) }
                         schedule(800L) { scanTree(decor, 0) }
