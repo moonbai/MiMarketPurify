@@ -8,17 +8,18 @@ import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
 import com.mars.mimarketpurify.util.getFieldValue
 import dalvik.system.DexFile
-import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 import org.json.JSONArray
 import org.json.JSONObject
+import java.lang.reflect.Method
 
 object RankAds : BaseHook() {
 
     override val prefKey: String = Settings.KEY_RANK
     override val name: String get() = "移除榜单广告"
 
-    private val realRankClasses = listOf(
+    // 手写fallback列表，dex扫描失败就用这份
+    private val fallbackRankClasses = listOf(
         "com.xiaomi.market.agent.AgentRankItemBinder",
         "com.xiaomi.market.agent.AgentRankItemView",
         "com.xiaomi.market.agent.AgentRankVerticalCardBinder",
@@ -28,9 +29,20 @@ object RankAds : BaseHook() {
         "com.xiaomi.market.agent.AgentRankTabFragment"
     )
 
+    // ThreadLocal标记：标记当前线程是否正在处理toplist/v4榜单请求
+    private val isRankApiThread = ThreadLocal<Boolean>()
+
     override fun init() {
+        if (!Settings.isEnabled(Settings.KEY_RANK, true)) {
+            debugLog("榜单广告：开关关闭，不执行hook")
+            return
+        }
+        debugLog("榜单广告模块初始化开始")
+
         hookAdEngine()
         hookTopListV4Api()
+        hookRankItemBindFilter()
+
         if (isDebug()) {
             diagnosticScan()
         }
@@ -38,41 +50,53 @@ object RankAds : BaseHook() {
 
     private fun hookTopListV4Api() {
         runCatching {
+            // 1. hook请求发出处，检测url包含toplist/v4打上ThreadLocal标记
+            val okhttpClz = ClassUtil.loadClass("okhttp3.Request\$Builder")
+            okhttpClz?.methodFinder()?.filterByName("url")?.forEach { method ->
+                method.hooked { chain ->
+                    val urlArg = chain.args[0]
+                    if(urlArg is String && urlArg.contains("/apm/toplist/v4")){
+                        isRankApiThread.set(true)
+                        debugLog("识别到榜单toplist/v4请求，设置线程标记")
+                    }
+                    val ret = chain.proceed()
+                    isRankApiThread.remove()
+                    return@hooked ret
+                }
+            }
+
+            // 2. hook ApiResponse.parse，读取ThreadLocal标记做JSON过滤
             val apiRespClz = ClassUtil.loadClass("com.xiaomi.market.network.ApiResponse")
             val parseMethod = apiRespClz.declaredMethods.firstOrNull { m ->
                 m.name.contains("parse") || m.name.contains("getData")
             }
-            parseMethod?.hooked {
-                val rawResp = proceed()
-                if (rawResp !is String) return@hooked rawResp
-    
-                val stackTrace = Thread.currentThread().stackTrace
-                var isRankV4Api = false
-                for (stackElement in stackTrace) {
-                    if (stackElement.className.contains("toplist") || stackElement.methodName.contains("toplist")) {
-                        isRankV4Api = true
-                        break
-                    }
-                }
-                if (!isRankV4Api) return@hooked rawResp
-    
+            parseMethod?.hooked { chain ->
+                val rawResp = chain.proceed()
+                val isRankApi = isRankApiThread.get() == true
+                debugLog("ApiResponse parse, isRankApi=$isRankApi")
+                if (!isRankApi || rawResp !is String) return@hooked rawResp
+
                 runCatching {
                     val root = JSONObject(rawResp)
-                    val data = root.optJSONObject("data") ?: return@runCatching
-                    val listJson: JSONArray = data.optJSONArray("list") ?: return@runCatching
-    
-                    val newList = JSONArray()
-                    for (i in 0 until listJson.length()) {
-                        val item = listJson.optJSONObject(i) ?: continue
+                    // ========== 修复真实JSON层级！！ ==========
+                    val outerList = root.optJSONArray("list") ?: return@runCatching
+                    val firstItem = outerList.optJSONObject(0) ?: return@runCatching
+                    val innerData = firstItem.optJSONObject("data") ?: return@runCatching
+                    val listApp: JSONArray = innerData.optJSONArray("listApp") ?: return@runCatching
+
+                    val newListApp = JSONArray()
+                    for (i in 0 until listApp.length()) {
+                        val item = listApp.optJSONObject(i) ?: continue
                         val ads = item.optInt("ads", 0)
                         val adType = item.optInt("adType", -1)
+                        // 业务规则：仅 ads=1 && adType=0 才是商业广告；adType=2运营位保留
                         if (ads == 1 && adType == 0) {
-                            debugLog("[榜单广告过滤] 剔除广告条目 ads=$ads,adType=$adType")
+                            debugLog("[JSON过滤] 剔除商业广告 ads=$ads,adType=$adType")
                             continue
                         }
-                        newList.put(item)
+                        newListApp.put(item)
                     }
-                    data.put("list", newList)
+                    innerData.put("listApp", newListApp)
                     return@hooked root.toString()
                 }.onFailure { ex ->
                     HookEnv.base.log(Log.ERROR, TAG, "[榜单接口过滤] json解析异常", ex)
@@ -81,33 +105,44 @@ object RankAds : BaseHook() {
             }
             HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hook toplist/v4 ApiResponse.parse ✓")
         }.onFailure { ex ->
-            HookEnv.base.log(Log.WARN, TAG, "[榜单广告] toplist/v4 hook失败，切换兜底Binder方案: ${ex.message}")
-            hookRankItemBindFilter()
+            HookEnv.base.log(Log.WARN, TAG, "[榜单广告] toplist/v4 hook失败，仅保留兜底Binder方案: ${ex.message}")
         }
     }
-    
+
     private fun hookRankItemBindFilter() {
-        realRankClasses.forEach { className ->
+        var rankClassNames = discoverRankClasses()
+        debugLog("dex扫描rank类数量=${rankClassNames.size}")
+        // 扫描结果为空 → fallback手写列表，防止dexElements遍历失效
+        if(rankClassNames.isEmpty()){
+            debugLog("dex扫描无结果，回退fallback硬编码类名单")
+            rankClassNames = fallbackRankClasses
+        }
+
+        rankClassNames.forEach { className ->
             runCatching {
-                val clz = ClassUtil.loadClass(className)
-                clz.methodFinder()
-                    .filterByName("onBindData")
-                    .forEach { m ->
-                        m.hooked {
-                            val dataModel = args[0]
-                            runCatching {
-                                val ads = dataModel.getFieldValue("ads") as? Int ?: 0
-                                val adType = dataModel.getFieldValue("adType") as? Int ?: -1
-                                if (ads == 1 && adType == 0) {
-                                    (args[1] as? View)?.visibility = View.GONE
-                                    return@hooked null
-                                }
+                val clz = ClassUtil.loadClass(className) ?: return@forEach
+                clz.declaredMethods.filter { m -> m.name == "onBindData" }.forEach { m ->
+                    m.hooked { chain ->
+                        val dataModel = chain.args[0]
+                        runCatching {
+                            val ads = dataModel.getFieldValue("ads") as? Int ?: 0
+                            val adType = dataModel.getFieldValue("adType") as? Int ?: -1
+                            HookEnv.base.log(Log.DEBUG, TAG, "onBindData ads=$ads adType=$adType")
+
+                            // 业务条件：仅 ads=1 && adType=0 屏蔽
+                            if (ads == 1 && adType == 0) {
+                                val itemView = chain.args[1] as? View
+                                itemView?.visibility = View.GONE
+                                debugLog("[兜底过滤] 隐藏商业广告Item ads=$ads adType=$adType")
                             }
-                            proceed()
                         }
-                        HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked $className.onBindData 兜底过滤")
+                        chain.proceed()
                     }
-            }.onFailure { }
+                    HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked $className.onBindData 兜底过滤")
+                }
+            }.onFailure {
+                debugLog("加载类失败 $className")
+            }
         }
     }
 
@@ -116,22 +151,18 @@ object RankAds : BaseHook() {
         runCatching { discovered = discoverRankClasses() }
 
         HookEnv.base.log(Log.WARN, TAG, "=== 诊断扫描开始 ===")
-
-        (realRankClasses + discovered).distinct().forEach { className ->
+        discovered.distinct().forEach { className ->
             runCatching {
                 val clz = ClassUtil.loadClass(className)
                 val methods = clz.declaredMethods
                     .filter { java.lang.reflect.Modifier.isPublic(it.modifiers) }
                     .map { "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})" }
                 HookEnv.base.log(Log.WARN, TAG, "[诊断] $className: ${methods.size} 个方法")
-                methods.forEach { m ->
-                    HookEnv.base.log(Log.WARN, TAG, "[诊断]   $m")
-                }
+                methods.forEach { m -> HookEnv.base.log(Log.WARN, TAG, "[诊断]   $m") }
                 clz.declaredFields.forEach { f ->
                     val name = f.name.lowercase()
-                    if (name.contains("ad") || name.contains("sponsor") || name.contains("promo") ||
-                        name.contains("type") || name.contains("tag")
-                    ) {
+                    if (name.contains("ad") || name.contains("sponsor") || name.contains("promo")
+                        || name.contains("type") || name.contains("tag")) {
                         HookEnv.base.log(Log.WARN, TAG, "[诊断]   字段: ${f.name} (${f.type.simpleName})")
                     }
                 }
@@ -146,34 +177,9 @@ object RankAds : BaseHook() {
                 "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})"
             }
             HookEnv.base.log(Log.WARN, TAG, "[诊断] AdReRankEngine: ${methods.size} 个方法")
-            methods.forEach { m ->
-                HookEnv.base.log(Log.WARN, TAG, "[诊断]   $m")
-            }
+            methods.forEach { m -> HookEnv.base.log(Log.WARN, TAG, "[诊断]   $m") }
         }.onFailure { ex ->
             HookEnv.base.log(Log.WARN, TAG, "[诊断] AdReRankEngine 不存在: ${ex.message}", ex)
-        }
-
-        (realRankClasses + discovered).distinct().forEach { className ->
-            runCatching {
-                val clz = ClassUtil.loadClass(className)
-                clz.methodFinder()
-                    .filterByName("onBindData")
-                    .forEach { m ->
-                        m.hooked {
-                            val argsStr = args.joinToString(", ") { arg ->
-                                when (arg) {
-                                    null -> "null"
-                                    is View -> "View#${arg.javaClass.simpleName}"
-                                    is CharSequence -> "String='${arg.take(50)}'"
-                                    else -> "${arg.javaClass.simpleName}"
-                                }
-                            }
-                            HookEnv.base.log(Log.WARN, TAG, "[绑定] ${clz.simpleName}.onBindData($argsStr)")
-                            return@hooked proceed()
-                        }
-                        HookEnv.base.log(Log.DEBUG, TAG, "[绑定] hooked ${className}.onBindData")
-                    }
-            }.onFailure { }
         }
 
         HookEnv.base.log(Log.WARN, TAG, "=== 诊断扫描结束 ===")
@@ -187,11 +193,10 @@ object RankAds : BaseHook() {
             }
             if (computeMethod != null) {
                 val returnType = computeMethod.returnType
-                computeMethod.hooked {
+                computeMethod.hooked { chain ->
                     debugLog("[广告引擎] compute 被调用，返回安全空值")
                     return@hooked when {
-                        returnType == java.lang.Boolean.TYPE ||
-                                returnType == java.lang.Boolean::class.java -> false
+                        returnType == java.lang.Boolean.TYPE || returnType == java.lang.Boolean::class.java -> false
                         List::class.java.isAssignableFrom(returnType) -> emptyList<Any>()
                         else -> null
                     }
@@ -222,6 +227,6 @@ object RankAds : BaseHook() {
         }.onFailure { ex ->
             HookEnv.base.log(Log.WARN, TAG, "$name: dex 扫描不可用：${ex.message}", ex)
         }
-        return found
+        return found.distinct()
     }
 }

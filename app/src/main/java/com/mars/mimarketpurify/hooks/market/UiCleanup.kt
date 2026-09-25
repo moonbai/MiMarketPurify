@@ -249,7 +249,12 @@ object UiCleanup : BaseHook() {
             cornerRadius = BTN_RADIUS_DP * density
         }
         view.background = btnDrawable
-
+        // 在 applyBtnStyle() 末尾，view.background = btnDrawable 之后添加
+        val density = view.resources.displayMetrics.density
+        val padVertical = (18f * density).toInt() // 上下内边距，越大按钮越高
+        val padHorizontal = (20f * density).toInt()
+        view.setPadding(padHorizontal, padVertical, padHorizontal, padVertical)
+        
         view.layoutParams?.let { lp ->
             when (lp) {
                 is android.widget.LinearLayout.LayoutParams -> {
