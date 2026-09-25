@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.LinearLayout
@@ -163,7 +164,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             default = false
         ) { checked ->
             writeRemote(Settings.KEY_FLOATING_BAR, checked)
-            floatingOptionsGroup?.visibility = if (checked) View.VISIBLE else View.GONE
+            floatingOptionsGroup?.visibility = if (mainSwitchEnable) View.VISIBLE else View.GONE
             updateGateState()
         }
     

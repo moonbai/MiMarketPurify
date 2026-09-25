@@ -143,6 +143,16 @@ object UiCleanup : BaseHook() {
     private val orchardDrawableIds = Collections.synchronizedSet(mutableSetOf<Int>())
     private var orchardIdsResolved = false
 
+    private val orchardMethods = listOf(
+        "applyUpdateViewOrchardStyle",
+        "applyViewOrchardState",
+        "applyEmptyViewOrchardState"
+    )
+    private val updateViewClasses = listOf(
+        "com.xiaomi.market.business_ui.main.mine.view.MineUpdateView",
+        "com.xiaomi.market.business_ui.main.mine.view.MineUpdateLayout"
+    )
+
     private fun hookOrchardSkin() {
         // 1) 保留原有 apply* 方法 hook 作为兜底（清掉已设上的背景）
         updateViewClasses.forEach { owner ->
