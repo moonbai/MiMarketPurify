@@ -23,7 +23,9 @@ import com.mars.mimarketpurify.hooks.market.SplashAds
 import com.mars.mimarketpurify.hooks.market.FloatingBottomBar
 import com.mars.mimarketpurify.hooks.market.TabFilter
 import com.mars.mimarketpurify.hooks.market.SubTabFilter
-import com.mars.mimarketpurify.hooks.market.UiCleanupMain
+import com.mars.mimarketpurify.hooks.market.UpdateCardSkin
+import com.mars.mimarketpurify.hooks.market.MinePageClean
+import com.mars.mimarketpurify.hooks.market.UpdateCardUi
 import com.mars.mimarketpurify.hooks.market.UpdateDownloadAds
 import com.mars.mimarketpurify.init.AppPackage
 import com.mars.mimarketpurify.init.AppRegister
@@ -53,7 +55,9 @@ object Market : AppRegister() {
             FloatingBottomBar,
             SubTabFilter,
             RankAds,
-            UiCleanupMain,
+            MinePageClean,
+            UpdateCardSkin,
+            UpdateCardUi,
             RecommendSections,
             TabBadge,
             EntranceAds,
