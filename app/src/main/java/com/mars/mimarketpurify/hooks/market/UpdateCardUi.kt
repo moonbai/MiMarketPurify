@@ -54,23 +54,41 @@ object UpdateCardUi : BaseHook() {
         }
     }
 
-    // 递归遍历View树：同时处理按钮背景 和 mine_app_update_title文字颜色
+    // 递归遍历View树：同时处理按钮背景、标题、empty文字、箭头
     private fun refreshAllUpdateButton(rootView: View?) {
         rootView ?: return
         val resName = MinePageClean.getResourceName(rootView)
 
-        // 1. 更新一键升级按钮背景
-        if (resName == "update_button_layout" || resName == "update_button_parent_layout") {
-            applyBtnColorOnly(rootView)
+        // 1. 一键升级按钮
+        if (resName == "update_button_layout") {
+            applyBtnColorOnly(rootView, true) // 内层按钮：设置背景 + 修改padding（降低高度）
+        }
+        if (resName == "update_button_parent_layout") {
+            applyBtnColorOnly(rootView, false) // 外层容器：仅上色，不修改padding
         }
 
-        // 2. 更新标题 mine_app_update_title
+        // 2. mine_app_update_title 标题
         if(resName == "mine_app_update_title" && rootView is TextView){
             val isNight = rootView.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
             if(isNight){
                 rootView.setTextColor(TITLE_WHITE)
             }
-            // 浅色模式：不做任何修改，保留商店原生颜色
+        }
+
+        // 3. update_empty_text
+        if(resName == "update_empty_text" && rootView is TextView){
+            val isNight = rootView.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            if(isNight){
+                rootView.setTextColor(TITLE_WHITE)
+            }
+        }
+
+        // 4. mine_update_arrow 箭头文字
+        if(resName == "mine_update_arrow" && rootView is TextView){
+            val isNight = rootView.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            if(isNight){
+                rootView.setTextColor(TITLE_WHITE)
+            }
         }
 
         if (rootView is ViewGroup) {
@@ -90,16 +108,27 @@ object UpdateCardUi : BaseHook() {
                     val result = proceed()
                     val v = thisObject as? View ?: return@hooked result
                     val resName = MinePageClean.getResourceName(v)
+
                     // 按钮
-                    if(resName == "update_button_layout" || resName == "update_button_parent_layout"){
-                        applyBtnColorOnly(v)
+                    if(resName == "update_button_layout"){
+                        applyBtnColorOnly(v, true)
                     }
-                    // 标题TextView
+                    if(resName == "update_button_parent_layout"){
+                        applyBtnColorOnly(v, false)
+                    }
+
+                    // 文本控件
                     if(resName == "mine_app_update_title" && v is TextView){
                         val isNight = v.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-                        if(isNight){
-                            v.setTextColor(TITLE_WHITE)
-                        }
+                        if(isNight) v.setTextColor(TITLE_WHITE)
+                    }
+                    if(resName == "update_empty_text" && v is TextView){
+                        val isNight = v.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+                        if(isNight) v.setTextColor(TITLE_WHITE)
+                    }
+                    if(resName == "mine_update_arrow" && v is TextView){
+                        val isNight = v.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+                        if(isNight) v.setTextColor(TITLE_WHITE)
                     }
                     result
                 }
@@ -169,22 +198,22 @@ object UpdateCardUi : BaseHook() {
         val btnParent = MinePageClean.findViewByResName(root, "update_button_parent_layout")
         val btnLayout = MinePageClean.findViewByResName(root, "update_button_layout")
 
-        applyBtnColorOnly(btnLayout)
-        applyBtnColorOnly(btnParent)
-        root.postDelayed({ applyBtnColorOnly(btnLayout); applyBtnColorOnly(btnParent) }, 150)
-        root.postDelayed({ applyBtnColorOnly(btnLayout); applyBtnColorOnly(btnParent) }, 400)
-        root.postDelayed({ applyBtnColorOnly(btnLayout); applyBtnColorOnly(btnParent) }, 800)
+        applyBtnColorOnly(btnLayout, true)
+        applyBtnColorOnly(btnParent, false)
+        root.postDelayed({ applyBtnColorOnly(btnLayout, true); applyBtnColorOnly(btnParent, false) }, 150)
+        root.postDelayed({ applyBtnColorOnly(btnLayout, true); applyBtnColorOnly(btnParent, false) }, 400)
+        root.postDelayed({ applyBtnColorOnly(btnLayout, true); applyBtnColorOnly(btnParent, false) }, 800)
 
-        // 同时刷新标题文字
+        // 同时刷新所有文本颜色
         refreshAllUpdateButton(root)
 
         HookEnv.base.log(Log.INFO, TAG, "btnParent=$btnParent, btnLayout=$btnLayout")
     }
 
     /**
-     * 修改按钮背景颜色+圆角，降低垂直内边距缩小按钮高度
+     * @param modifyPadding true=修改垂直padding降低高度（仅内层update_button_layout）
      */
-    fun applyBtnColorOnly(view: View?) {
+    fun applyBtnColorOnly(view: View?, modifyPadding: Boolean) {
         view ?: return
         val density = view.resources.displayMetrics.density
         val btnDrawable = GradientDrawable().apply {
@@ -194,9 +223,11 @@ object UpdateCardUi : BaseHook() {
         }
         view.background = btnDrawable
 
-        // 水平padding保持原生，垂直设6dp，降低按钮高度
-        val padVertical = (6f * density).toInt()
-        view.setPadding(view.paddingLeft, padVertical, view.paddingRight, padVertical)
+        // 仅内层按钮修改上下padding，降低按钮高度
+        if(modifyPadding){
+            val padVertical = (6f * density).toInt()
+            view.setPadding(view.paddingLeft, padVertical, view.paddingRight, padVertical)
+        }
 
         runCatching {
             val setTint = view::class.java.getDeclaredMethod(
