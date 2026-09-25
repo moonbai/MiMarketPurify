@@ -1,15 +1,14 @@
 package com.mars.mimarketpurify.hooks.market
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.init.ResIdHiderHook
 
-/**
- * 隐藏自动升级开关（资源 id 锚点 + 文案兜底，对抗资源名漂移）。
- * 基础逻辑见模板类 [ResIdHiderHook]。
- */
 object HideAutoUpdateSwitch : ResIdHiderHook(resName = "auto_update_item_open") {
 
     override val prefKey: String = Settings.KEY_HIDE_AUTO_UPDATE_SWITCH
@@ -17,8 +16,21 @@ object HideAutoUpdateSwitch : ResIdHiderHook(resName = "auto_update_item_open") 
     override val name: String
         get() = "隐藏自动升级开关"
 
-    /** 兜底：ID 没命中但子树含「自动升级」+「WLAN网络下」文案时也隐藏 */
-    override fun fallbackHit(view: View): Boolean = containsAutoUpdateText(view)
+    private const val TARGET_ACTIVITY = "com.xiaomi.market.ui.UpdateListActivity"
+
+    private fun isTargetActivity(ctx: Context?): Boolean {
+        var c: Context? = ctx
+        while (c is ContextWrapper) {
+            if (c is Activity) return c.javaClass.name == TARGET_ACTIVITY
+            c = c.baseContext
+        }
+        return false
+    }
+
+    override fun fallbackHit(view: View): Boolean {
+        if (!isTargetActivity(view.context)) return false
+        return containsAutoUpdateText(view)
+    }
 
     private fun containsAutoUpdateText(view: View): Boolean {
         if (view is TextView) {

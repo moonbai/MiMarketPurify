@@ -134,18 +134,17 @@ object UiCleanup : BaseHook() {
         return findViewById(root, targetId)
     }
 
-    // ═══════════════ 果园皮肤：内部实时读开关，去掉静态互斥 ═══════════════
-    private val orchardMethods = listOf(
-        "applyUpdateViewOrchardStyle",
-        "applyViewOrchardState",
-        "applyEmptyViewOrchardState"
+    // ═══════════════ 果园皮肤：hook Resources.getDrawable 从源头返回透明 ═══════════════
+    private val orchardDrawableNames = setOf(
+        "mine_update_orchard_bg",
+        "mine_update_orchard_tree_bg"
     )
-    private val updateViewClasses = listOf(
-        "com.xiaomi.market.business_ui.main.mine.view.MineUpdateView",
-        "com.xiaomi.market.business_ui.main.mine.view.MineUpdateLayout"
-    )
+    /** 已解析出的目标资源 id（懒解析，避免每次 getDrawable 都查 entryName） */
+    private val orchardDrawableIds = Collections.synchronizedSet(mutableSetOf<Int>())
+    private var orchardIdsResolved = false
 
     private fun hookOrchardSkin() {
+        // 1) 保留原有 apply* 方法 hook 作为兜底（清掉已设上的背景）
         updateViewClasses.forEach { owner ->
             runCatching {
                 val cls = ClassUtil.loadClass(owner)
@@ -153,7 +152,6 @@ object UiCleanup : BaseHook() {
                     cls.methodFinder().filterByName(method).forEach { m ->
                         m.hooked {
                             val result = proceed()
-                            // ✅ 这里运行时才判断，不再和 KEY_MINE_CLEANUP 互斥
                             if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
                                 (thisObject as? View)?.let { view -> view.background = null }
                             }
@@ -165,7 +163,51 @@ object UiCleanup : BaseHook() {
                 HookEnv.base.log(Log.VERBOSE, TAG, "$name: 无 $owner，跳过果园皮肤处理", null)
             }
         }
+
+        // 2) hook Resources.getDrawable：请求果园背景图时返回透明
+        runCatching {
+            ClassUtil.loadClass("android.content.res.Resources")
+                .methodFinder()
+                .filterByName("getDrawable")
+                .forEach { m ->
+                    m.hooked {
+                        val result = proceed()
+                        if (!Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
+                            return@hooked result
+                        }
+                        val res = thisObject as? android.content.res.Resources
+                            ?: return@hooked result
+                        val id = m.parameterTypes
+                            .indexOfFirst { it == Int::class.javaPrimitiveType }
+                            .takeIf { it >= 0 }
+                            ?.let { args[it] as? Int }
+                            ?: return@hooked result
+                        if (id <= 0) return@hooked result
+
+                        // 首次调用时解析目标资源 id
+                        if (!orchardIdsResolved) {
+                            orchardDrawableIds.clear()
+                            orchardDrawableNames.forEach { name ->
+                                runCatching {
+                                    val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
+                                    if (rid > 0) orchardDrawableIds.add(rid)
+                                }
+                            }
+                            orchardIdsResolved = true
+                        }
+
+                        if (id in orchardDrawableIds) {
+                            // 返回透明 drawable，不影响其他资源
+                            return@hooked android.graphics.drawable.ColorDrawable(0)
+                        }
+                        result
+                    }
+                }
+        }.onFailure {
+            HookEnv.base.log(Log.ERROR, TAG, "$name: hook Resources.getDrawable 失败", it)
+        }
     }
+
 
     // ═══════════════ onResume 补扫（任务去重版） ═══════════════
     private fun hookActivityRescan(className: String) {
