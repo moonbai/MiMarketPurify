@@ -24,7 +24,7 @@ object UpdateCardUi : BaseHook() {
     private const val BTN_RADIUS_DP = 24f
     private const val UPDATE_BTN_MARGIN_HORIZONTAL_DP = 12f
 
-    // tag标记：防止短时间重复执行居中逻辑，避免多层布局嵌套爆炸
+    // tag标记：防止短时间重复执行居中逻辑
     private val TAG_RECENTER_DONE = View.generateViewId()
 
     override fun init() {
@@ -44,7 +44,7 @@ object UpdateCardUi : BaseHook() {
                     val resName = MinePageClean.getResourceName(v)
                     if(resName == "update_button_layout" || resName == "update_button_parent_layout"){
                         applyBtnStyle(v)
-                        // tag判断：避免短时间重复调度
+                        // tag防重复执行
                         if(v.getTag(TAG_RECENTER_DONE) != true){
                             v.setTag(TAG_RECENTER_DONE, true)
                             v.postDelayed({
@@ -61,7 +61,6 @@ object UpdateCardUi : BaseHook() {
     }
 
     private fun hookCardExpand() {
-        // 和旧代码对齐：开关关闭不hook
         if (!Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)) return
 
         runCatching {
@@ -140,57 +139,19 @@ object UpdateCardUi : BaseHook() {
         }
     }
 
+    // 【重写！不再removeView，不重构布局树，只做位移微调，避免文字消失】
     private fun reCenterButtonContent(btnLayout: View) {
-        val btnViewGroup = btnLayout as? ViewGroup ?: return
-
-        // =========【第一步：强制清理我们之前动态添加的容器，无论能不能找到原始控件】=========
-        val toRemove = mutableListOf<View>()
-        for(i in 0 until btnViewGroup.childCount) {
-            val child = btnViewGroup.getChildAt(i)
-            // 识别我们自己插入的容器：FrameLayout / LinearLayout，原始布局不会嵌套这两层
-            if(child is FrameLayout || child is LinearLayout) {
-                toRemove.add(child)
-            }
-        }
-        toRemove.forEach { btnViewGroup.removeView(it) }
-
-        // =========【重新查找原始文字、角标控件】=========
         val textView = MinePageClean.findViewByResName(btnLayout, "update_button_text") as? TextView
         val badgeView = MinePageClean.findViewByResName(btnLayout, "update_button_red_badge")
         if(textView == null || badgeView == null) {
-            HookEnv.base.log(Log.WARN, TAG, "reCenterButtonContent: 找不到 update_button_text / update_button_red_badge，跳过居中改造")
+            HookEnv.base.log(Log.WARN, TAG, "reCenterButtonContent: 找不到 update_button_text / update_button_red_badge，跳过")
             return
         }
-
-        // 从旧父容器剥离
-        (textView.parent as? ViewGroup)?.removeView(textView)
-        (badgeView.parent as? ViewGroup)?.removeView(badgeView)
-
-        // 构建横向容器：文字 + 角标
-        val horizontalContainer = LinearLayout(btnLayout.context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val hlp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        horizontalContainer.addView(textView, hlp)
-
         val density = btnLayout.resources.displayMetrics.density
-        val badgeLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            marginStart = (4f * density).toInt()
-        }
-        horizontalContainer.addView(badgeView, badgeLp)
-
-        // 外层FrameLayout：整体垂直居中，修复文字偏下遮挡问题
-        val frame = FrameLayout(btnLayout.context)
-        val flp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            gravity = Gravity.CENTER
-        }
-        frame.addView(horizontalContainer, flp)
-
-        val frameLp = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        btnViewGroup.addView(frame, frameLp)
+        // 整体向上偏移，解决文字偏下裁切，调整这个数值微调
+        val offsetY = (-3f * density)
+        textView.translationY = offsetY
+        badgeView.translationY = offsetY
     }
 
     fun applyBtnStyle(view: View?) {
@@ -203,7 +164,6 @@ object UpdateCardUi : BaseHook() {
         }
         view.background = btnDrawable
 
-        // 【修复：垂直内边距由18dp → 10dp，解决文字底部被裁切】
         val padHorizontal = (20f * density).toInt()
         val padVertical = (10f * density).toInt()
         view.setPadding(padHorizontal, padVertical, padHorizontal, padVertical)
