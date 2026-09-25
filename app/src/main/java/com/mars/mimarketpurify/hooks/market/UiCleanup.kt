@@ -80,7 +80,28 @@ object UiCleanup : BaseHook() {
                 .first()
                 .hooked {
                     val result = proceed()
-                    (thisObject as? View)?.let { v -> runCatching { inspect(v) } }
+                    val v = thisObject as? View
+                    v?.let {
+                        runCatching { inspect(it) }
+
+                        // ========== 一键更新按钮attach时强制重绘背景 ==========
+                        val resName = getResourceName(it)
+                        if(resName == "update_button_layout" || resName == "update_button_parent_layout"){
+                            val density = it.resources.displayMetrics.density
+                            val btnDrawable = GradientDrawable().apply {
+                                shape = GradientDrawable.RECTANGLE
+                                setColor(UPDATE_BTN_COLOR)
+                                cornerRadius = BTN_RADIUS_DP * density
+                            }
+                            it.background = btnDrawable
+                            // 清除MaterialButton tint
+                            runCatching {
+                                val setTint = it::class.java.getDeclaredMethod("setBackgroundTintList", android.content.res.ColorStateList::class.java)
+                                setTint.isAccessible = true
+                                setTint.invoke(it, null)
+                            }
+                        }
+                    }
                     result
                 }
         }.onFailure {
@@ -153,17 +174,36 @@ object UiCleanup : BaseHook() {
                 }
             }
         }
-        // ========== 修改一键更新按钮逻辑 ==========
-        val btn = findViewByResName(root, "update_button_layout")
-        btn?.let { view ->
-            val drawable = GradientDrawable().apply {
+
+        // 一键更新：同时拿父容器 + 按钮容器
+        val btnParent = findViewByResName(root, "update_button_parent_layout")
+        val btnLayout = findViewByResName(root, "update_button_layout")
+
+        fun applyBg(view: View?) {
+            view ?: return
+            val density = view.resources.displayMetrics.density
+            val btnDrawable = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 setColor(UPDATE_BTN_COLOR)
-                val density = view.resources.displayMetrics.density
                 cornerRadius = BTN_RADIUS_DP * density
             }
-            view.background = drawable
+            view.background = btnDrawable
+            runCatching {
+                val setTint = view::class.java.getDeclaredMethod("setBackgroundTintList", android.content.res.ColorStateList::class.java)
+                setTint.isAccessible = true
+                setTint.invoke(view, null)
+            }
         }
+
+        // 立刻应用
+        applyBg(btnLayout)
+        applyBg(btnParent)
+        // 延迟多次覆盖，对抗Market原生UI刷新
+        root.postDelayed({ applyBg(btnLayout); applyBg(btnParent) }, 150)
+        root.postDelayed({ applyBg(btnLayout); applyBg(btnParent) }, 400)
+        root.postDelayed({ applyBg(btnLayout); applyBg(btnParent) }, 800)
+
+        HookEnv.base.log(Log.INFO, TAG, "btnParent=$btnParent, btnLayout=$btnLayout")
     }
 
     private fun findViewByResName(root: View, resName: String): View? {
@@ -212,7 +252,7 @@ object UiCleanup : BaseHook() {
             cornerRadius = CARD_RADIUS_DP * density
         }
     }
-    
+
 
     private fun hookOrchardSkin() {
         // apply* 方法 hook：proceed 即可，背景替换由 getDrawable hook 完成
@@ -313,6 +353,28 @@ object UiCleanup : BaseHook() {
                         }
 
                         scanTree(decor, 0)
+                        // 页面恢复时，重新给一键升级按钮上色
+                        schedule(400L) {
+                            val btnParent = findViewByResName(decor, "update_button_parent_layout")
+                            val btnLayout = findViewByResName(decor, "update_button_layout")
+                            fun applyBg(view: View?) {
+                                view ?: return
+                                val density = view.resources.displayMetrics.density
+                                val btnDrawable = GradientDrawable().apply {
+                                    shape = GradientDrawable.RECTANGLE
+                                    setColor(UPDATE_BTN_COLOR)
+                                    cornerRadius = BTN_RADIUS_DP * density
+                                }
+                                view.background = btnDrawable
+                                runCatching {
+                                    val setTint = view::class.java.getDeclaredMethod("setBackgroundTintList", android.content.res.ColorStateList::class.java)
+                                    setTint.isAccessible = true
+                                    setTint.invoke(view, null)
+                                }
+                            }
+                            applyBg(btnLayout)
+                            applyBg(btnParent)
+                        }
                         schedule(300L) { scanTree(decor, 0) }
                         schedule(800L) { scanTree(decor, 0) }
 
