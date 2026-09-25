@@ -137,7 +137,9 @@ object UiCleanup : BaseHook() {
     // ═══════════════ 果园皮肤：hook Resources.getDrawable 从源头返回透明 ═══════════════
     private val orchardDrawableNames = setOf(
         "mine_update_orchard_bg",
-        "mine_update_orchard_tree_bg"
+        "mine_update_orchard_tree_bg",
+        "mine_update_dark_bg",
+        "mine_update_dark_arrow"
     )
     /** 已解析出的目标资源 id（懒解析，避免每次 getDrawable 都查 entryName） */
     private val orchardDrawableIds = Collections.synchronizedSet(mutableSetOf<Int>())
@@ -163,7 +165,14 @@ object UiCleanup : BaseHook() {
                         m.hooked {
                             val result = proceed()
                             if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
-                                (thisObject as? View)?.let { view -> view.background = null }
+                                (thisObject as? View)?.let { view ->
+                                    val isNight = (view.resources.configuration.uiMode and
+                                        android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                                        android.content.res.Configuration.UI_MODE_NIGHT_YES
+                                    view.setBackgroundColor(
+                                        if (isNight) 0xFF242424.toInt() else 0xFFFFFFFF.toInt()
+                                    )
+                                }
                             }
                             result
                         }
@@ -207,9 +216,13 @@ object UiCleanup : BaseHook() {
                         }
 
                         if (id in orchardDrawableIds) {
-                            // 返回透明 drawable，不影响其他资源
-                            return@hooked android.graphics.drawable.ColorDrawable(0)
+                            val isNight = (res.configuration.uiMode and
+                                android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                                android.content.res.Configuration.UI_MODE_NIGHT_YES
+                            val color = if (isNight) 0xFF242424.toInt() else 0xFFFFFFFF.toInt()
+                            return@hooked android.graphics.drawable.ColorDrawable(color)
                         }
+
                         result
                     }
                 }
