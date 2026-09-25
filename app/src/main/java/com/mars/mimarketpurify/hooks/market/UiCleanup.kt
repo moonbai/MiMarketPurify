@@ -185,57 +185,74 @@ object UiCleanup : BaseHook() {
     /**
      * 统一胶囊按钮样式方法（图二效果：圆角胶囊、宽度限制、居中，移除maximumWidth）
      */
-    private fun applyBtnStyle(view: View?) {
-        view ?: return
-        val density = view.resources.displayMetrics.density
-        val btnDrawable = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            setColor(UPDATE_BTN_COLOR)
-            cornerRadius = BTN_RADIUS_DP * density
-        }
-        view.background = btnDrawable
+ private fun applyBtnStyle(view: View?) {
+    view ?: return
+    val density = view.resources.displayMetrics.density
+    val btnDrawable = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        setColor(UPDATE_BTN_COLOR)
+        cornerRadius = BTN_RADIUS_DP * density
+    }
+    view.background = btnDrawable
 
-        // 修改布局参数，取消MATCH_PARENT/weight，设置WRAP_CONTENT
-        view.layoutParams?.let { lp ->
-            when (lp) {
-                is android.widget.LinearLayout.LayoutParams -> {
-                    lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
+    view.layoutParams?.let { lp ->
+        when (lp) {
+            is android.widget.LinearLayout.LayoutParams -> {
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                lp.weight = 0f
+                lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                lp.topMargin = (16f * density).toInt()
+                view.layoutParams = lp
+            }
+
+            is android.widget.FrameLayout.LayoutParams -> {
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                lp.gravity = android.view.Gravity.CENTER_HORIZONTAL
+                lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                lp.topMargin = (16f * density).toInt()
+                view.layoutParams = lp
+            }
+
+            is android.widget.RelativeLayout.LayoutParams -> {
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT
+                lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                lp.topMargin = (16f * density).toInt()
+                view.layoutParams = lp
+            }
+
+            else -> {
+                if (lp is ViewGroup.MarginLayoutParams) {
+                    lp.width = ViewGroup.LayoutParams.MATCH_PARENT
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    lp.weight = 0f
                     lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
                     lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
+                    lp.topMargin = (16f * density).toInt()
                     view.layoutParams = lp
-                }
-                is android.widget.FrameLayout.LayoutParams -> {
-                    lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
-                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    lp.gravity = android.view.Gravity.CENTER_HORIZONTAL
-                    lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    view.layoutParams = lp
-                }
-                is android.widget.RelativeLayout.LayoutParams -> {
-                    lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
-                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    view.layoutParams = lp
-                }
-                else -> {
-                    lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                } else {
+                    lp.width = ViewGroup.LayoutParams.MATCH_PARENT
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
                     view.layoutParams = lp
                 }
             }
         }
-
-        // 清除MaterialButton tint干扰
-        runCatching {
-            val setTint = view::class.java.getDeclaredMethod("setBackgroundTintList", android.content.res.ColorStateList::class.java)
-            setTint.isAccessible = true
-            setTint.invoke(view, null)
-        }
     }
+
+    runCatching {
+        val setTint = view::class.java.getDeclaredMethod(
+            "setBackgroundTintList",
+            android.content.res.ColorStateList::class.java
+        )
+        setTint.isAccessible = true
+        setTint.invoke(view, null)
+    }
+}
+
 
     private fun findViewByResName(root: View, resName: String): View? {
         val targetId = runCatching {
