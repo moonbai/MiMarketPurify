@@ -121,7 +121,10 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addSwitchRow(group = group, title = "清理与卸载",
             summary = "隐藏手机清理与应用卸载入口",
             checked = readLocal(Settings.KEY_MINE_CLEANUP, true), tag = Settings.KEY_MINE_CLEANUP
-        ) { on -> writeRemote(Settings.KEY_MINE_CLEANUP, on) }
+        ) { on ->
+            writeRemote(Settings.KEY_MINE_CLEANUP, on)
+            refreshExpandCardVisibility()
+        }
         addSwitchRow(group = group, title = "个人信息区",
             summary = "隐藏头像、昵称、消息、收藏",
             checked = readLocal(Settings.KEY_MINE_SUMMARY, true), tag = Settings.KEY_MINE_SUMMARY
@@ -133,9 +136,12 @@ class SubSettingsActivity : SettingsBaseActivity() {
         addSwitchRow(group = group, title = "更新卡片背景",
             summary = "清除升级卡片的果园背景",
             checked = readLocal(Settings.KEY_ORCHARD_SKIN, true), tag = Settings.KEY_ORCHARD_SKIN
-        ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
+        ) { on ->
+            writeRemote(Settings.KEY_ORCHARD_SKIN, on)
+            refreshExpandCardVisibility()
+        }
         val expandSwitch = addSwitchRow(group = group, title = "升级卡片横向展开",
-            summary = "展开升级卡片时4个待升级图标横向平铺一排",
+            summary = "需清理与卸载+更新卡片背景同时开启，展开时4个图标横向平铺",
             checked = readLocal(Settings.KEY_CARD_EXPAND, false),
             tag = Settings.KEY_CARD_EXPAND
         ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
@@ -147,6 +153,16 @@ class SubSettingsActivity : SettingsBaseActivity() {
         content.addView(group)
         addFooter("Tips：改动一般在下次进入界面时生效，不过重启会立刻生效。")
     }
+
+    private fun refreshExpandCardVisibility() {
+        val eligible = readLocal(Settings.KEY_MINE_CLEANUP, true) &&
+                readLocal(Settings.KEY_ORCHARD_SKIN, true)
+        expandCardRow?.visibility = if (eligible) View.VISIBLE else View.GONE
+        if (!eligible && readLocal(Settings.KEY_CARD_EXPAND, false)) {
+            writeRemote(Settings.KEY_CARD_EXPAND, false)
+        }
+    }
+
 
     private fun buildTabs() {
         val group = groupCard()
@@ -339,6 +355,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         hideIconSwitch?.isChecked = isLauncherIconHidden()
         val kept = readLocalTabs()
         tabChecks.forEach { cb -> val t = cb.tag; cb.isChecked = t is String && kept.contains(t) }
+        refreshExpandCardVisibility()
     }
 
     override fun updateGateState() {
