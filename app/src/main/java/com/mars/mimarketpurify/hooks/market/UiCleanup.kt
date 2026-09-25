@@ -242,6 +242,7 @@ object UiCleanup : BaseHook() {
      */
     private fun applyBtnStyle(view: View?) {
         view ?: return
+        // 仅声明一次density，消除重复局部变量报错
         val density = view.resources.displayMetrics.density
         val btnDrawable = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
@@ -249,12 +250,12 @@ object UiCleanup : BaseHook() {
             cornerRadius = BTN_RADIUS_DP * density
         }
         view.background = btnDrawable
-        // 在 applyBtnStyle() 末尾，view.background = btnDrawable 之后添加
-        val density = view.resources.displayMetrics.density
-        val padVertical = (18f * density).toInt() // 上下内边距，越大按钮越高
+    
+        // 加高一键升级按钮：上下内部padding 18dp
         val padHorizontal = (20f * density).toInt()
+        val padVertical = (18f * density).toInt()
         view.setPadding(padHorizontal, padVertical, padHorizontal, padVertical)
-        
+    
         view.layoutParams?.let { lp ->
             when (lp) {
                 is android.widget.LinearLayout.LayoutParams -> {
@@ -266,7 +267,6 @@ object UiCleanup : BaseHook() {
                     lp.topMargin = (16f * density).toInt()
                     view.layoutParams = lp
                 }
-
                 is android.widget.FrameLayout.LayoutParams -> {
                     lp.width = ViewGroup.LayoutParams.MATCH_PARENT
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
@@ -276,7 +276,6 @@ object UiCleanup : BaseHook() {
                     lp.topMargin = (16f * density).toInt()
                     view.layoutParams = lp
                 }
-
                 is android.widget.RelativeLayout.LayoutParams -> {
                     lp.width = ViewGroup.LayoutParams.MATCH_PARENT
                     lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
@@ -285,7 +284,6 @@ object UiCleanup : BaseHook() {
                     lp.topMargin = (16f * density).toInt()
                     view.layoutParams = lp
                 }
-
                 else -> {
                     if (lp is ViewGroup.MarginLayoutParams) {
                         lp.width = ViewGroup.LayoutParams.MATCH_PARENT
@@ -302,7 +300,7 @@ object UiCleanup : BaseHook() {
                 }
             }
         }
-
+    
         runCatching {
             val setTint = view::class.java.getDeclaredMethod(
                 "setBackgroundTintList",
@@ -312,7 +310,7 @@ object UiCleanup : BaseHook() {
             setTint.invoke(view, null)
         }
     }
-
+    
 
     private fun findViewByResName(root: View, resName: String): View? {
         val targetId = runCatching {
