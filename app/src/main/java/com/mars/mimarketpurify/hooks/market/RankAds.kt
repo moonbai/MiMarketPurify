@@ -39,13 +39,13 @@ object RankAds : BaseHook() {
     private fun hookTopListV4Api() {
         runCatching {
             val apiRespClz = ClassUtil.loadClass("com.xiaomi.market.network.ApiResponse")
-            val parseMethod = apiRespClz.methodFinder()
-                .filter { it.name.contains("parse") || it.name.contains("getData") }
-                .firstOrNull()
+            val parseMethod = apiRespClz.declaredMethods.firstOrNull { m ->
+                m.name.contains("parse") || m.name.contains("getData")
+            }
             parseMethod?.hooked {
                 val rawResp = proceed()
                 if (rawResp !is String) return@hooked rawResp
-
+    
                 val stackTrace = Thread.currentThread().stackTrace
                 var isRankV4Api = false
                 for (stackElement in stackTrace) {
@@ -55,12 +55,12 @@ object RankAds : BaseHook() {
                     }
                 }
                 if (!isRankV4Api) return@hooked rawResp
-
+    
                 runCatching {
                     val root = JSONObject(rawResp)
                     val data = root.optJSONObject("data") ?: return@runCatching
                     val listJson: JSONArray = data.optJSONArray("list") ?: return@runCatching
-
+    
                     val newList = JSONArray()
                     for (i in 0 until listJson.length()) {
                         val item = listJson.optJSONObject(i) ?: continue
@@ -85,7 +85,7 @@ object RankAds : BaseHook() {
             hookRankItemBindFilter()
         }
     }
-
+    
     private fun hookRankItemBindFilter() {
         realRankClasses.forEach { className ->
             runCatching {
