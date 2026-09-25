@@ -233,7 +233,7 @@ class LiquidSelectionView(context: Context) : View(context) {
         if (liquid3D) {
             // 顶部高光：一个半透明白色椭圆，偏上
             val hiPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = withAlpha(0xFFFFFFFF, 90)
+                color = withAlpha(0xFFFFFFFF.toInt(), 90)
             }
             val hiRect = RectF(
                 rect.left + r * 0.4f,
