@@ -128,7 +128,12 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "清除升级卡片的果园背景",
             checked = readLocal(Settings.KEY_ORCHARD_SKIN, true), tag = Settings.KEY_ORCHARD_SKIN
         ) { on -> writeRemote(Settings.KEY_ORCHARD_SKIN, on) }
-
+        val expandSwitch = addSwitchRow(group = group, title = "升级卡片横向展开",
+            summary = "展开升级卡片时4个待升级图标横向平铺一排",
+            checked = readLocal(Settings.KEY_CARD_EXPAND, false),
+            tag = Settings.KEY_CARD_EXPAND
+        ) { on -> writeRemote(Settings.KEY_CARD_EXPAND, on) }
+        expandCardRow = expandSwitch.parent as View
         addSwitchRow(group = group, title = "底栏角标",
             summary = "去掉底部标签页的数字角标与「新」字红点",
             checked = readLocal(Settings.KEY_TAB_BADGE, true), tag = Settings.KEY_TAB_BADGE

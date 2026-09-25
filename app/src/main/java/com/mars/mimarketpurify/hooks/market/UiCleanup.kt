@@ -33,7 +33,7 @@ object UiCleanup : BaseHook() {
     private val mineRecommendIds = listOf("mine_ad_container")
     private val mineTabIds = listOf("mine_middle_menu_container")
     private val mineCleanupIds = listOf("phone_clear_layout", "mine_uninstall_app_layout")
-    private val mineCleanupTitleIds = listOf("phone_clear_title") // 新增：标题锚点用于兼容
+    private val mineCleanupTitleIds = listOf("phone_clear_title")
     private val mineSummaryIds = listOf(
         "mine_avatar", "mine_nickname", "mine_message", "mine_message_layout",
         "mine_favorites", "mine_favorites_count", "mine_favorites_layout",
@@ -86,20 +86,20 @@ object UiCleanup : BaseHook() {
             HookEnv.base.log(Log.ERROR, TAG, "$name: onAttachedToWindow 挂钩失败", it)
         }
 
-        // ── 升级卡片展开（完全未改动） ──
+        // ── 升级卡片展开 ──
         if (Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)) {
             hookCardExpand()
         }
 
-        // ── onResume 补扫（完全未改动） ──
+        // ── onResume 补扫 ──
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
         hookActivityRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
 
-        // ── 果园皮肤：移除 init 层开关互斥，总是挂；逻辑内实时判断 ──
+        // ── 果园皮肤：总是挂；逻辑内实时判断 ──
         hookOrchardSkin()
     }
 
-    // ═══════════════ 升级卡片展开（原样保留） ═══════════════
+    // ═══════════════ 升级卡片展开 ═══════════════
     private fun hookCardExpand() {
         runCatching {
             val cls = ClassUtil.loadClass(
@@ -115,6 +115,10 @@ object UiCleanup : BaseHook() {
                                     val header = findViewByResName(view, "expand_collapse_header")
                                     val arrow = findViewByResName(view, "expand_arrow")
                                     (arrow ?: header)?.performClick()
+                                    // 展开后横向平铺4个图标
+                                    view.postDelayed({
+                                        runCatching { flattenUpdateIcons(view) }
+                                    }, 120)
                                 }
                             }
                         }
@@ -126,6 +130,43 @@ object UiCleanup : BaseHook() {
         }
     }
 
+    /** 把待升级图标从 2x2 网格改成横向一排4个 */
+    private fun flattenUpdateIcons(root: View) {
+        val icons = findViewByResName(root, "update_icon_layout") as? ViewGroup ?: return
+        // GridLayout：列数改为4，行数自动归1
+        if (icons is android.widget.GridLayout) {
+            icons.columnCount = 4
+        }
+        // 每个子项横向均分
+        for (i in 0 until icons.childCount) {
+            val child = icons.getChildAt(i)
+            val lp = child.layoutParams ?: continue
+            when (lp) {
+                is android.widget.LinearLayout.LayoutParams -> {
+                    lp.width = 0
+                    lp.weight = 1f
+                    lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    lp.marginEnd = 0
+                    lp.marginStart = 0
+                    child.layoutParams = lp
+                }
+                is android.widget.FrameLayout.LayoutParams -> {
+                    lp.width = 0
+                    lp.weight = 1f
+                    lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    child.layoutParams = lp
+                }
+                is android.widget.GridLayout.LayoutParams -> {
+                    // GridLayout：每个格子占1列，不跨行
+                    lp.columnSpec = android.widget.GridLayout.spec(i, 1, 1f)
+                    lp.width = 0
+                    lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    child.layoutParams = lp
+                }
+            }
+        }
+    }
+
     private fun findViewByResName(root: View, resName: String): View? {
         val targetId = runCatching {
             root.resources.getIdentifier(resName, "id", "com.xiaomi.market")
@@ -134,15 +175,20 @@ object UiCleanup : BaseHook() {
         return findViewById(root, targetId)
     }
 
-    // ═══════════════ 果园皮肤：hook Resources.getDrawable 从源头返回透明 ═══════════════
+    // ═══════════════ 果园皮肤：hook Resources.getDrawable 从源头替换 ═══════════════
     private val orchardDrawableNames = setOf(
         "mine_update_orchard_bg",
         "mine_update_orchard_tree_bg",
         "mine_update_dark_bg",
         "mine_update_dark_arrow"
     )
-    /** 已解析出的目标资源 id（懒解析，避免每次 getDrawable 都查 entryName） */
+    /** 花盆图标：空状态图标，替换为透明 */
+    private val orchardIconNames = setOf(
+        "no_update_history",
+        "no_update_new"
+    )
     private val orchardDrawableIds = Collections.synchronizedSet(mutableSetOf<Int>())
+    private val orchardIconIds = Collections.synchronizedSet(mutableSetOf<Int>())
     private var orchardIdsResolved = false
 
     private val orchardMethods = listOf(
@@ -155,8 +201,15 @@ object UiCleanup : BaseHook() {
         "com.xiaomi.market.business_ui.main.mine.view.MineUpdateLayout"
     )
 
+    private fun isNightResources(res: android.content.res.Resources): Boolean =
+        (res.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+    private fun orchardBackgroundColor(isNight: Boolean): Int =
+        if (isNight) 0xFF242424.toInt() else 0xFFFFFFFF.toInt()
+
     private fun hookOrchardSkin() {
-        // 1) 保留原有 apply* 方法 hook 作为兜底（清掉已设上的背景）
+        // 1) apply* 方法 hook 兜底：方法执行后直接把背景设为纯色
         updateViewClasses.forEach { owner ->
             runCatching {
                 val cls = ClassUtil.loadClass(owner)
@@ -166,11 +219,8 @@ object UiCleanup : BaseHook() {
                             val result = proceed()
                             if (Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
                                 (thisObject as? View)?.let { view ->
-                                    val isNight = (view.resources.configuration.uiMode and
-                                        android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                                        android.content.res.Configuration.UI_MODE_NIGHT_YES
                                     view.setBackgroundColor(
-                                        if (isNight) 0xFF242424.toInt() else 0xFFFFFFFF.toInt()
+                                        orchardBackgroundColor(isNightResources(view.resources))
                                     )
                                 }
                             }
@@ -183,54 +233,61 @@ object UiCleanup : BaseHook() {
             }
         }
 
-        // 2) hook Resources.getDrawable：请求果园背景图时返回透明
+        // 2) hook Resources.getDrawable：命中即替换，不加载原图
         runCatching {
             ClassUtil.loadClass("android.content.res.Resources")
                 .methodFinder()
                 .filterByName("getDrawable")
                 .forEach { m ->
                     m.hooked {
-                        val result = proceed()
                         if (!Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
-                            return@hooked result
+                            return@hooked proceed()
                         }
                         val res = thisObject as? android.content.res.Resources
-                            ?: return@hooked result
+                            ?: return@hooked proceed()
                         val id = m.parameterTypes
                             .indexOfFirst { it == Int::class.javaPrimitiveType }
                             .takeIf { it >= 0 }
                             ?.let { args[it] as? Int }
-                            ?: return@hooked result
-                        if (id <= 0) return@hooked result
+                            ?: return@hooked proceed()
+                        if (id <= 0) return@hooked proceed()
 
-                        // 首次调用时解析目标资源 id
+                        // 首次拿到 Resources 时立即解析目标 id
                         if (!orchardIdsResolved) {
                             orchardDrawableIds.clear()
+                            orchardIconIds.clear()
                             orchardDrawableNames.forEach { name ->
                                 runCatching {
                                     val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
                                     if (rid > 0) orchardDrawableIds.add(rid)
                                 }
                             }
+                            orchardIconNames.forEach { name ->
+                                runCatching {
+                                    val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
+                                    if (rid > 0) orchardIconIds.add(rid)
+                                }
+                            }
                             orchardIdsResolved = true
                         }
 
-                        if (id in orchardDrawableIds) {
-                            val isNight = (res.configuration.uiMode and
-                                android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                                android.content.res.Configuration.UI_MODE_NIGHT_YES
-                            val color = if (isNight) 0xFF242424.toInt() else 0xFFFFFFFF.toInt()
-                            return@hooked android.graphics.drawable.ColorDrawable(color)
+                        // 花盆图标 → 透明
+                        if (id in orchardIconIds) {
+                            return@hooked android.graphics.drawable.ColorDrawable(0)
                         }
-
-                        result
+                        // 背景图 → 日夜纯色
+                        if (id in orchardDrawableIds) {
+                            return@hooked android.graphics.drawable.ColorDrawable(
+                                orchardBackgroundColor(isNightResources(res))
+                            )
+                        }
+                        proceed()
                     }
                 }
         }.onFailure {
             HookEnv.base.log(Log.ERROR, TAG, "$name: hook Resources.getDrawable 失败", it)
         }
     }
-
 
     // ═══════════════ onResume 补扫（任务去重版） ═══════════════
     private fun hookActivityRescan(className: String) {
@@ -254,8 +311,6 @@ object UiCleanup : BaseHook() {
                             return@hooked result
                         }
 
-                        // 取消该 Activity 尚未执行的旧补扫任务，再重新调度：
-                        // 快速进出页面时只保留最新一轮扫描，避免 Handler 任务堆积。
                         pendingRescanTasks.forEach { mainHandler.removeCallbacks(it) }
                         pendingRescanTasks.clear()
 
@@ -310,7 +365,7 @@ object UiCleanup : BaseHook() {
         return null
     }
 
-    // ═══════════════ 遍历（原样保留） ═══════════════
+    // ═══════════════ 遍历 ═══════════════
     private fun scanTree(v: View, depth: Int) {
         if (depth > 8) return
         inspect(v)
@@ -321,20 +376,20 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    // ═══════════════ 判断 & 隐藏：增加 phone_clear_title 向上回溯兼容 ═══════════════
+    // ═══════════════ 判断 & 隐藏 ═══════════════
     private fun inspect(v: View) {
         if (v.visibility != View.VISIBLE) return
         runCatching {
             when {
                 isMineTarget(v) || isFeaturedTarget(v) -> hide(v)
-                // 果园皮肤 View 层兜底：apply* 方法 hook 失效/改名时，
-                // 挂载或补扫到升级卡片直接把背景清掉（不隐藏卡片本身）
-                isOrchardTarget(v) -> v.background = null
+                isOrchardTarget(v) -> v.setBackgroundColor(
+                    orchardBackgroundColor(isNightResources(v.resources))
+                )
             }
         }
     }
 
-    /** 升级卡片的果园背景：按类名兜底清除，开关实时判断 */
+    /** 升级卡片：按类名兜底设置纯色背景，开关实时判断 */
     private fun isOrchardTarget(v: View): Boolean {
         if (!Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) return false
         val n = v.javaClass.name
@@ -351,7 +406,6 @@ object UiCleanup : BaseHook() {
             && id in idSet(v, "tab", mineTabIds)) return true
         if (Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) {
             if (id in getCleanupIdSet(v)) return true
-            // ✅ 标题锚点兜底：ID变了还能抓到父容器
             if (id in getCleanupTitleIdSet(v)) {
                 findParentByStep(v, 3)?.let { hide(it) }
                 return true
@@ -365,7 +419,6 @@ object UiCleanup : BaseHook() {
         return false
     }
 
-    // 新增：向上找 N 层父布局
     private fun findParentByStep(view: View, step: Int): View? {
         var curr: View? = view
         repeat(step) {
