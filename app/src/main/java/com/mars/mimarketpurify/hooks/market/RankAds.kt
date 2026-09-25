@@ -48,19 +48,19 @@ object RankAds : BaseHook() {
             parseMethod?.hooked {
                 val rawResp = proceed()
                 if(rawResp !is String) return@hooked rawResp
-
+    
                 // 判断是否是榜单v4接口返回，从上层请求url匹配
                 val stackTrace = Thread.currentThread().stackTrace
-                val isRankV4Api = stackTrace.any {
-                    it.className.contains("toplist") || it.methodName.contains("toplist")
+                val isRankV4Api = stackTrace.any { element ->
+                    element.className.contains("toplist") || element.methodName.contains("toplist")
                 }
                 if (!isRankV4Api) return@hooked rawResp
-
+    
                 runCatching {
                     val root = JSONObject(rawResp)
                     val data = root.optJSONObject("data") ?: return@runCatching
                     val listJson: JSONArray = data.optJSONArray("list") ?: return@runCatching
-
+    
                     val newList = JSONArray()
                     for (i in 0 until listJson.length()) {
                         val item = listJson.optJSONObject(i) ?: continue
@@ -86,6 +86,7 @@ object RankAds : BaseHook() {
             hookRankItemBindFilter()
         }
     }
+    
 
     // ===================== 兜底方案：Binder onBindData 读取model，隐藏广告item =====================
     private fun hookRankItemBindFilter() {

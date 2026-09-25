@@ -193,7 +193,7 @@ object UiCleanup : BaseHook() {
             reCenterButtonContent(btnLayout)
         },100)
     }
-
+    
     /**
      * 复用：按钮文字+角标居中逻辑，明暗切换重建View时调用
      */
@@ -201,12 +201,12 @@ object UiCleanup : BaseHook() {
         val textView = findViewByResName(btnLayout, "update_button_text") as? TextView
         val badgeView = findViewByResName(btnLayout, "update_button_red_badge")
         if(textView == null || badgeView == null) return
-
+    
         val parentText = textView.parent as? ViewGroup
         parentText?.removeView(textView)
         val parentBadge = badgeView.parent as? ViewGroup
         parentBadge?.removeView(badgeView)
-
+    
         // 新建水平容器，放置文字 + 角标
         val horizontalContainer = LinearLayout(btnLayout.context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -221,7 +221,7 @@ object UiCleanup : BaseHook() {
             marginStart = (4f * btnLayout.resources.displayMetrics.density).toInt()
         }
         horizontalContainer.addView(badgeView, badgeLp)
-
+    
         // 将水平容器放入按钮，全局居中
         val flp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             gravity = Gravity.CENTER
@@ -232,9 +232,10 @@ object UiCleanup : BaseHook() {
             val frame = FrameLayout(btnLayout.context)
             frame.addView(horizontalContainer, flp)
             val frameLp = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            btnLayout.addView(frame, frameLp)
+            (btnLayout as? ViewGroup)?.addView(frame, frameLp)
         }
     }
+    
 
     /**
      * 统一胶囊按钮样式方法（图二效果：圆角胶囊、宽度限制、居中）
