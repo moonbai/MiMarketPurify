@@ -152,6 +152,8 @@ class SubSettingsActivity : SettingsBaseActivity() {
     /** 独立悬浮底栏高级配置页面 PAGE_TAB_BAR */
     private fun buildTabBarConfig() {
         val baseGroup = groupCard()
+        var floatingOptionsGroup: ViewGroup? = null
+    
         addSwitchRow(
             group = baseGroup,
             title = "启用悬浮底栏",
@@ -161,15 +163,16 @@ class SubSettingsActivity : SettingsBaseActivity() {
             default = false
         ) { checked ->
             writeRemote(Settings.KEY_FLOATING_BAR, checked)
+            floatingOptionsGroup?.visibility = if (checked) View.VISIBLE else View.GONE
             updateGateState()
         }
-
-        // ========== 全部子参数放进 floatingOptionsGroup ==========
+    
+        // ========== 全部子参数统一放进 floatingOptionsGroup ==========
         val options = groupCard()
         floatingOptionsGroup = options
-
+    
         addSwitchRow(
-            group = baseGroup,
+            group = options,
             title = "液态选中高亮动画",
             summary = "选中项显示跟随移动的液态胶囊（参考 iOS），图标带弹性缩放",
             checked = readLocal(Settings.KEY_FLOATING_BAR_LIQUID, true),
@@ -178,7 +181,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             writeRemote(Settings.KEY_FLOATING_BAR_LIQUID, checked)
         }
         addSwitchRow(
-            group = baseGroup,
+            group = options,
             title = "3D液态效果",
             summary = "选中项显示跟随移动的3D液态胶囊，图标带弹性缩放",
             checked = readLocal(Settings.KEY_FLOATING_BAR_LIQUID_3D, true),
@@ -187,7 +190,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             writeRemote(Settings.KEY_FLOATING_BAR_LIQUID_3D, checked)
         }
         addSwitchRow(
-            group = baseGroup,
+            group = options,
             title = "显示标签文字",
             summary = "关闭后悬浮底栏只保留图标，栏体更矮更清爽",
             checked = readLocal(Settings.KEY_FLOATING_BAR_LABEL, true),
@@ -196,7 +199,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
             writeRemote(Settings.KEY_FLOATING_BAR_LABEL, checked)
         }
         addSwitchRow(
-            group = baseGroup,
+            group = options,
             title = "显示角标",
             summary = "悬浮栏同步原生红点/数字角标，受底栏角标净化开关控制",
             checked = readLocal(Settings.KEY_FLOATING_BAR_BADGE, true),
@@ -204,15 +207,14 @@ class SubSettingsActivity : SettingsBaseActivity() {
         ) { checked ->
             writeRemote(Settings.KEY_FLOATING_BAR_BADGE, checked)
         }
-        content.addView(baseGroup)
-
+    
         val colorGroup = groupCard()
         addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xE6FFFFFF.toInt())
         addColorPickerRow(colorGroup, "选中背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
         addColorPickerRow(colorGroup, "选中文字/图标高亮色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFFFFFFFF.toInt())
         addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0xFF8E8E93.toInt())
         options.addView(colorGroup)
-
+    
         // 尺寸：透明度已并入「底栏背景色」的 alpha 通道（#AARRGGBB），不再单独滑块
         val sizeGroup = groupCard()
         addSliderRow(sizeGroup, title = "圆角大小",
@@ -225,11 +227,18 @@ class SubSettingsActivity : SettingsBaseActivity() {
             format = { "${it}dp" }
         ) { v -> writeRemoteInt(Settings.KEY_FLOATING_BAR_RADIUS, v) }
         options.addView(sizeGroup)
-
+    
+        content.addView(baseGroup)
         content.addView(options)
+    
+        // 页面初始化：读取总开关状态，控制子面板折叠/展开
+        val mainSwitchEnable = readLocal(Settings.KEY_FLOATING_BAR, false)
+        floatingOptionsGroup.visibility = if (mainSwitchEnable) View.VISIBLE else View.GONE
+    
         addFooter("Tips：底栏背景色可用 #AARRGGBB 自定义透明度（如 #CCFFFFFF），实时生效。")
     }
-
+    
+    
     private fun buildMisc() {
         val group = groupCard()
         addSwitchRow(group = group, title = "详情页「精选」",

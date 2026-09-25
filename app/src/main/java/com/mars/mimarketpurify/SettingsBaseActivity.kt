@@ -449,8 +449,29 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             .setView(rootLayout)
             .setPositiveButton("确定") { _, _ ->
                 val raw = inputField.text.toString().trim()
-                runCatching { onPick(android.graphics.Color.parseColor(raw)) }
-                    .onFailure { onPick(picker.color) }
+                val parsed = runCatching {
+                    val clean = if (raw.startsWith("#")) raw.substring(1) else raw
+                    when (clean.length) {
+                        // #AARRGGBB
+                        8 -> {
+                            val a = clean.substring(0, 2).toLong(16)
+                            val r = clean.substring(2, 4).toLong(16)
+                            val g = clean.substring(4, 6).toLong(16)
+                            val b = clean.substring(6, 8).toLong(16)
+                            ((a shl 24) or (r shl 16) or (g shl 8) or b).toInt()
+                        }
+                        // #RRGGBB，默认不透明
+                        6 -> {
+                            val r = clean.substring(0, 2).toLong(16)
+                            val g = clean.substring(2, 4).toLong(16)
+                            val b = clean.substring(4, 6).toLong(16)
+                            (0xFF000000.toInt() or
+                                (r.toInt() shl 16) or (g.toInt() shl 8) or b.toInt())
+                        }
+                        else -> android.graphics.Color.parseColor(raw)
+                    }
+                }.getOrDefault(picker.color)
+                onPick(parsed)
             }
             .setNeutralButton("恢复默认") { _, _ -> onPick(-1) }
             .setNegativeButton("取消", null)
