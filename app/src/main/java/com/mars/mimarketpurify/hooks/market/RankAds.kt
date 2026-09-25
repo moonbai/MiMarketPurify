@@ -40,10 +40,10 @@ object RankAds : BaseHook() {
         runCatching {
             val apiRespClz = ClassUtil.loadClass("com.xiaomi.market.network.ApiResponse")
             val parseMethod = apiRespClz.methodFinder()
-                .filter { methodItem -> methodItem.name.contains("parse") || methodItem.name.contains("getData") }
+                .filter { it.name.contains("parse") || it.name.contains("getData") }
                 .firstOrNull()
-            parseMethod?.hooked { hookParam ->
-                val rawResp = hookParam.proceed()
+            parseMethod?.hooked {
+                val rawResp = it.proceed()
                 if(rawResp !is String) return@hooked rawResp
 
                 val stackTrace = Thread.currentThread().stackTrace
@@ -93,22 +93,22 @@ object RankAds : BaseHook() {
                 clz.methodFinder()
                     .filterByName("onBindData")
                     .forEach { m ->
-                        m.hooked { hookParam ->
-                            val dataModel = hookParam.args[0]
+                        m.hooked {
+                            val dataModel = it.args[0]
                             runCatching {
                                 val ads = dataModel.getFieldValue("ads") as? Int ?: 0
                                 val adType = dataModel.getFieldValue("adType") as? Int ?: -1
                                 if (ads == 1 && adType == 0) {
-                                    val view = hookParam.args[1] as? View
+                                    val view = it.args[1] as? View
                                     view?.visibility = View.GONE
                                     return@hooked null
                                 }
                             }
-                            hookParam.proceed()
+                            it.proceed()
                         }
                         HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked $className.onBindData 兜底过滤")
                     }
-            }.onFailure { ex -> }
+            }.onFailure { }
         }
     }
 
@@ -122,8 +122,8 @@ object RankAds : BaseHook() {
             runCatching {
                 val clz = ClassUtil.loadClass(className)
                 val methods = clz.declaredMethods
-                    .filter { methodItem -> java.lang.reflect.Modifier.isPublic(methodItem.modifiers) }
-                    .map { methodItem -> "${methodItem.name}(${methodItem.parameterTypes.joinToString { p -> p.simpleName }})" }
+                    .filter { java.lang.reflect.Modifier.isPublic(it.modifiers) }
+                    .map { "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})" }
                 HookEnv.base.log(Log.WARN, TAG, "[诊断] $className: ${methods.size} 个方法")
                 methods.forEach { m ->
                     HookEnv.base.log(Log.WARN, TAG, "[诊断]   $m")
@@ -159,8 +159,8 @@ object RankAds : BaseHook() {
                 clz.methodFinder()
                     .filterByName("onBindData")
                     .forEach { m ->
-                        m.hooked { hookParam ->
-                            val argsStr = hookParam.args.joinToString(", ") { arg ->
+                        m.hooked {
+                            val argsStr = it.args.joinToString(", ") { arg ->
                                 when (arg) {
                                     null -> "null"
                                     is View -> "View#${arg.javaClass.simpleName}"
@@ -169,11 +169,11 @@ object RankAds : BaseHook() {
                                 }
                             }
                             HookEnv.base.log(Log.WARN, TAG, "[绑定] ${clz.simpleName}.onBindData($argsStr)")
-                            return@hooked hookParam.proceed()
+                            return@hooked it.proceed()
                         }
                         HookEnv.base.log(Log.DEBUG, TAG, "[绑定] hooked ${className}.onBindData")
                     }
-            }.onFailure { ex -> }
+            }.onFailure { }
         }
 
         HookEnv.base.log(Log.WARN, TAG, "=== 诊断扫描结束 ===")
@@ -187,7 +187,7 @@ object RankAds : BaseHook() {
             }
             if (computeMethod != null) {
                 val returnType = computeMethod.returnType
-                computeMethod.hooked { hookParam ->
+                computeMethod.hooked {
                     debugLog("[广告引擎] compute 被调用，返回安全空值")
                     return@hooked when {
                         returnType == java.lang.Boolean.TYPE ||
