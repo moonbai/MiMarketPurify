@@ -28,6 +28,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
 
     private var page: String = PAGE_MINE
     private val tabChecks = mutableListOf<CheckBox>()
+    private var expandCardRow: View? = null
     private var tabSelectBlock: View? = null
     private var floatingOptionsGroup: LinearLayout? = null
     private var hideIconSwitch: CompoundButton? = null

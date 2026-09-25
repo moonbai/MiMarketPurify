@@ -133,11 +133,9 @@ object UiCleanup : BaseHook() {
     /** 把待升级图标从 2x2 网格改成横向一排4个 */
     private fun flattenUpdateIcons(root: View) {
         val icons = findViewByResName(root, "update_icon_layout") as? ViewGroup ?: return
-        // GridLayout：列数改为4，行数自动归1
         if (icons is android.widget.GridLayout) {
             icons.columnCount = 4
         }
-        // 每个子项横向均分
         for (i in 0 until icons.childCount) {
             val child = icons.getChildAt(i)
             val lp = child.layoutParams ?: continue
@@ -146,18 +144,9 @@ object UiCleanup : BaseHook() {
                     lp.width = 0
                     lp.weight = 1f
                     lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-                    lp.marginEnd = 0
-                    lp.marginStart = 0
-                    child.layoutParams = lp
-                }
-                is android.widget.FrameLayout.LayoutParams -> {
-                    lp.width = 0
-                    lp.weight = 1f
-                    lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
                     child.layoutParams = lp
                 }
                 is android.widget.GridLayout.LayoutParams -> {
-                    // GridLayout：每个格子占1列，不跨行
                     lp.columnSpec = android.widget.GridLayout.spec(i, 1, 1f)
                     lp.width = 0
                     lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
