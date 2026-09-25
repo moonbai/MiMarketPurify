@@ -164,7 +164,8 @@ class SubSettingsActivity : SettingsBaseActivity() {
             default = false
         ) { checked ->
             writeRemote(Settings.KEY_FLOATING_BAR, checked)
-            floatingOptionsGroup?.visibility = if (mainSwitchEnable) View.VISIBLE else View.GONE
+            floatingOptionsGroup?.visibility =
+    if (readLocal(Settings.KEY_FLOATING_BAR, false)) View.VISIBLE else View.GONE
             updateGateState()
         }
     
