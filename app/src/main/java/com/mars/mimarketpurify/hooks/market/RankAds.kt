@@ -43,13 +43,13 @@ object RankAds : BaseHook() {
                 .filter { it.name.contains("parse") || it.name.contains("getData") }
                 .firstOrNull()
             parseMethod?.hooked {
-                val rawResp = it.proceed()
-                if(rawResp !is String) return@hooked rawResp
+                val rawResp = proceed()
+                if (rawResp !is String) return@hooked rawResp
 
                 val stackTrace = Thread.currentThread().stackTrace
                 var isRankV4Api = false
                 for (stackElement in stackTrace) {
-                    if(stackElement.className.contains("toplist") || stackElement.methodName.contains("toplist")){
+                    if (stackElement.className.contains("toplist") || stackElement.methodName.contains("toplist")) {
                         isRankV4Api = true
                         break
                     }
@@ -94,17 +94,16 @@ object RankAds : BaseHook() {
                     .filterByName("onBindData")
                     .forEach { m ->
                         m.hooked {
-                            val dataModel = it.args[0]
+                            val dataModel = args[0]
                             runCatching {
                                 val ads = dataModel.getFieldValue("ads") as? Int ?: 0
                                 val adType = dataModel.getFieldValue("adType") as? Int ?: -1
                                 if (ads == 1 && adType == 0) {
-                                    val view = it.args[1] as? View
-                                    view?.visibility = View.GONE
+                                    (args[1] as? View)?.visibility = View.GONE
                                     return@hooked null
                                 }
                             }
-                            it.proceed()
+                            proceed()
                         }
                         HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked $className.onBindData 兜底过滤")
                     }
@@ -131,7 +130,8 @@ object RankAds : BaseHook() {
                 clz.declaredFields.forEach { f ->
                     val name = f.name.lowercase()
                     if (name.contains("ad") || name.contains("sponsor") || name.contains("promo") ||
-                        name.contains("type") || name.contains("tag")) {
+                        name.contains("type") || name.contains("tag")
+                    ) {
                         HookEnv.base.log(Log.WARN, TAG, "[诊断]   字段: ${f.name} (${f.type.simpleName})")
                     }
                 }
@@ -160,7 +160,7 @@ object RankAds : BaseHook() {
                     .filterByName("onBindData")
                     .forEach { m ->
                         m.hooked {
-                            val argsStr = it.args.joinToString(", ") { arg ->
+                            val argsStr = args.joinToString(", ") { arg ->
                                 when (arg) {
                                     null -> "null"
                                     is View -> "View#${arg.javaClass.simpleName}"
@@ -169,7 +169,7 @@ object RankAds : BaseHook() {
                                 }
                             }
                             HookEnv.base.log(Log.WARN, TAG, "[绑定] ${clz.simpleName}.onBindData($argsStr)")
-                            return@hooked it.proceed()
+                            return@hooked proceed()
                         }
                         HookEnv.base.log(Log.DEBUG, TAG, "[绑定] hooked ${className}.onBindData")
                     }
