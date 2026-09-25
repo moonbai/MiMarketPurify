@@ -8,8 +8,7 @@ import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
 import com.mars.mimarketpurify.util.getFieldValue
 import dalvik.system.DexFile
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.kyuubiran.ezxhelper.core.XC
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 object RankAds : BaseHook() {
@@ -55,23 +54,21 @@ object RankAds : BaseHook() {
                 val clz = ClassUtil.loadClass(className) ?: return@forEach
                 val onBindMethods = clz.declaredMethods.filter { it.name == "onBindData" }
                 onBindMethods.forEach { m ->
-                    XposedBridge.hookMethod(m, object : XC_MethodHook() {
-                        override fun beforeHookedMethod(param: MethodHookParam) {
-                            super.beforeHookedMethod(param)
-                            val dataModel = param.args[0]
-                            runCatching {
-                                val ads = dataModel.getFieldValue("ads") as? Int ?: 0
-                                val adType = dataModel.getFieldValue("adType") as? Int ?: -1
-                                HookEnv.base.log(Log.DEBUG, TAG, "onBindData ads=$ads adType=$adType")
+                    m.hooked { chain: XC.Chain ->
+                        val dataModel = chain.args[0]
+                        runCatching {
+                            val ads = dataModel.getFieldValue("ads") as? Int ?: 0
+                            val adType = dataModel.getFieldValue("adType") as? Int ?: -1
+                            HookEnv.base.log(Log.DEBUG, TAG, "onBindData ads=$ads adType=$adType")
 
-                                if (ads == 1 && adType == 0) {
-                                    val itemView = param.args[1] as? View
-                                    itemView?.visibility = View.GONE
-                                    debugLog("[兜底过滤] 隐藏商业广告Item ads=$ads adType=$adType")
-                                }
+                            if (ads == 1 && adType == 0) {
+                                val itemView = chain.args[1] as? View
+                                itemView?.visibility = View.GONE
+                                debugLog("[兜底过滤] 隐藏商业广告Item ads=$ads adType=$adType")
                             }
                         }
-                    })
+                        chain.proceed()
+                    }
                     HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked $className.onBindData 兜底过滤")
                 }
             }.onFailure {
@@ -127,18 +124,16 @@ object RankAds : BaseHook() {
                 it.name == "compute" && it.parameterTypes.size == 2
             }
             if (computeMethod != null) {
-                XposedBridge.hookMethod(computeMethod, object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        super.afterHookedMethod(param)
-                        debugLog("[广告引擎] compute 被调用，返回安全空值")
-                        val returnType = computeMethod.returnType
-                        param.result = when {
-                            returnType == java.lang.Boolean.TYPE || returnType == java.lang.Boolean::class.java -> false
-                            List::class.java.isAssignableFrom(returnType) -> emptyList<Any>()
-                            else -> null
-                        }
+                val returnType = computeMethod.returnType
+                computeMethod.hooked { chain: XC.Chain ->
+                    debugLog("[广告引擎] compute 被调用，返回安全空值")
+                    chain.proceed()
+                    return@hooked when {
+                        returnType == java.lang.Boolean.TYPE || returnType == java.lang.Boolean::class.java -> false
+                        List::class.java.isAssignableFrom(returnType) -> emptyList<Any>()
+                        else -> null
                     }
-                })
+                }
                 HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked AdReRankEngine.compute ✓")
             }
         }.onFailure { ex ->
