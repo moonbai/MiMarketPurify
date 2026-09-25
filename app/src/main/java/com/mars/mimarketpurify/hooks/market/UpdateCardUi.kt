@@ -1,9 +1,12 @@
 package com.mars.mimarketpurify.hooks.market
 
+import android.content.res.Configuration
 import android.graphics.drawable.GradientDrawable
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import android.app.Activity
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
@@ -19,10 +22,62 @@ object UpdateCardUi : BaseHook() {
     private const val UPDATE_BTN_COLOR = 0xFF0DAE73.toInt()
     private const val BTN_RADIUS_DP = 24f
     private const val UPDATE_BTN_MARGIN_HORIZONTAL_DP = 12f
+    private const val TITLE_WHITE = 0xFFFFFFFF.toInt() // 白色
 
     override fun init() {
         hookCardExpand()
         hookViewAttachObserver()
+        hookActivityConfigChange() // 监听深色模式切换
+    }
+
+    // 监听Activity配置变更(深色/浅色切换)，触发重绘按钮+标题文字
+    private fun hookActivityConfigChange() {
+        runCatching {
+            val activityCls = ClassUtil.loadClass("android.app.Activity")
+            activityCls?.methodFinder()
+                ?.filterByName("onConfigurationChanged")
+                ?.first()
+                ?.hooked {
+                    val newConfig = args[0] as Configuration
+                    val oldConfig = thisObject as Activity
+                    proceed()
+                    val oldNight = oldConfig.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                    val newNight = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                    if (oldNight != newNight) {
+                        oldConfig.window?.decorView?.postDelayed({
+                            refreshAllUpdateButton(oldConfig.window?.decorView)
+                        }, 100)
+                    }
+                }
+        }.onFailure {
+            HookEnv.base.log(Log.ERROR, TAG, "$name: hookActivityConfigChange失败", it)
+        }
+    }
+
+    // 递归遍历View树：同时处理按钮背景 和 mine_app_update_title文字颜色
+    private fun refreshAllUpdateButton(rootView: View?) {
+        rootView ?: return
+        val resName = MinePageClean.getResourceName(rootView)
+
+        // 1. 更新一键升级按钮背景
+        if (resName == "update_button_layout" || resName == "update_button_parent_layout") {
+            applyBtnColorOnly(rootView)
+        }
+
+        // 2. 更新标题 mine_app_update_title
+        if(resName == "mine_app_update_title" && rootView is TextView){
+            val isNight = rootView.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            if(isNight){
+                rootView.setTextColor(TITLE_WHITE)
+            }
+            // 浅色模式：不做任何修改，保留商店原生颜色
+        }
+
+        if (rootView is ViewGroup) {
+            for (i in 0 until rootView.childCount) {
+                refreshAllUpdateButton(rootView.getChildAt(i))
+            }
+        }
     }
 
     private fun hookViewAttachObserver() {
@@ -35,8 +90,16 @@ object UpdateCardUi : BaseHook() {
                     val result = proceed()
                     val v = thisObject as? View ?: return@hooked result
                     val resName = MinePageClean.getResourceName(v)
+                    // 按钮
                     if(resName == "update_button_layout" || resName == "update_button_parent_layout"){
                         applyBtnColorOnly(v)
+                    }
+                    // 标题TextView
+                    if(resName == "mine_app_update_title" && v is TextView){
+                        val isNight = v.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+                        if(isNight){
+                            v.setTextColor(TITLE_WHITE)
+                        }
                     }
                     result
                 }
@@ -112,12 +175,14 @@ object UpdateCardUi : BaseHook() {
         root.postDelayed({ applyBtnColorOnly(btnLayout); applyBtnColorOnly(btnParent) }, 400)
         root.postDelayed({ applyBtnColorOnly(btnLayout); applyBtnColorOnly(btnParent) }, 800)
 
+        // 同时刷新标题文字
+        refreshAllUpdateButton(root)
+
         HookEnv.base.log(Log.INFO, TAG, "btnParent=$btnParent, btnLayout=$btnLayout")
     }
 
     /**
-     * 仅修改按钮背景颜色+圆角
-     * 【禁止修改padding、禁止修改layoutParams、禁止查找子控件、不改动原生布局】
+     * 修改按钮背景颜色+圆角，降低垂直内边距缩小按钮高度
      */
     fun applyBtnColorOnly(view: View?) {
         view ?: return
@@ -128,6 +193,10 @@ object UpdateCardUi : BaseHook() {
             cornerRadius = BTN_RADIUS_DP * density
         }
         view.background = btnDrawable
+
+        // 水平padding保持原生，垂直设6dp，降低按钮高度
+        val padVertical = (6f * density).toInt()
+        view.setPadding(view.paddingLeft, padVertical, view.paddingRight, padVertical)
 
         runCatching {
             val setTint = view::class.java.getDeclaredMethod(
