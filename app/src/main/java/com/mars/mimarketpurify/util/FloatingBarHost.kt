@@ -119,13 +119,14 @@ class FloatingBarHost private constructor(
     private fun refreshBarStyle() {
         barBg.setColor(barFillPx())
         barBg.cornerRadius = barRadiusPx()
-        barBg.setStroke(dp(1), if (isNight()) 0x33FFFFFF else 0x14000000)
+        // 去掉这行：barBg.setStroke(dp(1), if (isNight()) 0x33FFFFFF else 0x14000000)
         barRoot.background = barBg
         barRoot.outlineProvider = roundedOutlineProvider
         pill.configure(selectedColor(), min(barRadiusPx(), dpf(PILL_HEIGHT_DP / 2f)))
-        pill.liquid3D = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LIQUID_3D, true)  // ← 加这行
+        pill.liquid3D = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LIQUID_3D, true)
         pill.visibility = if (liquidOn()) View.VISIBLE else View.GONE
     }
+
 
     private fun buildItemsRow(): LinearLayout = LinearLayout(activity).apply {
         orientation = LinearLayout.HORIZONTAL
