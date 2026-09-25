@@ -161,7 +161,7 @@ class FloatingBarHost private constructor(
             }
         }.apply {
             background = barBg
-            elevation = dpf(12f)
+            // 去掉这行：elevation = dpf(12f)
             outlineProvider = roundedOutlineProvider
             clipToOutline = true
             visibility = View.GONE
