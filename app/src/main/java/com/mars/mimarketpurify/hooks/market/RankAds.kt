@@ -49,7 +49,7 @@ object RankAds : BaseHook() {
                 val rawResp = proceed()
                 if(rawResp !is String) return@hooked rawResp
     
-                // 判断是否是榜单v4接口返回，从上层请求url匹配
+                // 判断是否是榜单v4接口返回，从上层调用栈判断
                 val stackTrace = Thread.currentThread().stackTrace
                 var isRankV4Api = false
                 for (stackElement in stackTrace) {
@@ -79,14 +79,14 @@ object RankAds : BaseHook() {
                     }
                     data.put("list", newList)
                     return@hooked root.toString()
-                }.onFailure {
-                    HookEnv.base.log(Log.ERROR, TAG, "[榜单接口过滤] json解析异常", it)
+                }.onFailure { ex ->
+                    HookEnv.base.log(Log.ERROR, TAG, "[榜单接口过滤] json解析异常", ex)
                 }
                 rawResp
             }
             HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hook toplist/v4 ApiResponse.parse ✓")
-        }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "[榜单广告] toplist/v4 hook失败，切换兜底Binder方案: ${it.message}")
+        }.onFailure { ex ->
+            HookEnv.base.log(Log.WARN, TAG, "[榜单广告] toplist/v4 hook失败，切换兜底Binder方案: ${ex.message}")
             hookRankItemBindFilter()
         }
     }
@@ -144,8 +144,8 @@ object RankAds : BaseHook() {
                         HookEnv.base.log(Log.WARN, TAG, "[诊断]   字段: ${f.name} (${f.type.simpleName})")
                     }
                 }
-            }.onFailure {
-                HookEnv.base.log(Log.VERBOSE, TAG, "[诊断] $className 不存在")
+            }.onFailure { ex ->
+                HookEnv.base.log(Log.VERBOSE, TAG, "[诊断] $className 不存在", ex)
             }
         }
 
@@ -158,8 +158,8 @@ object RankAds : BaseHook() {
             methods.forEach { m ->
                 HookEnv.base.log(Log.WARN, TAG, "[诊断]   $m")
             }
-        }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "[诊断] AdReRankEngine 不存在: ${it.message}")
+        }.onFailure { ex ->
+            HookEnv.base.log(Log.WARN, TAG, "[诊断] AdReRankEngine 不存在: ${ex.message}", ex)
         }
 
         // ★ debug模式下onBindData日志打印
@@ -183,7 +183,7 @@ object RankAds : BaseHook() {
                         }
                         HookEnv.base.log(Log.DEBUG, TAG, "[绑定] hooked ${className}.onBindData")
                     }
-            }.onFailure { }
+            }.onFailure { ex -> }
         }
 
         HookEnv.base.log(Log.WARN, TAG, "=== 诊断扫描结束 ===")
@@ -209,8 +209,8 @@ object RankAds : BaseHook() {
                 }
                 HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked AdReRankEngine.compute ✓")
             }
-        }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "[榜单广告] AdReRankEngine hook 失败: ${it.message}")
+        }.onFailure { ex ->
+            HookEnv.base.log(Log.WARN, TAG, "[榜单广告] AdReRankEngine hook 失败: ${ex.message}", ex)
         }
     }
 
@@ -230,8 +230,8 @@ object RankAds : BaseHook() {
                     if (name.startsWith("com.xiaomi.market") && name.contains("rank", ignoreCase = true)) found += name
                 }
             }
-        }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "$name: dex 扫描不可用：${it.message}")
+        }.onFailure { ex ->
+            HookEnv.base.log(Log.WARN, TAG, "$name: dex 扫描不可用：${ex.message}", ex)
         }
         return found
     }
