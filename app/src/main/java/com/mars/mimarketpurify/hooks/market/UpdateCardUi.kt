@@ -12,15 +12,14 @@ import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
+import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 object UpdateCardUi : BaseHook() {
     override val prefKey: String? = null
     override val name: String = "更新卡片UI调整"
 
-    // 更新卡片背景圆角 dp
     private const val CARD_RADIUS_DP = 16f
-    // 一键更新按钮颜色 #FF0DAE73
     private const val UPDATE_BTN_COLOR = 0xFF0DAE73.toInt()
     private const val BTN_RADIUS_DP = 24f
     private const val UPDATE_BTN_MARGIN_HORIZONTAL_DP = 12f

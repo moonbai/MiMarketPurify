@@ -6,6 +6,7 @@ import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
+import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 import java.util.Collections
 
@@ -80,7 +81,14 @@ object UpdateCardSkin : BaseHook() {
                             return@hooked proceed()
                         }
                         val res = thisObject as? android.content.res.Resources ?: return@hooked proceed()
-                        val idIdx = m.parameterTypes.indexOfFirst { it == Int::class.javaPrimitiveType }
+                        // 修复：不要在indexOfFirst内部使用it，重新拿到参数索引
+                        var idIdx = -1
+                        for(pi in m.parameterTypes.indices){
+                            if(m.parameterTypes[pi] == Int::class.javaPrimitiveType){
+                                idIdx = pi
+                                break
+                            }
+                        }
                         if(idIdx < 0) return@hooked proceed()
                         val id = args[idIdx] as? Int ?: return@hooked proceed()
                         if (id <= 0) return@hooked proceed()
