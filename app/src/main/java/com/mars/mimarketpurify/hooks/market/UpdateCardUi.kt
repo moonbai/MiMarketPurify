@@ -2,12 +2,8 @@ package com.mars.mimarketpurify.hooks.market
 
 import android.graphics.drawable.GradientDrawable
 import android.util.Log
-import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.TextView
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
@@ -23,9 +19,6 @@ object UpdateCardUi : BaseHook() {
     private const val UPDATE_BTN_COLOR = 0xFF0DAE73.toInt()
     private const val BTN_RADIUS_DP = 24f
     private const val UPDATE_BTN_MARGIN_HORIZONTAL_DP = 12f
-
-    // tag标记：防止短时间重复执行居中逻辑
-    private val TAG_RECENTER_DONE = View.generateViewId()
 
     override fun init() {
         hookCardExpand()
@@ -43,15 +36,7 @@ object UpdateCardUi : BaseHook() {
                     val v = thisObject as? View ?: return@hooked result
                     val resName = MinePageClean.getResourceName(v)
                     if(resName == "update_button_layout" || resName == "update_button_parent_layout"){
-                        applyBtnStyle(v)
-                        // tag防重复执行
-                        if(v.getTag(TAG_RECENTER_DONE) != true){
-                            v.setTag(TAG_RECENTER_DONE, true)
-                            v.postDelayed({
-                                reCenterButtonContent(v)
-                                v.setTag(TAG_RECENTER_DONE, false)
-                            },100)
-                        }
+                        applyBtnColorOnly(v)
                     }
                     result
                 }
@@ -121,40 +106,20 @@ object UpdateCardUi : BaseHook() {
         val btnParent = MinePageClean.findViewByResName(root, "update_button_parent_layout")
         val btnLayout = MinePageClean.findViewByResName(root, "update_button_layout")
 
-        applyBtnStyle(btnLayout)
-        applyBtnStyle(btnParent)
-        root.postDelayed({ applyBtnStyle(btnLayout); applyBtnStyle(btnParent) }, 150)
-        root.postDelayed({ applyBtnStyle(btnLayout); applyBtnStyle(btnParent) }, 400)
-        root.postDelayed({ applyBtnStyle(btnLayout); applyBtnStyle(btnParent) }, 800)
+        applyBtnColorOnly(btnLayout)
+        applyBtnColorOnly(btnParent)
+        root.postDelayed({ applyBtnColorOnly(btnLayout); applyBtnColorOnly(btnParent) }, 150)
+        root.postDelayed({ applyBtnColorOnly(btnLayout); applyBtnColorOnly(btnParent) }, 400)
+        root.postDelayed({ applyBtnColorOnly(btnLayout); applyBtnColorOnly(btnParent) }, 800)
 
         HookEnv.base.log(Log.INFO, TAG, "btnParent=$btnParent, btnLayout=$btnLayout")
-        btnLayout?.let { bl ->
-            if(bl.getTag(TAG_RECENTER_DONE) != true) {
-                bl.setTag(TAG_RECENTER_DONE, true)
-                bl.postDelayed({
-                    reCenterButtonContent(bl)
-                    bl.setTag(TAG_RECENTER_DONE, false)
-                },100)
-            }
-        }
     }
 
-    // 【重写！不再removeView，不重构布局树，只做位移微调，避免文字消失】
-    private fun reCenterButtonContent(btnLayout: View) {
-        val textView = MinePageClean.findViewByResName(btnLayout, "update_button_text") as? TextView
-        val badgeView = MinePageClean.findViewByResName(btnLayout, "update_button_red_badge")
-        if(textView == null || badgeView == null) {
-            HookEnv.base.log(Log.WARN, TAG, "reCenterButtonContent: 找不到 update_button_text / update_button_red_badge，跳过")
-            return
-        }
-        val density = btnLayout.resources.displayMetrics.density
-        // 整体向上偏移，解决文字偏下裁切，调整这个数值微调
-        val offsetY = (-3f * density)
-        textView.translationY = offsetY
-        badgeView.translationY = offsetY
-    }
-
-    fun applyBtnStyle(view: View?) {
+    /**
+     * 仅修改按钮背景颜色+圆角
+     * 【禁止修改padding、禁止修改layoutParams、禁止查找子控件、不改动原生布局】
+     */
+    fun applyBtnColorOnly(view: View?) {
         view ?: return
         val density = view.resources.displayMetrics.density
         val btnDrawable = GradientDrawable().apply {
@@ -163,55 +128,6 @@ object UpdateCardUi : BaseHook() {
             cornerRadius = BTN_RADIUS_DP * density
         }
         view.background = btnDrawable
-
-        val padHorizontal = (20f * density).toInt()
-        val padVertical = (10f * density).toInt()
-        view.setPadding(padHorizontal, padVertical, padHorizontal, padVertical)
-
-        view.layoutParams?.let { lp ->
-            when (lp) {
-                is android.widget.LinearLayout.LayoutParams -> {
-                    lp.width = ViewGroup.LayoutParams.MATCH_PARENT
-                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    lp.weight = 0f
-                    lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    lp.topMargin = (16f * density).toInt()
-                    view.layoutParams = lp
-                }
-                is android.widget.FrameLayout.LayoutParams -> {
-                    lp.width = ViewGroup.LayoutParams.MATCH_PARENT
-                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    lp.gravity = android.view.Gravity.CENTER_HORIZONTAL
-                    lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    lp.topMargin = (16f * density).toInt()
-                    view.layoutParams = lp
-                }
-                is android.widget.RelativeLayout.LayoutParams -> {
-                    lp.width = ViewGroup.LayoutParams.MATCH_PARENT
-                    lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                    lp.topMargin = (16f * density).toInt()
-                    view.layoutParams = lp
-                }
-                else -> {
-                    if (lp is ViewGroup.MarginLayoutParams) {
-                        lp.width = ViewGroup.LayoutParams.MATCH_PARENT
-                        lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                        lp.marginStart = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                        lp.marginEnd = (UPDATE_BTN_MARGIN_HORIZONTAL_DP * density).toInt()
-                        lp.topMargin = (16f * density).toInt()
-                        view.layoutParams = lp
-                    } else {
-                        lp.width = ViewGroup.LayoutParams.MATCH_PARENT
-                        lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                        view.layoutParams = lp
-                    }
-                }
-            }
-        }
 
         runCatching {
             val setTint = view::class.java.getDeclaredMethod(
