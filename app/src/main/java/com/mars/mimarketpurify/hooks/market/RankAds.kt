@@ -8,6 +8,8 @@ import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
 import com.mars.mimarketpurify.util.getFieldValue
 import dalvik.system.DexFile
+import io.github.kyuubiran.ezxhelper.core.XposedInterface
+import io.github.kyuubiran.ezxhelper.core.hookMethod
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 object RankAds : BaseHook() {
@@ -20,9 +22,6 @@ object RankAds : BaseHook() {
         "com.xiaomi.market.agent.AgentRankItemView",
         "com.xiaomi.market.agent.AgentRankVerticalCardBinder",
         "com.xiaomi.market.agent.AgentRankVerticalCardView",
-        "com.xiaomi.market.agent.AgentSubPageRankActivity",
-        "com.xiaomi.market.agent.AgentRankPagerFragment",
-        "com.xiaomi.market.agent.AgentRankTabFragment"
     )
 
     override fun init() {
@@ -53,21 +52,36 @@ object RankAds : BaseHook() {
                 val clz = ClassUtil.loadClass(className) ?: return@forEach
                 val onBindMethods = clz.declaredMethods.filter { it.name == "onBindData" }
                 onBindMethods.forEach { m ->
-                    m.hooked {
-                        val dataModel = args[0]
+                    val beforeBlock: (XposedInterface.Chain) -> Unit = { chain ->
                         runCatching {
-                            val ads = dataModel.getFieldValue("ads") as? Int ?: 0
-                            val adType = dataModel.getFieldValue("adType") as? Int ?: -1
-                            HookEnv.base.log(Log.DEBUG, TAG, "onBindData ads=$ads adType=$adType")
+                            // 区分Binder 和 View 的onBindData参数
+                            val model = chain.args[0]
+                            debugLog("onBindData invoked | class=$className, model=$model")
 
-                            if (ads == 1 && adType == 0) {
-                                val itemView = args[1] as? View
+                            // 兼容多种广告字段名
+                            val isAd = model.getFieldValue("ads") as? Int
+                                ?: model.getFieldValue("isAd") as? Int
+                                ?: model.getFieldValue("adFlag") as? Int ?: 0
+                            val adType = model.getFieldValue("adType") as? Int ?: -1
+
+                            debugLog("onBindData ads=$isAd adType=$adType")
+                            if (isAd == 1) {
+                                val itemView: View? = when {
+                                    // Binder: args[1] = viewHolder
+                                    className.contains("Binder") -> {
+                                        val vh = chain.args[1]
+                                        vh.getFieldValue("itemView") as? View
+                                    }
+                                    else -> chain.args[1] as? View
+                                }
                                 itemView?.visibility = View.GONE
-                                debugLog("[兜底过滤] 隐藏商业广告Item ads=$ads adType=$adType")
+                                debugLog("[兜底过滤] 隐藏商业广告Item ads=$isAd adType=$adType")
                             }
+                        }.onFailure {
+                            debugLog("onBindData 读取字段失败: ${it.message}")
                         }
-                        proceed()
                     }
+                    hookMethod(m, before = beforeBlock, after = null)
                     HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked $className.onBindData 兜底过滤")
                 }
             }.onFailure {
@@ -124,15 +138,15 @@ object RankAds : BaseHook() {
             }
             if (computeMethod != null) {
                 val returnType = computeMethod.returnType
-                computeMethod.hooked {
+                val afterBlock: (XposedInterface.Chain) -> Any? = { chain ->
                     debugLog("[广告引擎] compute 被调用，返回安全空值")
-                    proceed()
-                    return@hooked when {
+                    when {
                         returnType == java.lang.Boolean.TYPE || returnType == java.lang.Boolean::class.java -> false
                         List::class.java.isAssignableFrom(returnType) -> emptyList<Any>()
                         else -> null
                     }
                 }
+                hookMethod(computeMethod, before = null, after = afterBlock)
                 HookEnv.base.log(Log.DEBUG, TAG, "[榜单广告] hooked AdReRankEngine.compute ✓")
             }
         }.onFailure { ex ->
