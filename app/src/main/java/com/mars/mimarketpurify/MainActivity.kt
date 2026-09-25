@@ -47,7 +47,8 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_RANK,
         Settings.KEY_FRUIT,
         Settings.KEY_ENTRANCE,
-        Settings.KEY_DETAIL_EXTRAS
+        Settings.KEY_DETAIL_EXTRAS,
+        Settings.KEY_FLOATING_AD
     )
 
     /** 二级页「「我的」页」里的开关，用于在主页入口行显示启用数量 */

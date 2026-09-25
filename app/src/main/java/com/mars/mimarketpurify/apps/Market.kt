@@ -28,6 +28,7 @@ import com.mars.mimarketpurify.hooks.market.UpdateDownloadAds
 import com.mars.mimarketpurify.init.AppPackage
 import com.mars.mimarketpurify.init.AppRegister
 import com.mars.mimarketpurify.hooks.market.UpdateTabEntry
+import com.mars.mimarketpurify.hooks.market.FloatingAdHook
 import io.github.libxposed.api.XposedModuleInterface
 
 object Market : AppRegister() {
@@ -63,7 +64,8 @@ object Market : AppRegister() {
             MiscApply,
             AntiSelfDestruct,
             UpdateTabEntry,
-            ConfigBackupRestore
+            ConfigBackupRestore,
+            FloatingAdHook
         )
     }
 }

@@ -92,6 +92,11 @@ class SubSettingsActivity : SettingsBaseActivity() {
             summary = "详情页拼装推荐、底部多按钮推广栏、浏览器下载弹窗广告",
             checked = readLocal(Settings.KEY_DETAIL_EXTRAS, true), tag = Settings.KEY_DETAIL_EXTRAS
         ) { on -> writeRemote(Settings.KEY_DETAIL_EXTRAS, on) }
+        addSwitchRow(group = group, title = "主页悬浮广告",
+            summary = "屏蔽主页底部/侧边弹出的悬浮广告图标",
+            checked = readLocal(Settings.KEY_FLOATING_AD, true),
+            tag = Settings.KEY_FLOATING_AD
+        ) { on -> writeRemote(Settings.KEY_FLOATING_AD, on) }
         content.addView(group)
         addFooter("Tips：屏蔽后若页面空白，关掉对应页面开关即可恢复")
     }

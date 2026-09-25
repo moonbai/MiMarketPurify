@@ -25,7 +25,6 @@ object UiCleanup : BaseHook() {
     /**
      * 尚未执行的补扫任务。每次 onResume 会先取消上一批任务再重新调度，
      * 防止快速进出页面时 Handler 上堆积大量 300/800/1500/3000ms 的重复扫描。
-     * （同一时刻至多一个前台 Activity，全局一份即可；全部操作都在主线程。）
      */
     private val pendingRescanTasks = mutableListOf<Runnable>()
 
@@ -86,10 +85,8 @@ object UiCleanup : BaseHook() {
             HookEnv.base.log(Log.ERROR, TAG, "$name: onAttachedToWindow 挂钩失败", it)
         }
 
-        // ── 升级卡片展开 ──
-        if (Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)) {
-            hookCardExpand()
-        }
+        // ── 升级卡片展开（总是 hook，内部实时判断开关）──
+        hookCardExpand()
 
         // ── onResume 补扫 ──
         hookActivityRescan("com.xiaomi.market.business_ui.main.MarketTabActivity")
@@ -112,10 +109,15 @@ object UiCleanup : BaseHook() {
                         (thisObject as? View)?.let { view ->
                             view.post {
                                 runCatching {
+                                    // 实时判断：开关开 + 前置全开才展开
+                                    val expandOn = Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)
+                                    val cleanupOn = Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
+                                    val orchardOn = Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, true)
+                                    if (!expandOn || !cleanupOn || !orchardOn) return@runCatching
+
                                     val header = findViewByResName(view, "expand_collapse_header")
                                     val arrow = findViewByResName(view, "expand_arrow")
                                     (arrow ?: header)?.performClick()
-                                    // 展开后横向平铺4个图标
                                     view.postDelayed({
                                         runCatching { flattenUpdateIcons(view) }
                                     }, 120)
@@ -171,7 +173,6 @@ object UiCleanup : BaseHook() {
         "mine_update_dark_bg",
         "mine_update_dark_arrow"
     )
-    /** 花盆图标：空状态图标，替换为透明 */
     private val orchardIconNames = setOf(
         "no_update_history",
         "no_update_new"
@@ -241,7 +242,6 @@ object UiCleanup : BaseHook() {
                             ?: return@hooked proceed()
                         if (id <= 0) return@hooked proceed()
 
-                        // 首次拿到 Resources 时立即解析目标 id
                         if (!orchardIdsResolved) {
                             orchardDrawableIds.clear()
                             orchardIconIds.clear()
@@ -260,11 +260,9 @@ object UiCleanup : BaseHook() {
                             orchardIdsResolved = true
                         }
 
-                        // 花盆图标 → 透明
                         if (id in orchardIconIds) {
                             return@hooked android.graphics.drawable.ColorDrawable(0)
                         }
-                        // 背景图 → 日夜纯色
                         if (id in orchardDrawableIds) {
                             return@hooked android.graphics.drawable.ColorDrawable(
                                 orchardBackgroundColor(isNightResources(res))
@@ -278,7 +276,7 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    // ═══════════════ onResume 补扫（任务去重版） ═══════════════
+    // ═══════════════ onResume 补扫 ═══════════════
     private fun hookActivityRescan(className: String) {
         runCatching {
             ClassUtil.loadClass(className)
@@ -378,7 +376,6 @@ object UiCleanup : BaseHook() {
         }
     }
 
-    /** 升级卡片：按类名兜底设置纯色背景，开关实时判断 */
     private fun isOrchardTarget(v: View): Boolean {
         if (!Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) return false
         val n = v.javaClass.name

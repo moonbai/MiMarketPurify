@@ -23,6 +23,7 @@ object Settings {
     const val KEY_TAB_FILTER = "tab_filter"
     const val KEY_SUB_TAB_FILTER = "sub_tab_filter"
     const val KEY_TAB_KEEP = "tab_keep"
+    const val KEY_FLOATING_AD = "floating_ad"
 
     // ═══════════════ 悬浮底栏（纯原生自绘） ═══════════════
     /** 主开关：把原生贴边底栏换成悬浮胶囊底栏 */
