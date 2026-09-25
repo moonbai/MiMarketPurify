@@ -222,7 +222,7 @@ object RankAds : BaseHook() {
                 val entries = dex.entries()
                 while (entries.hasMoreElements()) {
                     val name = entries.nextElement()
-                    if (name.startsWith("com.xiaomi.market") && name.contains("rank", true)) found += name
+                    if (name.startsWith("com.xiaomi.market") && name.contains("rank", ignoreCase = true)) found += name
                 }
             }
         }.onFailure {
