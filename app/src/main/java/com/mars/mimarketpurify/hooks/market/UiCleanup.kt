@@ -158,8 +158,7 @@ object UiCleanup : BaseHook() {
         btn?.let { view ->
             val drawable = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                solidColor = UPDATE_BTN_COLOR
-                // dp转px
+                setColor(UPDATE_BTN_COLOR)
                 val density = view.resources.displayMetrics.density
                 cornerRadius = BTN_RADIUS_DP * density
             }
@@ -209,10 +208,11 @@ object UiCleanup : BaseHook() {
         val density = res.displayMetrics.density
         return GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            solidColor = bgColor
+            setColor(bgColor)
             cornerRadius = CARD_RADIUS_DP * density
         }
     }
+    
 
     private fun hookOrchardSkin() {
         // apply* 方法 hook：proceed 即可，背景替换由 getDrawable hook 完成
