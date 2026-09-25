@@ -24,6 +24,9 @@ object UpdateCardUi : BaseHook() {
     private const val BTN_RADIUS_DP = 24f
     private const val UPDATE_BTN_MARGIN_HORIZONTAL_DP = 12f
 
+    // tag标记：防止短时间重复执行居中逻辑，避免多层布局嵌套爆炸
+    private val TAG_RECENTER_DONE = View.generateViewId()
+
     override fun init() {
         hookCardExpand()
         hookViewAttachObserver()
@@ -37,12 +40,17 @@ object UpdateCardUi : BaseHook() {
                 ?.first()
                 ?.hooked {
                     val result = proceed()
-                    val v = thisObject as? View
-                    v?.let {
-                        val resName = MinePageClean.getResourceName(it)
-                        if(resName == "update_button_layout" || resName == "update_button_parent_layout"){
-                            applyBtnStyle(it)
-                            it.postDelayed({ reCenterButtonContent(it) },100)
+                    val v = thisObject as? View ?: return@hooked result
+                    val resName = MinePageClean.getResourceName(v)
+                    if(resName == "update_button_layout" || resName == "update_button_parent_layout"){
+                        applyBtnStyle(v)
+                        // tag判断：避免短时间重复调度
+                        if(v.getTag(TAG_RECENTER_DONE) != true){
+                            v.setTag(TAG_RECENTER_DONE, true)
+                            v.postDelayed({
+                                reCenterButtonContent(v)
+                                v.setTag(TAG_RECENTER_DONE, false)
+                            },100)
                         }
                     }
                     result
@@ -86,7 +94,7 @@ object UpdateCardUi : BaseHook() {
         }
     }
 
-    
+
     private fun flattenUpdateIcons(root: View) {
         val icons = MinePageClean.findViewByResName(root, "update_icon_layout") as? ViewGroup ?: return
         if (icons is android.widget.GridLayout) {
@@ -121,28 +129,44 @@ object UpdateCardUi : BaseHook() {
         root.postDelayed({ applyBtnStyle(btnLayout); applyBtnStyle(btnParent) }, 800)
 
         HookEnv.base.log(Log.INFO, TAG, "btnParent=$btnParent, btnLayout=$btnLayout")
-        btnLayout?.postDelayed({ reCenterButtonContent(btnLayout) },100)
+        btnLayout?.let { bl ->
+            if(bl.getTag(TAG_RECENTER_DONE) != true) {
+                bl.setTag(TAG_RECENTER_DONE, true)
+                bl.postDelayed({
+                    reCenterButtonContent(bl)
+                    bl.setTag(TAG_RECENTER_DONE, false)
+                },100)
+            }
+        }
     }
 
     private fun reCenterButtonContent(btnLayout: View) {
-        val textView = MinePageClean.findViewByResName(btnLayout, "update_button_text") as? TextView
-        val badgeView = MinePageClean.findViewByResName(btnLayout, "update_button_red_badge")
-        if(textView == null || badgeView == null) return
+        val btnViewGroup = btnLayout as? ViewGroup ?: return
 
-        if (btnLayout is ViewGroup) {
-            for(i in 0 until btnLayout.childCount) {
-                val child = btnLayout.getChildAt(i)
-                if(child is LinearLayout || child is FrameLayout) {
-                    btnLayout.removeView(child)
-                }
+        // =========【第一步：强制清理我们之前动态添加的容器，无论能不能找到原始控件】=========
+        val toRemove = mutableListOf<View>()
+        for(i in 0 until btnViewGroup.childCount) {
+            val child = btnViewGroup.getChildAt(i)
+            // 识别我们自己插入的容器：FrameLayout / LinearLayout，原始布局不会嵌套这两层
+            if(child is FrameLayout || child is LinearLayout) {
+                toRemove.add(child)
             }
         }
+        toRemove.forEach { btnViewGroup.removeView(it) }
 
-        val parentText = textView.parent as? ViewGroup
-        parentText?.removeView(textView)
-        val parentBadge = badgeView.parent as? ViewGroup
-        parentBadge?.removeView(badgeView)
+        // =========【重新查找原始文字、角标控件】=========
+        val textView = MinePageClean.findViewByResName(btnLayout, "update_button_text") as? TextView
+        val badgeView = MinePageClean.findViewByResName(btnLayout, "update_button_red_badge")
+        if(textView == null || badgeView == null) {
+            HookEnv.base.log(Log.WARN, TAG, "reCenterButtonContent: 找不到 update_button_text / update_button_red_badge，跳过居中改造")
+            return
+        }
 
+        // 从旧父容器剥离
+        (textView.parent as? ViewGroup)?.removeView(textView)
+        (badgeView.parent as? ViewGroup)?.removeView(badgeView)
+
+        // 构建横向容器：文字 + 角标
         val horizontalContainer = LinearLayout(btnLayout.context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -151,19 +175,22 @@ object UpdateCardUi : BaseHook() {
             gravity = Gravity.CENTER_VERTICAL
         }
         horizontalContainer.addView(textView, hlp)
+
         val density = btnLayout.resources.displayMetrics.density
         val badgeLp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             marginStart = (4f * density).toInt()
         }
         horizontalContainer.addView(badgeView, badgeLp)
 
+        // 外层FrameLayout：整体垂直居中，修复文字偏下遮挡问题
+        val frame = FrameLayout(btnLayout.context)
         val flp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             gravity = Gravity.CENTER
         }
-        val frame = FrameLayout(btnLayout.context)
         frame.addView(horizontalContainer, flp)
+
         val frameLp = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        (btnLayout as? ViewGroup)?.addView(frame, frameLp)
+        btnViewGroup.addView(frame, frameLp)
     }
 
     fun applyBtnStyle(view: View?) {
@@ -176,8 +203,9 @@ object UpdateCardUi : BaseHook() {
         }
         view.background = btnDrawable
 
+        // 【修复：垂直内边距由18dp → 10dp，解决文字底部被裁切】
         val padHorizontal = (20f * density).toInt()
-        val padVertical = (18f * density).toInt()
+        val padVertical = (10f * density).toInt()
         view.setPadding(padHorizontal, padVertical, padHorizontal, padVertical)
 
         view.layoutParams?.let { lp ->
