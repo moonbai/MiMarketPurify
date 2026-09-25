@@ -1,6 +1,7 @@
 package com.mars.mimarketpurify.hooks.market
 
 import android.app.Activity
+import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -40,6 +41,13 @@ object UiCleanup : BaseHook() {
     private val resolved = Collections.synchronizedMap(mutableMapOf<String, Set<Int>>())
     private fun getCleanupIdSet(v: View): Set<Int> = idSet(v, "cleanup", mineCleanupIds)
     private fun getCleanupTitleIdSet(v: View): Set<Int> = idSet(v, "cleanup_title", mineCleanupTitleIds)
+
+    // ================= 常量定义：圆角 & 颜色 =================
+    // 更新卡片背景圆角 dp
+    private const val CARD_RADIUS_DP = 16f
+    // 一键更新按钮颜色 #FF0DAE73
+    private const val UPDATE_BTN_COLOR = 0xFF0DAE73.toInt()
+    private const val BTN_RADIUS_DP = 12f
 
     // ═══════════════ init ═══════════════
     override fun init() {
@@ -145,9 +153,18 @@ object UiCleanup : BaseHook() {
                 }
             }
         }
-        // 一键更新按钮背景设灰，避免和白色背景融在一起
+        // ========== 修改一键更新按钮逻辑 ==========
         val btn = findViewByResName(root, "update_button_layout")
-        btn?.setBackgroundColor(0xFFF0F0F0.toInt())
+        btn?.let { view ->
+            val drawable = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                solidColor = UPDATE_BTN_COLOR
+                // dp转px
+                val density = view.resources.displayMetrics.density
+                cornerRadius = BTN_RADIUS_DP * density
+            }
+            view.background = drawable
+        }
     }
 
     private fun findViewByResName(root: View, resName: String): View? {
@@ -185,10 +202,17 @@ object UiCleanup : BaseHook() {
 
     private fun isNightResources(res: android.content.res.Resources): Boolean =
         (res.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-            android.content.res.Configuration.UI_MODE_NIGHT_YES
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
 
-    private fun orchardBackgroundColor(isNight: Boolean): Int =
-        if (isNight) 0xFF242424.toInt() else 0xFFFFFFFF.toInt()
+    private fun getCardBackgroundDrawable(res: android.content.res.Resources, isNight: Boolean): GradientDrawable {
+        val bgColor = if (isNight) 0xFF242424.toInt() else 0xFFFFFFFF.toInt()
+        val density = res.displayMetrics.density
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            solidColor = bgColor
+            cornerRadius = CARD_RADIUS_DP * density
+        }
+    }
 
     private fun hookOrchardSkin() {
         // apply* 方法 hook：proceed 即可，背景替换由 getDrawable hook 完成
@@ -246,9 +270,8 @@ object UiCleanup : BaseHook() {
                             return@hooked android.graphics.drawable.ColorDrawable(0)
                         }
                         if (id in orchardDrawableIds) {
-                            return@hooked android.graphics.drawable.ColorDrawable(
-                                orchardBackgroundColor(isNightResources(res))
-                            )
+                            // 替换为带圆角的背景，替代原来ColorDrawable
+                            return@hooked getCardBackgroundDrawable(res, isNightResources(res))
                         }
                         proceed()
                     }
@@ -421,4 +444,3 @@ object UiCleanup : BaseHook() {
             if (id != null && id > 0) id else null
         }.toSet()
 }
-//（注：内容由AI生成）
