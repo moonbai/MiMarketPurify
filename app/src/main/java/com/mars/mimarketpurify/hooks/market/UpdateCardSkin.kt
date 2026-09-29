@@ -11,7 +11,8 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 import java.util.Collections
 
 object UpdateCardSkin : BaseHook() {
-    override val prefKey: String? = null
+    override val prefKey: String = Settings.KEY_ORCHARD_SKIN
+    override val defaultEnabled: Boolean = true
     override val name: String = "更新卡片皮肤修复"
 
     private const val CARD_RADIUS_DP = 16f
@@ -28,6 +29,8 @@ object UpdateCardSkin : BaseHook() {
     )
     private val orchardDrawableIds = Collections.synchronizedSet(mutableSetOf<Int>())
     private val orchardIconIds = Collections.synchronizedSet(mutableSetOf<Int>())
+    /** 资源 id 在 App 生命周期内稳定，首次解析后缓存，避免每次 getDrawable 都重新 getIdentifier。 */
+    private var idsResolved = false
 
     private val orchardMethods = listOf(
         "applyUpdateViewOrchardStyle",
@@ -57,6 +60,26 @@ object UpdateCardSkin : BaseHook() {
         }
     }
 
+    /** 首次解析果园 / 深色背景与图标资源 id 并缓存（资源 id 在 App 生命周期内稳定，无需每次 getDrawable 都解析）。 */
+    private fun resolveOrchardIds(res: android.content.res.Resources) {
+        synchronized(orchardDrawableIds) {
+            if (idsResolved) return
+            orchardDrawableNames.forEach { name ->
+                runCatching {
+                    val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
+                    if (rid > 0) orchardDrawableIds.add(rid)
+                }
+            }
+            orchardIconNames.forEach { name ->
+                runCatching {
+                    val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
+                    if (rid > 0) orchardIconIds.add(rid)
+                }
+            }
+            idsResolved = true
+        }
+    }
+
     private fun hookUpdateCardSkin() {
         updateViewClasses.forEach { owner ->
             runCatching {
@@ -77,36 +100,23 @@ object UpdateCardSkin : BaseHook() {
                 ?.filterByName("getDrawable")
                 ?.forEach { m ->
                     m.hooked {
-                        if (!Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, false)) {
-                            return@hooked proceed()
-                        }
+                        // 与设置页「更新卡片背景」开关保持一致：默认开启；受总开关 + 子开关实时控制
+                        if (!enabled()) return@hooked proceed()
                         val res = thisObject as? android.content.res.Resources ?: return@hooked proceed()
-                        // 修复：不要在indexOfFirst内部使用it，重新拿到参数索引
+                        // 重新拿到参数索引（避免在意外的 lambda 作用域里误用 it）
                         var idIdx = -1
-                        for(pi in m.parameterTypes.indices){
-                            if(m.parameterTypes[pi] == Int::class.javaPrimitiveType){
+                        for (pi in m.parameterTypes.indices) {
+                            if (m.parameterTypes[pi] == Int::class.javaPrimitiveType) {
                                 idIdx = pi
                                 break
                             }
                         }
-                        if(idIdx < 0) return@hooked proceed()
+                        if (idIdx < 0) return@hooked proceed()
                         val id = args[idIdx] as? Int ?: return@hooked proceed()
                         if (id <= 0) return@hooked proceed()
 
-                        orchardDrawableIds.clear()
-                        orchardIconIds.clear()
-                        orchardDrawableNames.forEach { name ->
-                            runCatching {
-                                val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
-                                if (rid > 0) orchardDrawableIds.add(rid)
-                            }
-                        }
-                        orchardIconNames.forEach { name ->
-                            runCatching {
-                                val rid = res.getIdentifier(name, "drawable", "com.xiaomi.market")
-                                if (rid > 0) orchardIconIds.add(rid)
-                            }
-                        }
+                        // 资源 id 在 App 生命周期内稳定，首次解析后缓存（见 resolveOrchardIds）
+                        if (!idsResolved) resolveOrchardIds(res)
 
                         if (id in orchardIconIds) {
                             return@hooked android.graphics.drawable.ColorDrawable(0)

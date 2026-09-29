@@ -38,12 +38,11 @@ object RankAds : BaseHook() {
     }
 
     private fun hookRankItemBindFilter() {
-        var rankClassNames = discoverRankClasses()
-        debugLog("dex扫描rank类数量=${rankClassNames.size}")
-        if (rankClassNames.isEmpty()) {
-            debugLog("dex扫描无结果，回退fallback硬编码类名单")
-            rankClassNames = fallbackRankClasses
-        }
+        val discovered = discoverRankClasses()
+        debugLog("dex扫描rank类数量=${discovered.size}")
+        // 始终并集 fallback 名单：即使 dex 扫描命中了部分类，也能兜住其它版本里命名不同的广告 Binder
+        val rankClassNames = (discovered + fallbackRankClasses).distinct()
+        debugLog("最终参与挂钩的 rank 类数量=${rankClassNames.size}")
 
         rankClassNames.forEach { className ->
             runCatching {
@@ -55,22 +54,12 @@ object RankAds : BaseHook() {
                             val model = args[0]
                             debugLog("onBindData invoked | class=$className, model=$model")
 
-                            val isAd = model.getFieldValue("ads") as? Int
-                                ?: model.getFieldValue("isAd") as? Int
-                                ?: model.getFieldValue("adFlag") as? Int ?: 0
-                            val adType = model.getFieldValue("adType") as? Int ?: -1
-
-                            debugLog("onBindData ads=$isAd adType=$adType")
-                            if (isAd == 1) {
-                                val itemView: View? = when {
-                                    className.contains("Binder") -> {
-                                        val vh = args[1]
-                                        vh.getFieldValue("itemView") as? View
-                                    }
-                                    else -> args[1] as? View
-                                }
+                            val isAd = isAdModel(model)
+                            debugLog("onBindData isAd=$isAd")
+                            if (isAd) {
+                                val itemView = extractItemView(args, className)
                                 itemView?.visibility = View.GONE
-                                debugLog("[兜底过滤] 隐藏商业广告Item ads=$isAd adType=$adType")
+                                debugLog("[兜底过滤] 隐藏商业广告Item | class=$className")
                             }
                         }.onFailure {
                             debugLog("onBindData 读取字段失败: ${it.message}")
@@ -83,6 +72,36 @@ object RankAds : BaseHook() {
                 debugLog("加载类失败 $className")
             }
         }
+    }
+
+    /**
+     * 多版本兼容地判断一个榜单条目 model 是否为广告：
+     * 依次模糊读取常见广告标记字段，命中 Int==1 或 Boolean==true 即判为广告。
+     * 不同 HyperOS / MIUI 版本的字段名不一（ads / isAd / adFlag / isAdItem / ad / sponsor），
+     * 全部用 [getFieldValue] 容错读取，读不到也不影响其它判断。
+     */
+    private fun isAdModel(model: Any?): Boolean {
+        if (model == null) return false
+        val candidates = listOf("ads", "isAd", "adFlag", "isAdItem", "ad", "sponsor")
+        for (f in candidates) {
+            when (val v = runCatching { model.getFieldValue(f) }.getOrNull()) {
+                is Int -> if (v == 1) return true
+                is Boolean -> if (v) return true
+                else -> {}
+            }
+        }
+        return false
+    }
+
+    /**
+     * 从 onBindData 参数里稳健地取出条目根 View：
+     *  - 第二个参数本身就是 View（多数 Binder 的 onBindData(model, itemView)）→ 直接用；
+     *  - 否则退化为读取其 itemView 字段（ViewHolder 形态），兼容 `...Binder` 之外的写法。
+     */
+    private fun extractItemView(args: Array<out Any?>, className: String): View? {
+        val second = args.getOrNull(1)
+        if (second is View) return second
+        return runCatching { second?.getFieldValue("itemView") }.getOrNull() as? View
     }
 
     private fun diagnosticScan() {

@@ -22,6 +22,8 @@ object FloatingAdHook : BaseHook() {
 
     private val anchorNames = listOf("floating_icon", "floating_close_btn")
     private var anchorIds: Set<Int> = emptySet()
+    /** 资源 id 在 App 生命周期内稳定：解析成功后即缓存，避免 setVisibility/addView 高频路径每次都 getIdentifier。 */
+    private var idsResolved = false
 
     override fun init() {
         // 1. Hook onAttachedToWindow：捕获广告View挂载事件
@@ -121,9 +123,11 @@ object FloatingAdHook : BaseHook() {
     }
 
     /**
-     * 每次调用都解析ID，更新anchorIds，不再一次性缓存
+     * 解析广告锚点资源 id。仅在前一次解析尚未成功时尝试，成功后缓存，
+     * 既保留「首次解析失败可重试」的容错，又避免高频路径每次调用都 getIdentifier。
      */
     private fun resolveIds(view: View) {
+        if (idsResolved && anchorIds.isNotEmpty()) return
         val newIds = anchorNames.mapNotNull { name ->
             runCatching {
                 view.resources.getIdentifier(name, "id", "com.xiaomi.market")
@@ -131,6 +135,7 @@ object FloatingAdHook : BaseHook() {
         }.toSet()
         if (newIds.isNotEmpty()) {
             anchorIds = newIds
+            idsResolved = true
         }
     }
 }

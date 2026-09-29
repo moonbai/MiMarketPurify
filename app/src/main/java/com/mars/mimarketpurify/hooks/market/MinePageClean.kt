@@ -157,13 +157,15 @@ object MinePageClean : BaseHook() {
     }
 
     private fun hookVisibilityMonitor() {
-        if (!Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) return
         runCatching {
             val viewCls = ClassUtil.loadClass("android.view.View")
             viewCls?.methodFinder()
                 ?.filterByName("setVisibility")
                 ?.first()
                 ?.hooked {
+                    // 实时读开关：用户中途开启「清理与卸载」也能立即生效（与项目实时开关策略一致），
+                    // 不再在安装期决定是否挂钩，避免「关→开」后动态出现的清理入口无法隐藏。
+                    if (!Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)) return@hooked proceed()
                     val view = thisObject as? View ?: return@hooked proceed()
                     val result = proceed()
                     if (view.visibility == View.VISIBLE) {

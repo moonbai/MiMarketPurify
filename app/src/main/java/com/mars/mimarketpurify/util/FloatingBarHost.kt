@@ -65,6 +65,8 @@ class FloatingBarHost private constructor(
     private var disposed = false
 
     private var lastSignature: String = ""
+    private var lastCheapSig: String = ""
+    private var lastContentRefreshAt: Long = 0L
     private var lastBlocker: String? = null
 
     private val items = ArrayList<View>()
@@ -363,6 +365,7 @@ class FloatingBarHost private constructor(
         runCatching {
             if (refreshViewRefs()) {
                 lastSignature = ""
+                lastCheapSig = ""
                 return
             }
             val tabs = tabViews()
@@ -380,6 +383,7 @@ class FloatingBarHost private constructor(
                         debugLog("已还原原生底栏（$blocker）")
                     }
                     lastSignature = ""
+                    lastCheapSig = ""
                 }
                 return
             }
@@ -389,18 +393,35 @@ class FloatingBarHost private constructor(
             lastBlocker = null
             invisibleFrames = 0
 
+            // ── 廉价每帧同步：保持原生底栏被压制、浮层可见 ──
+            // 参考 HyperModifier 的 NavigationRefreshPolicy：高频的 OnPreDraw 路径只做最廉价的
+            // 可见性 / 锚点判定，昂贵的反射读取（标题、角标、图标）下沉到「变化时才做」，
+            // 既避免低刷新率下原生广告位残留，又显著降低每帧开销。
+            applyNativeChromeReplacement()
+            if (barRoot.visibility != View.VISIBLE) barRoot.visibility = View.VISIBLE
+
             val selected = NativeTabBar.selectedIndexOf(nativeTabLayout).coerceIn(0, tabs.size - 1)
             val selectionChanged = lastSelected != selected
+            // 廉价签名：仅标签数与选中项，变化频率低、每帧计算成本极小
+            val cheapSig = "${tabs.size}:$selected"
+            val now = System.currentTimeMillis()
+            val cheapChanged = cheapSig != lastCheapSig
+            val throttled = (now - lastContentRefreshAt) >= CONTENT_REFRESH_THROTTLE_MS
+            if (!cheapChanged && !throttled) return   // 内容无变化，跳过昂贵的反射读取
+
+            // ── 昂贵同步：读取标题/角标/图标并重建（仅变化时或节流到期时执行）──
             val signature = buildSignature(tabs, selected)
-            if (signature == lastSignature) {
-                if (barRoot.visibility != View.VISIBLE) barRoot.visibility = View.VISIBLE
-                applyNativeChromeReplacement()
+            if (!cheapChanged && signature == lastSignature) {
+                lastContentRefreshAt = now   // 节流到期但内容未变，仅续期时间戳
                 return
             }
             lastSignature = signature
+            lastCheapSig = cheapSig
+            lastContentRefreshAt = now
             styleDirty = true
             if (refreshViewRefs(force = true)) {
                 lastSignature = ""
+                lastCheapSig = ""
                 return
             }
 
@@ -696,6 +717,7 @@ class FloatingBarHost private constructor(
             return false
         }
 
+        private const val CONTENT_REFRESH_THROTTLE_MS = 1000L
         private const val RESTORE_AFTER_FRAMES = 2
         private val active = WeakHashMapOfActivity()
 
