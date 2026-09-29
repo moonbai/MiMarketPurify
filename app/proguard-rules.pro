@@ -27,6 +27,19 @@
     public static int d(...);
 }
 
+# ═══════════════ 新增：Compose + Miuix KMP（悬浮底栏重写）═══════════════
+# Compose runtime 必须保留，否则 R8 会误删重组/稳定性推断所需的类
+-keep class androidx.compose.** { *; }
+-keep class androidx.lifecycle.** { *; }
+-keep class androidx.savedstate.** { *; }
+-dontwarn androidx.compose.**
+# Miuix KMP（毛玻璃 + 图标，公开依赖，保留其公共 API）
+-keep class top.yukonga.miuix.kmp.** { *; }
+-dontwarn top.yukonga.miuix.kmp.**
+# 模块自有包：保留类名，避免被 -repackageclasses 重命名破坏 Xposed 入口与 Compose 反射引用
+-keep class com.mars.mimarketpurify.** { *; }
+-keepattributes *Annotation*,Signature,InnerClasses
+
 # Obfuscation
 -repackageclasses ''
 -allowaccessmodification

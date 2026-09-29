@@ -7,7 +7,7 @@ import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
-import com.mars.mimarketpurify.util.FloatingBarHost
+import com.mars.mimarketpurify.util.ComposeFloatingBarHost
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 import java.lang.reflect.Method
@@ -74,7 +74,7 @@ object FloatingBottomBar : BaseHook() {
                 when (method.name) {
                     "onDestroy" -> {
                         cancelRetry(activity)
-                        FloatingBarHost.release(activity)
+                        ComposeFloatingBarHost.release(activity)
                     }
                     // onCreate / onResume：按当前开关状态决定挂载或卸载
                     else -> applyTo(activity)
@@ -91,12 +91,12 @@ object FloatingBottomBar : BaseHook() {
      */
     private fun applyTo(activity: Activity) {
         val on = enabled()
-        val existing = FloatingBarHost.get(activity)
+        val existing = ComposeFloatingBarHost.get(activity)
 
         if (!on) {
             if (existing != null) {
                 cancelRetry(activity)
-                FloatingBarHost.release(activity)
+                ComposeFloatingBarHost.release(activity)
                 debugLog("开关关闭：已卸载悬浮底栏并还原原生底栏")
             }
             cancelRetry(activity)
@@ -106,14 +106,14 @@ object FloatingBottomBar : BaseHook() {
 
         // onCreate 时 View 往往尚未 inflate，post 到下一帧再试
         activity.window?.decorView?.post { tryAttach(activity) }
-        if (FloatingBarHost.get(activity) == null) scheduleRetry(activity)
+        if (ComposeFloatingBarHost.get(activity) == null) scheduleRetry(activity)
     }
 
     private fun tryAttach(activity: Activity): Boolean {
         if (activity.isFinishing || activity.isDestroyed || !enabled()) return false
         // 先记录是否已存在，避免「复用已有宿主」也被记成一次新挂载（日志刷屏）
-        val existed = FloatingBarHost.get(activity) != null
-        val host = runCatching { FloatingBarHost.attach(activity) }.getOrNull()
+        val existed = ComposeFloatingBarHost.get(activity) != null
+        val host = runCatching { ComposeFloatingBarHost.attach(activity) }.getOrNull()
         if (host == null) {
             debugLog("attach 失败：未找到原生底栏 View，继续按帧重试")
             return false
