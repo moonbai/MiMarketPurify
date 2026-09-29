@@ -11,7 +11,7 @@ import android.widget.CompoundButton
 import io.github.libxposed.service.XposedService
 
 /**
- * 程序主页：**顶栏固定 + 内容区滚动**，整体遵循 HyperOS 风格的分组卡片布局。
+ * 程序主页：**顶栏固定 + 内容区滚动**，整体遵循 MiuiX / HyperOS 风格的分组卡片布局。
  *
  * 主页只保留**高频开关**：广告移除这一组，以及功能增强两项。其余按「同一个页面」
  * 或「带子选项」为维度收进 [SubSettingsActivity]——主页此前近二十行开关需要反复
@@ -20,10 +20,11 @@ import io.github.libxposed.service.XposedService
  * 布局要点：
  * - 根布局为纵向 [LinearLayout]：固定顶栏（标题 / 副标题）+ 下方 ScrollView，
  * 因此标题始终可见，滚动只发生在内容区；
- * - 功能开关按分组放进 [groupCard()] 容器，组内不画分隔线、只用少量留白分行，
+ * - 功能开关按分组放进 [groupCard] 容器，组内不画分隔线、只用少量留白分行，
  * 而不是每行一张独立卡片——这是 HyperOS 设置的标准形态；
  * - 每行的「标题 + 摘要 + 开关」整体可点击，点击整行即翻转开关；
- * - 所有配色、字号、间距、触摸目标尺寸统一取自 [Ui]。
+ * - 所有配色、字号、间距、触摸目标尺寸统一取自 [MiuiX]（直接引用 MiuiX 主题取色，
+ * 支持日 / 夜模式自适应）。
  *
  * 「隐藏桌面图标」不再禁用本 Activity，而是禁用桌面入口 alias，
  * 保证 LSPosed 等框架始终可以打开主页（详见 manifest 注释）。
@@ -81,7 +82,7 @@ class MainActivity : SettingsBaseActivity() {
 
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Ui.BG)
+            setBackgroundColor(MiuiX.bg(isNight()))
         }
         setupRoot(header)
 
@@ -111,14 +112,14 @@ class MainActivity : SettingsBaseActivity() {
 
         titleView = TextView(this).apply {
             text = "Mi Market Purify"
-            textSize = Ui.HOME_TITLE
+            textSize = MiuiX.HOME_TITLE
             setTypeface(null, Typeface.BOLD)
-            setTextColor(Ui.STATE_INACTIVE)
+            setTextColor(MiuiX.onSurface(isNight()))
         }
         val subTitleTv = TextView(this).apply {
             text = "小米应用商店净化与增强"
-            textSize = Ui.CAPTION
-            setTextColor(Ui.TEXT_SECONDARY)
+            textSize = MiuiX.CAPTION
+            setTextColor(MiuiX.onSurfaceVariant(isNight()))
             setPadding(0, dp(2), 0, dp(10))
         }
 
@@ -128,9 +129,9 @@ class MainActivity : SettingsBaseActivity() {
         row.addView(leftTextBlock)
         row.addView(TextView(this).apply {
             text = "关于"
-            textSize = Ui.CAPTION
+            textSize = MiuiX.CAPTION
             setTypeface(null, Typeface.BOLD)
-            setTextColor(Ui.ACCENT)
+            setTextColor(MiuiX.primary(isNight()))
             setBackgroundResource(R.drawable.bg_pill_accent)
             setPadding(dp(14), dp(7), dp(14), dp(7))
             minimumHeight = dp(40)
@@ -150,22 +151,22 @@ class MainActivity : SettingsBaseActivity() {
     private fun buildStatusCard() {
         statusCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(Ui.CARD_PAD_H), dp(Ui.CARD_PAD_V), dp(Ui.CARD_PAD_H), dp(Ui.CARD_PAD_V))
+            setPadding(dp(MiuiX.CARD_PAD_H), dp(MiuiX.CARD_PAD_V), dp(MiuiX.CARD_PAD_H), dp(MiuiX.CARD_PAD_V))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.topMargin = dp(12) }
-            background = softBackground(Ui.STATE_INACTIVE_SOFT)
+            background = softBackground(MiuiX.neutralSoft(isNight()))
         }
         statusTitle = TextView(this).apply {
             text = "正在连接框架…"
-            textSize = Ui.ROW_TITLE
+            textSize = MiuiX.ROW_TITLE
             setTypeface(null, Typeface.BOLD)
-            setTextColor(Ui.STATE_INACTIVE)
+            setTextColor(MiuiX.onSurfaceVariant(isNight()))
         }
         statusBody = TextView(this).apply {
-            textSize = Ui.ROW_SUMMARY
-            setTextColor(Ui.TEXT_SECTION)
+            textSize = MiuiX.ROW_SUMMARY
+            setTextColor(MiuiX.onSurfaceVariant(isNight()))
             setLineSpacing(0f, 1.4f)
             setPadding(0, dp(4), 0, 0)
         }
@@ -177,22 +178,22 @@ class MainActivity : SettingsBaseActivity() {
     private fun applyStatusCard(service: XposedService?) {
         if (service == null) {
             statusTitle.text = "模块未激活"
-            statusTitle.setTextColor(Ui.STATE_INACTIVE)
+            statusTitle.setTextColor(MiuiX.onSurfaceVariant(isNight()))
             statusBody.text =
                 "以下开关暂时改不动远程偏好：请在 LSPosed / 框架中启用本模块，" +
                 "并在作用域里勾选「应用商店」，然后重启应用商店。"
-            statusCard.background = softBackground(Ui.STATE_INACTIVE_SOFT)
+            statusCard.background = softBackground(MiuiX.neutralSoft(isNight()))
             return
         }
         val remote = service.frameworkProperties and XposedService.PROP_CAP_REMOTE != 0L
         statusTitle.text = "已激活 · ${service.frameworkName} ${service.frameworkVersion}"
-        statusTitle.setTextColor(Ui.STATE_ACTIVE)
+        statusTitle.setTextColor(MiuiX.STATE_ACTIVE)
         statusBody.text = if (remote) {
             "支持远程偏好：开关改动实时生效，一般无需重启应用商店。\n\n插件调试基于应用商店版本：4.126.xx，其余版本不保证适用性"
         } else {
             "当前框架不支持远程偏好，开关可能不会立即生效，建议重启一次应用商店。"
         }
-        statusCard.background = softBackground(Ui.STATE_ACTIVE_SOFT)
+        statusCard.background = softBackground(MiuiX.STATE_ACTIVE_SOFT)
     }
 
     private fun softBackground(color: Int): GradientDrawable =
@@ -242,7 +243,7 @@ class MainActivity : SettingsBaseActivity() {
             value = { tabsText() }
         ) { openPage(SubSettingsActivity.PAGE_TABS) }
     
-        // ====== 新增：悬浮底栏高级配置入口 =====
+        // ====== 悬浮底栏高级配置入口 ======
         addNavRow(
             group = uiGroup,
             title = "悬浮底栏配置",
@@ -307,8 +308,8 @@ class MainActivity : SettingsBaseActivity() {
         content.addView(moduleGroup)
         content.addView(TextView(this).apply {
             text = "Tips：开关实时生效，但还是建议重启应用商店"
-            textSize = Ui.MICRO
-            setTextColor(Ui.TEXT_TERTIARY)
+            textSize = MiuiX.MICRO
+            setTextColor(MiuiX.outline(isNight()))
             setPadding(dp(4), dp(2), dp(4), dp(16))
         })
     }
@@ -357,7 +358,7 @@ class MainActivity : SettingsBaseActivity() {
     // ==================== 刷新 ====================
 
     override fun onRefresh() {
-        titleView.setTextColor(if (service == null) Ui.STATE_INACTIVE else Ui.STATE_ACTIVE)
+        titleView.setTextColor(if (service == null) MiuiX.onSurfaceVariant(isNight()) else MiuiX.onSurface(isNight()))
         applyStatusCard(service)
     }
 }

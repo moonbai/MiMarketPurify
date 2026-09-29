@@ -18,6 +18,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlin.math.roundToInt
 
@@ -32,11 +33,11 @@ class AboutActivity : Activity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Ui.BG)
+            setBackgroundColor(MiuiX.bg(isNight()))
         }
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Ui.BG)
+            setBackgroundColor(MiuiX.bg(isNight()))
         }
         val scroll = ScrollView(this).apply {
             isFillViewport = true
@@ -68,20 +69,23 @@ class AboutActivity : Activity() {
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
             header.setPadding(
-                dp(Ui.PAGE_H),
-                dp(Ui.PAGE_H) + bars.top,
-                dp(Ui.PAGE_H),
+                dp(MiuiX.PAGE_H),
+                dp(MiuiX.PAGE_H) + bars.top,
+                dp(MiuiX.PAGE_H),
                 dp(12)
             )
             content.setPadding(
-                dp(Ui.PAGE_H),
+                dp(MiuiX.PAGE_H),
                 dp(8),
-                dp(Ui.PAGE_H),
-                dp(Ui.PAGE_H) + bars.bottom
+                dp(MiuiX.PAGE_H),
+                dp(MiuiX.PAGE_H) + bars.bottom
             )
             insets
         }
         ViewCompat.requestApplyInsets(root)
+
+        // 暗色模式：状态栏图标随背景反色（亮色背景→深色图标，暗色背景→浅色图标）
+        WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = !isNight()
 
         buildTopBar(header)
         buildAppCard()
@@ -97,8 +101,8 @@ class AboutActivity : Activity() {
 
         content.addView(TextView(this).apply {
             text = "不乱拉屎的应用商店才是好的应用商店@Mars"
-            textSize = Ui.MICRO
-            setTextColor(Ui.TEXT_TERTIARY)
+            textSize = MiuiX.MICRO
+            setTextColor(MiuiX.outline(isNight()))
             setLineSpacing(0f, 1.5f)
             setPadding(dp(8), dp(16), dp(8), dp(8))
             gravity = Gravity.CENTER_HORIZONTAL
@@ -108,7 +112,7 @@ class AboutActivity : Activity() {
     private fun setFixedIconRounded(iv: ImageView, radiusDp: Float) {
         val rPx = dp(radiusDp).toFloat()
         // 垫页面底色兜底漏黑
-        iv.setBackgroundColor(Ui.BG)
+        iv.setBackgroundColor(MiuiX.bg(isNight()))
         iv.outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
                 // ✅ 全部用 Int，向内缩1px避开亚像素缝隙
@@ -139,16 +143,16 @@ class AboutActivity : Activity() {
             isClickable = true
             isFocusable = true
             layoutParams = LinearLayout.LayoutParams(
-                dp(Ui.TOUCH_MIN),
-                dp(Ui.TOUCH_MIN)
+                dp(MiuiX.TOUCH_MIN),
+                dp(MiuiX.TOUCH_MIN)
             ).also { it.marginStart = -dp(8) }
             setOnClickListener { finish() }
         })
         row.addView(TextView(this).apply {
             text = "关于"
-            textSize = Ui.PAGE_TITLE
+            textSize = MiuiX.PAGE_TITLE
             setTypeface(null, Typeface.BOLD)
-            setTextColor(Ui.TEXT_PRIMARY)
+            setTextColor(MiuiX.onSurface(isNight()))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -156,7 +160,7 @@ class AboutActivity : Activity() {
         })
         header.addView(row)
         header.addView(View(this).apply {
-            setBackgroundColor(Ui.DIVIDER)
+            setBackgroundColor(MiuiX.outlineVariant(isNight()))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dp(1).coerceAtLeast(1)
@@ -194,21 +198,21 @@ class AboutActivity : Activity() {
         info.addView(cardTitle("Mi Market Purify"))
         info.addView(TextView(this).apply {
             text = "v${BuildConfig.VERSION_NAME}"
-            textSize = Ui.ROW_SUMMARY
-            setTextColor(Ui.TEXT_SECONDARY)
+            textSize = MiuiX.ROW_SUMMARY
+            setTextColor(MiuiX.onSurfaceVariant(isNight()))
             setPadding(0, dp(3), 0, 0)
         })
         info.addView(TextView(this).apply {
             text = "小米应用商店净化与增强"
-            textSize = Ui.MICRO
-            setTextColor(Ui.TEXT_TERTIARY)
+            textSize = MiuiX.MICRO
+            setTextColor(MiuiX.outline(isNight()))
             setPadding(0, dp(3), 0, 0)
         })
 
         val arrowTv = TextView(this).apply {
             text = "›"
             textSize = 20f
-            setTextColor(Ui.TEXT_TERTIARY)
+            setTextColor(MiuiX.outline(isNight()))
         }
 
         row.addView(appIcon)
@@ -235,8 +239,8 @@ class AboutActivity : Activity() {
                 addView(cardTitle(title))
                 addView(TextView(this@AboutActivity).apply {
                     text = desc
-                    textSize = Ui.ROW_SUMMARY
-                    setTextColor(Ui.TEXT_SECONDARY)
+                    textSize = MiuiX.ROW_SUMMARY
+                    setTextColor(MiuiX.onSurfaceVariant(isNight()))
                     setLineSpacing(0f, 1.4f)
                     setPadding(0, dp(2), 0, 0)
                 })
@@ -287,15 +291,15 @@ class AboutActivity : Activity() {
         info.addView(cardTitle(authorName))
         info.addView(TextView(this).apply {
             text = authorSubtitle
-            textSize = Ui.ROW_SUMMARY
-            setTextColor(Ui.TEXT_SECONDARY)
+            textSize = MiuiX.ROW_SUMMARY
+            setTextColor(MiuiX.onSurfaceVariant(isNight()))
             setPadding(0, dp(3), 0, 0)
         })
 
         val arrowTv = TextView(this).apply {
             text = "›"
             textSize = 20f
-            setTextColor(Ui.TEXT_TERTIARY)
+            setTextColor(MiuiX.outline(isNight()))
         }
 
         row.addView(authorAvatar)
@@ -371,21 +375,21 @@ class AboutActivity : Activity() {
                 }
                 textLayout.addView(TextView(this@AboutActivity).apply {
                     text = item.repoName
-                    textSize = Ui.ROW_SUMMARY
+                    textSize = MiuiX.ROW_SUMMARY
                     setTypeface(null, Typeface.BOLD)
-                    setTextColor(Ui.TEXT_PRIMARY)
+                    setTextColor(MiuiX.onSurface(isNight()))
                 })
                 textLayout.addView(TextView(this@AboutActivity).apply {
                     text = item.label
-                    textSize = Ui.MICRO
-                    setTextColor(Ui.TEXT_SECONDARY)
+                    textSize = MiuiX.MICRO
+                    setTextColor(MiuiX.onSurfaceVariant(isNight()))
                     setPadding(0, dp(3), 0, 0)
                 })
 
                 val arrow = TextView(this@AboutActivity).apply {
                     text = "›"
                     textSize = 20f
-                    setTextColor(Ui.TEXT_TERTIARY)
+                    setTextColor(MiuiX.outline(isNight()))
                 }
 
                 addView(textLayout)
@@ -400,7 +404,7 @@ class AboutActivity : Activity() {
 
     private fun openRepo() {
         runCatching {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Ui.REPO_URL)))
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(MiuiX.REPO_URL)))
         }.onFailure {
             Toast.makeText(this, "无法打开仓库链接", Toast.LENGTH_SHORT).show()
         }
@@ -427,15 +431,15 @@ class AboutActivity : Activity() {
     }
     private fun cardTitle(text: String): TextView = TextView(this).apply {
         this.text = text
-        textSize = Ui.ROW_TITLE
+        textSize = MiuiX.ROW_TITLE
         setTypeface(null, Typeface.BOLD)
-        setTextColor(Ui.TEXT_PRIMARY)
+        setTextColor(MiuiX.onSurface(isNight()))
     }
     // ✅ 修复：用已存在的 PAGE_TITLE 代替不存在的 SECTION_TITLE
     private fun sectionTitle(text: String): TextView = TextView(this).apply {
         this.text = text
-        textSize = Ui.PAGE_TITLE
-        setTextColor(Ui.TEXT_SECONDARY)
+        textSize = MiuiX.PAGE_TITLE
+        setTextColor(MiuiX.onSurfaceVariant(isNight()))
     }
     private fun View.tappable(activity: Activity, bgRes: Int) {
         background = activity.resources.getDrawable(bgRes, activity.theme)

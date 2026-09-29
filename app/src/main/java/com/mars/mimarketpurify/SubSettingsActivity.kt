@@ -47,7 +47,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         super.onCreate(savedInstanceState)
         page = intent?.getStringExtra(EXTRA_PAGE) ?: PAGE_MINE
         val header = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; setBackgroundColor(Ui.BG)
+            orientation = LinearLayout.VERTICAL; setBackgroundColor(MiuiX.bg(isNight()))
         }
         setupRoot(header)
         buildSubTopBar(header, titleOf(page))
@@ -239,7 +239,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
     
         val colorGroup = groupCard()
         addColorPickerRow(colorGroup, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xE6FFFFFF.toInt())
-        addColorPickerRow(colorGroup, "选中背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, Ui.ACCENT)
+        addColorPickerRow(colorGroup, "选中背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, MiuiX.primary(isNight()))
         addColorPickerRow(colorGroup, "选中文字/图标高亮色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFFFFFFFF.toInt())
         addColorPickerRow(colorGroup, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0xFF8E8E93.toInt())
         options.addView(colorGroup)
@@ -315,7 +315,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
 
     private fun addFooter(text: String) {
         content.addView(TextView(this).apply {
-            this.text = text; textSize = Ui.MICRO; setTextColor(Ui.TEXT_TERTIARY)
+            this.text = text; textSize = MiuiX.MICRO; setTextColor(MiuiX.outline(isNight()))
             setPadding(dp(4), dp(2), dp(4), dp(16))
         })
     }
@@ -329,16 +329,16 @@ class SubSettingsActivity : SettingsBaseActivity() {
             setPadding(dp(12), 0, 0, 0)
         }
         block.addView(TextView(this).apply {
-            textSize = Ui.ROW_SUMMARY; setTextColor(Ui.TEXT_SECONDARY)
-            setPadding(dp(Ui.ROW_PAD_H), dp(4), dp(Ui.ROW_PAD_H), dp(2))
+            textSize = MiuiX.ROW_SUMMARY; setTextColor(MiuiX.onSurfaceVariant(isNight()))
+            setPadding(dp(MiuiX.ROW_PAD_H), dp(4), dp(MiuiX.ROW_PAD_H), dp(2))
         })
         Settings.TAB_ITEMS.forEach { (tag, label) ->
             val cb = CheckBox(this).apply {
-                text = label; textSize = Ui.ROW_TITLE; setTextColor(Ui.TEXT_PRIMARY)
+                text = label; textSize = MiuiX.ROW_TITLE; setTextColor(MiuiX.onSurface(isNight()))
                 this.tag = tag; isChecked = readLocalTabs().contains(tag)
-                setPadding(dp(Ui.ROW_PAD_H), dp(4), dp(4), dp(4))
-                compoundDrawablePadding = dp(10); minimumHeight = dp(Ui.TOUCH_MIN)
-                buttonDrawable?.let { buttonDrawable = it.tinted(Ui.ACCENT, Ui.CHECK_OFF) }
+                setPadding(dp(MiuiX.ROW_PAD_H), dp(4), dp(4), dp(4))
+                compoundDrawablePadding = dp(10); minimumHeight = dp(MiuiX.TOUCH_MIN)
+                buttonDrawable?.let { buttonDrawable = it.tinted(MiuiX.primary(isNight()), MiuiX.CHECK_OFF) }
                 setOnCheckedChangeListener { _, _ -> writeTabSelection() }
             }
             tabChecks.add(cb); block.addView(cb)

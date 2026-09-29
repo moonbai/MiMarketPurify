@@ -25,6 +25,8 @@ android {
         versionCode = 6
         versionName = "1.2.0"
         buildConfigField("String", "APP_NAME", "\"Mi Market Purify\"")
+        // 只打包用到的语言资源，丢弃 Compose / Miuix 等库自带的其余 locale，进一步压缩体积
+        resourceConfigurations += listOf("zh-rCN", "en")
     }
 
     buildTypes {
@@ -56,11 +58,13 @@ dependencies {
     implementation(libs.ezxhelper.core)
 
     // ── Compose（BOM 统一版本，避免散落版本冲突）──
+    // 注意：不再依赖 material3（全工程仅悬浮底栏用过一处 Text），改用 foundation 的 BasicText，
+    // 可省下 material3 这一大块体积（约 1MB+）。
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.activity.compose)
     debugImplementation("androidx.compose.ui:ui-tooling")
 

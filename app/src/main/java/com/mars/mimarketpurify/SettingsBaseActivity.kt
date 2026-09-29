@@ -17,6 +17,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.mars.mimarketpurify.App.ServiceStateListener
 import com.mars.mimarketpurify.Settings.PREFS_GROUP
@@ -97,9 +98,10 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     // ==================== 布局骨架 ====================
 
     protected fun setupRoot(header: LinearLayout) {
+        val night = isNight()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Ui.BG)
+            setBackgroundColor(MiuiX.bg(night))
         }
         val scroll = ScrollView(this)
         content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -118,13 +120,16 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         )
         setContentView(root)
 
+        // 暗色模式：状态栏图标随背景反色（亮色背景→深色图标，暗色背景→浅色图标）
+        WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = !night
+
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            header.setPadding(dp(Ui.PAGE_H), dp(Ui.PAGE_H) + bars.top, dp(Ui.PAGE_H), dp(12))
+            header.setPadding(dp(MiuiX.PAGE_H), dp(MiuiX.PAGE_H) + bars.top, dp(MiuiX.PAGE_H), dp(12))
             content.setPadding(
-                dp(Ui.PAGE_H), dp(6), dp(Ui.PAGE_H), dp(Ui.PAGE_H) + bars.bottom
+                dp(MiuiX.PAGE_H), dp(6), dp(MiuiX.PAGE_H), dp(MiuiX.PAGE_H) + bars.bottom
             )
             insets
         }
@@ -143,16 +148,16 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             contentDescription = "返回"
             isClickable = true
             isFocusable = true
-            layoutParams = LinearLayout.LayoutParams(dp(Ui.TOUCH_MIN), dp(Ui.TOUCH_MIN)).also {
+            layoutParams = LinearLayout.LayoutParams(dp(MiuiX.TOUCH_MIN), dp(MiuiX.TOUCH_MIN)).also {
                 it.marginStart = -dp(12)
             }
             setOnClickListener { finish() }
         })
         row.addView(TextView(this).apply {
             text = title
-            textSize = Ui.PAGE_TITLE
+            textSize = MiuiX.PAGE_TITLE
             setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(Ui.TEXT_PRIMARY)
+            setTextColor(MiuiX.onSurface(isNight()))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -163,7 +168,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     }
 
     protected fun headerDivider(): View = View(this).apply {
-        setBackgroundColor(Ui.DIVIDER)
+        setBackgroundColor(MiuiX.outlineVariant(isNight()))
         layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             dp(1).coerceAtLeast(1)
@@ -178,8 +183,8 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         parent.addView(sectionTitle(title))
         parent.addView(TextView(this).apply {
             text = subtitle
-            textSize = Ui.MICRO
-            setTextColor(Ui.TEXT_TERTIARY)
+            textSize = MiuiX.MICRO
+            setTextColor(MiuiX.outline(isNight()))
             setPadding(dp(4), 0, 0, dp(6))
         })
     }
@@ -214,7 +219,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             isChecked = checked
             setOnCheckedChangeListener { _, isChecked -> onChanged(isChecked) }
             getDrawable(R.drawable.switch_track)
-                ?.let { trackDrawable = it.tinted(Ui.ACCENT, Ui.SWITCH_TRACK_OFF) }
+                ?.let { trackDrawable = it.tinted(MiuiX.primary(isNight()), MiuiX.SWITCH_TRACK_OFF) }
             getDrawable(R.drawable.switch_thumb)
                 ?.let { thumbDrawable = it }
             switchMinWidth = dp(48)
@@ -225,7 +230,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         row.tappable(this, R.drawable.bg_row_ripple)
         row.setOnClickListener { sw.toggle() }
         if (group.childCount > 0) {
-            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(Ui.ROW_GAP)
+            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(MiuiX.ROW_GAP)
         }
         group.addView(row)
 
@@ -253,7 +258,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     ): SeekBar {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(Ui.ROW_PAD_H), dp(Ui.ROW_PAD_V), dp(Ui.ROW_PAD_H), dp(Ui.ROW_PAD_V))
+            setPadding(dp(MiuiX.ROW_PAD_H), dp(MiuiX.ROW_PAD_V), dp(MiuiX.ROW_PAD_H), dp(MiuiX.ROW_PAD_V))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -274,9 +279,9 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         textWrap.addView(summaryView)
         val valueView = TextView(this).apply {
             text = format(initialValue)
-            textSize = Ui.CAPTION
+            textSize = MiuiX.CAPTION
             setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(Ui.ACCENT)
+            setTextColor(MiuiX.primary(isNight()))
         }
 
         topRow.addView(textWrap)
@@ -304,7 +309,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         row.addView(topRow)
         row.addView(seek)
         if (group.childCount > 0) {
-            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(Ui.ROW_GAP)
+            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(MiuiX.ROW_GAP)
         }
         group.addView(row)
 
@@ -335,8 +340,8 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
 
         val valueView = TextView(this).apply {
             text = value()
-            textSize = Ui.CAPTION
-            setTextColor(Ui.TEXT_SECONDARY)
+            textSize = MiuiX.CAPTION
+            setTextColor(MiuiX.onSurfaceVariant(isNight()))
         }
         val arrow = ImageView(this).apply {
             setImageResource(R.drawable.ic_chevron_right)
@@ -351,7 +356,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         row.tappable(this, R.drawable.bg_row_ripple)
         row.setOnClickListener { onClick() }
         if (group.childCount > 0) {
-            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(Ui.ROW_GAP)
+            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(MiuiX.ROW_GAP)
         }
         group.addView(row)
 
@@ -407,7 +412,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             }
         }
         if (group.childCount > 0) {
-            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(Ui.ROW_GAP)
+            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(MiuiX.ROW_GAP)
         }
         group.addView(row)
         if (gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
@@ -486,8 +491,8 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
             r.sw?.isEnabled = master
             r.row.isClickable = master
             r.row.isFocusable = master
-            r.title.setTextColor(if (master) Ui.TEXT_PRIMARY else Ui.TEXT_TERTIARY)
-            r.summary.setTextColor(if (master) Ui.TEXT_SECONDARY else Ui.TEXT_TERTIARY)
+            r.title.setTextColor(if (master) MiuiX.onSurface(isNight()) else MiuiX.outline(isNight()))
+            r.summary.setTextColor(if (master) MiuiX.onSurfaceVariant(isNight()) else MiuiX.outline(isNight()))
         }
     }
 
@@ -588,7 +593,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
     protected fun row(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(Ui.ROW_PAD_H), dp(Ui.ROW_PAD_V), dp(Ui.ROW_PAD_H), dp(Ui.ROW_PAD_V))
+            setPadding(dp(MiuiX.ROW_PAD_H), dp(MiuiX.ROW_PAD_V), dp(MiuiX.ROW_PAD_H), dp(MiuiX.ROW_PAD_V))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -598,29 +603,29 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
 
     protected fun rowTitle(text: String): TextView = TextView(this).apply {
         this.text = text
-        textSize = Ui.ROW_TITLE
-        setTextColor(Ui.TEXT_PRIMARY)
+        textSize = MiuiX.ROW_TITLE
+        setTextColor(MiuiX.onSurface(isNight()))
     }
 
     protected fun rowSummary(text: String): TextView = TextView(this).apply {
         this.text = text
-        textSize = Ui.ROW_SUMMARY
-        setTextColor(Ui.TEXT_SECONDARY)
+        textSize = MiuiX.ROW_SUMMARY
+        setTextColor(MiuiX.onSurfaceVariant(isNight()))
         setPadding(0, dp(2), 0, 0)
     }
 
     protected fun sectionTitle(text: String): TextView = TextView(this).apply {
         this.text = text
-        textSize = Ui.SECTION
+        textSize = MiuiX.SECTION
         setTypeface(null, android.graphics.Typeface.BOLD)
-        setTextColor(Ui.TEXT_SECTION)
+        setTextColor(MiuiX.onSurfaceVariant(isNight()))
     }
 
     protected fun groupCard(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
-                setColor(Ui.CARD)
+                setColor(MiuiX.card(isNight()))
                 cornerRadius = dpf(16f)
             }
             layoutParams = LinearLayout.LayoutParams(

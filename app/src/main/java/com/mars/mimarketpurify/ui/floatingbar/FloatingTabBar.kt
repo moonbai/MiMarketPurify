@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.TextStyle
 import kotlin.math.roundToInt
 import com.mars.mimarketpurify.util.ViewBackdropLayer
 import com.mars.mimarketpurify.util.ViewBackdropSnapshot
@@ -163,7 +164,8 @@ private fun FloatingTabItem(
     modifier: Modifier = Modifier,
 ) {
     val theme = MiuixTheme.colorScheme
-    val contentColor = if (selected) theme.primary else theme.onSurface
+    // MiuiX：选中项用 primary 强调色，未选中项用静默的 onSurfaceVariant（而非满对比度的 onSurface）
+    val contentColor = if (selected) theme.primary else theme.onSurfaceVariant
     val iconScale by animateFloatAsState(
         targetValue = if (selected) 1.15f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 500f),
@@ -201,15 +203,17 @@ private fun FloatingTabItem(
                         .offset(x = 6.dp, y = (-2).dp)
                         .size(if (item.badge.length > 1) 14.dp else 8.dp)
                         .clip(RoundedCornerShape(percent = 50))
-                        .background(Color(0xFFFF3B30)),
+                        .background(theme.error),
                 )
             }
         }
         if (item.label.isNotEmpty()) {
-            Text(
+            BasicText(
                 text = item.label,
-                color = contentColor,
-                fontSize = 10.5.sp,
+                style = TextStyle(
+                    color = contentColor,
+                    fontSize = 10.5.sp,
+                ),
                 maxLines = 1,
                 modifier = Modifier.padding(top = 2.dp),
             )
