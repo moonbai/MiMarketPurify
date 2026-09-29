@@ -164,8 +164,8 @@ private fun FloatingTabItem(
     modifier: Modifier = Modifier,
 ) {
     val theme = MiuixTheme.colorScheme
-    // MiuiX：选中项用 primary 强调色，未选中项用静默的 onSurfaceVariant（而非满对比度的 onSurface）
-    val contentColor = if (selected) theme.primary else theme.onSurfaceVariant
+    // MiuiX：选中项用 primary 强调色，未选中项用静默的 onSurfaceSecondary（而非满对比度的 onSurface）
+    val contentColor = if (selected) theme.primary else theme.onSurfaceSecondary
     val iconScale by animateFloatAsState(
         targetValue = if (selected) 1.15f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 500f),

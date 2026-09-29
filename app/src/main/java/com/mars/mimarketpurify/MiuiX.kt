@@ -18,8 +18,8 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
 object MiuiX {
 
     // ═══════════════ 配色：直接取自 MiuiX 主题（日 / 夜）══════════════
-    // 注：以下字段名沿用 Material3 标准（miuix 的 Colors 与之对齐）。
-    // 若 0.9.4-rc01 个别字段名有出入（例如 background），按实际字段微调即可。
+    // 注：字段名严格对应 miuix-kmp 0.9.4-rc01 的 Colors 数据类
+    // （例如次级文本 onSurfaceSecondary、分割线 dividerLine），不再沿用 Material3 命名。
     fun bg(isNight: Boolean): Int =
         (if (isNight) darkColorScheme() else lightColorScheme()).background.value.toInt()
 
@@ -31,17 +31,17 @@ object MiuiX {
     fun onSurface(isNight: Boolean): Int =
         (if (isNight) darkColorScheme() else lightColorScheme()).onSurface.value.toInt()
 
-    /** 摘要 / 分组标题 */
+    /** 摘要 / 分组标题：映射 MiuiX 的 onSurfaceSecondary（次级文本） */
     fun onSurfaceVariant(isNight: Boolean): Int =
-        (if (isNight) darkColorScheme() else lightColorScheme()).onSurfaceVariant.value.toInt()
+        (if (isNight) darkColorScheme() else lightColorScheme()).onSurfaceSecondary.value.toInt()
 
     /** 最弱一级文本 */
     fun outline(isNight: Boolean): Int =
         (if (isNight) darkColorScheme() else lightColorScheme()).outline.value.toInt()
 
-    /** 分割线 / 状态卡（未激活）底色 */
+    /** 分割线 / 状态卡（未激活）底色：映射 MiuiX 的 dividerLine */
     fun outlineVariant(isNight: Boolean): Int =
-        (if (isNight) darkColorScheme() else lightColorScheme()).outlineVariant.value.toInt()
+        (if (isNight) darkColorScheme() else lightColorScheme()).dividerLine.value.toInt()
 
     /** 强调色：开关开启态、链接、可点元素（MiuiX 蓝/紫） */
     fun primary(isNight: Boolean): Int =
@@ -59,7 +59,7 @@ object MiuiX {
     const val STATE_ACTIVE = 0xFF34C759.toInt()
     const val STATE_ACTIVE_SOFT = 0x1434C759.toInt()
 
-    /** 未激活状态卡的柔底色：用 outlineVariant 低透明度，区别于卡片白底 */
+    /** 未激活状态卡的柔底色：用 dividerLine 低透明度，区别于卡片白底 */
     fun neutralSoft(isNight: Boolean): Int = outlineVariant(isNight).withAlpha(0x40)
 
     /** primary 的低透明度底（约 12%），用于胶囊 / 状态卡背景 */

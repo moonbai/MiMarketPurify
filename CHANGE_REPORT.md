@@ -99,8 +99,13 @@ val contentColor = if (selected) theme.primary else theme.onSurfaceVariant
 ---
 
 ## 四、风险点
-1. **MiuiX 字段名假设**：`MiuiX.kt` 按 Material3 标准字段（`background/surface/onSurface/onSurfaceVariant/outline/outlineVariant/primary/error/onError`）
-   映射 miuix `Colors`。若 0.9.4-rc01 个别字段命名有出入（如 `background`），需按实际字段微调（编译期即可暴露）。
+1. **MiuiX 字段名（已修复）**：初版 `MiuiX.kt` 按 Material3 命名映射了 `onSurfaceVariant` / `outlineVariant`，
+   但 miuix-kmp `0.9.4-rc01` 的 `Colors` **不含这两个字段**（编译期 `Unresolved reference` 已暴露）。
+   已据 miuix 源码修正为对应真实字段：
+   - `onSurfaceVariant`（次级文本/摘要）→ **`onSurfaceSecondary`**
+   - `outlineVariant`（分割线/未激活底色）→ **`dividerLine`**
+   `MiuiX.kt` 的方法名 `onSurfaceVariant()` / `outlineVariant()` 保留（调用方无需改动），仅内部字段访问改为上述真实字段。
+   `FloatingTabBar.kt` 未选中项取色同步改为 `theme.onSurfaceSecondary`。
 2. **毛玻璃降级**：若宿主 `LayerBackdrop` 采样失败，`FloatingTabBar` 会回退半透明色块（行为不变，仅无真实模糊）。
 3. **R8 full mode**：更激进裁剪，建议首次打包后**真机验证**所有开关/页面/悬浮底栏功能正常（full mode 下偶有反射类被砍的风险，已用显式 `-keep` 兜底 Xposed 入口与 manifest 组件）。
 
@@ -112,3 +117,42 @@ val contentColor = if (selected) theme.primary else theme.onSurfaceVariant
 
 > ⚠️ 沙箱内**无 Android SDK**（仅 `gradle`/`java`，缺 `sdkmanager`/`ANDROID_HOME`），无法在此真正打包验证；
 > 上述编译级核查（符号引用、import、ProGuard 规则、依赖目录）均已通过，请在本机完成最终 `assembleRelease` 构建与真机回归。
+
+## 六、若 CI 仍报同一行错误：先确认构建源是否含本修复
+
+三次构建失败（`Unresolved reference 'onSurfaceVariant'/'outlineVariant'`）的根因一致：**CI 实际构建的代码未包含本修复**
+（上传的 `MiMarketPurify.zip` 内 `MiuiX.kt:36/44` 仍是旧字段）。本仓库交付的 `MiMarketPurify_modified.zip`
+（与 `/workspace/MiMarketPurify` 工作区）**已含正确修复**，请确认构建用的是修复版，而非旧快照。
+
+若不便整体替换，可直接套用以下**精确补丁**（3 处，方法名不变，仅改内部字段）：
+
+**`app/src/main/java/com/mars/mimarketpurify/MiuiX.kt`**
+
+```kotlin
+// 原（错误）：
+    fun onSurfaceVariant(isNight: Boolean): Int =
+        (if (isNight) darkColorScheme() else lightColorScheme()).onSurfaceVariant.value.toInt()
+// 改为（正确，映射 miuix 真实字段）：
+    fun onSurfaceVariant(isNight: Boolean): Int =
+        (if (isNight) darkColorScheme() else lightColorScheme()).onSurfaceSecondary.value.toInt()
+
+// 原（错误）：
+    fun outlineVariant(isNight: Boolean): Int =
+        (if (isNight) darkColorScheme() else lightColorScheme()).outlineVariant.value.toInt()
+// 改为（正确）：
+    fun outlineVariant(isNight: Boolean): Int =
+        (if (isNight) darkColorScheme() else lightColorScheme()).dividerLine.value.toInt()
+```
+
+**`app/src/main/java/com/mars/mimarketpurify/ui/floatingbar/FloatingTabBar.kt`**（约 168 行）
+
+```kotlin
+// 原（错误）：
+    val contentColor = if (selected) theme.primary else theme.onSurfaceVariant
+// 改为（正确）：
+    val contentColor = if (selected) theme.primary else theme.onSurfaceSecondary
+```
+
+> miuix-kmp `0.9.4-rc01` 的 `Colors` 数据类**不含** `onSurfaceVariant`/`outlineVariant`，真实字段为
+> `onSurfaceSecondary`（次级文本）与 `dividerLine`（分割线）。其余 miuix 字段
+> （`background`/`surface`/`onSurface`/`outline`/`primary`/`error`/`onError`/`isNight`）在该版本均存在，无需改动。
