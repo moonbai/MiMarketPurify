@@ -1,5 +1,4 @@
-run: 36546228117 attempt 1
-sha: d996dc77e9c395d47577a814181dc19dabfe91e4
-outcome: success
+run: 36548206438 attempt 1
+sha: ab26dead791601647251eb14a2284f34a9a906ce
+outcome: failure
 apk:
-  app/build/outputs/apk/debug/app-debug.apk 7312346 bytes
