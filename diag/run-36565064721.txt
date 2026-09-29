@@ -1,0 +1,871 @@
+=== CI diagnostics ===
+generated at : 2026-09-29T11:58:58Z
+workflow run : 36565064721 attempt 1
+head sha     : ea5c815b6887449a616cf59179db2a5efccb78e1
+build outcome: failure
+
+=== toolchain versions ===
+openjdk version "21.0.12.1" 2026-08-18 LTS
+OpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)
+-- gradlew --version --
+
+------------------------------------------------------------
+Gradle 9.4.0
+------------------------------------------------------------
+
+Build time:    2026-03-04 10:36:00 UTC
+Revision:      b631911858264c0b6e4d6603d677ff5218766cee
+
+Kotlin:        2.3.0
+Groovy:        4.0.29
+Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
+Launcher JVM:  21.0.12.1 (Eclipse Adoptium 21.0.12.1+1-LTS)
+Daemon JVM:    Compatible with Java 21, any vendor, nativeImageCapable=false (from gradle/gradle-daemon-jvm.properties)
+OS:            Linux 6.17.0-1022-azure amd64
+
+
+=== produced apk / aab ===
+(app/build/outputs does not exist)
+
+=== app/build/outputs tree ===
+(app/build/outputs does not exist)
+
+=== kotlin compile error lines (e:) ===
+4:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:6:1: Unresolved reference 'android'.
+5:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:7:5: Unresolved reference 'namespace'.
+6:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:8:5: Unresolved reference 'compileSdk'.
+7:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:9:19: Unresolved reference 'release'.
+8:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:10:13: Unresolved reference 'minorApiLevel'.
+9:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:14:5: Unresolved reference 'buildFeatures'.
+10:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:15:9: Unresolved reference 'buildConfig'.
+11:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:16:9: Unresolved reference 'compose'.
+12:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:19:5: Unresolved reference 'defaultConfig'.
+13:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:20:9: Unresolved reference 'applicationId'.
+14:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:21:9: Unresolved reference 'minSdk'.
+15:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:22:9: Unresolved reference 'targetSdk'.
+16:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:23:9: Unresolved reference 'versionCode'.
+17:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:24:9: Unresolved reference 'versionName'.
+18:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:25:9: Unresolved reference 'buildConfigField'.
+19:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:28:5: Unresolved reference 'buildTypes'.
+20:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:29:9: Unresolved reference 'release'.
+21:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:30:13: Unresolved reference 'isMinifyEnabled'.
+22:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:31:13: Unresolved reference 'isShrinkResources'.
+23:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:32:13: Unresolved reference 'proguardFiles'.
+24:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:33:17: Unresolved reference 'getDefaultProguardFile'.
+25:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:37:9: Unresolved reference 'packaging'.
+26:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:38:13: None of the following candidates is applicable:
+99:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:39:17: Unresolved reference 'excludes'.
+100:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:40:17: Unresolved reference 'merges'.
+101:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:44:5: Unresolved reference 'compileOptions'.
+102:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:45:9: Unresolved reference 'sourceCompatibility'.
+103:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:46:9: Unresolved reference 'targetCompatibility'.
+104:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:51:5: Unresolved reference 'implementation'.
+105:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:52:5: Unresolved reference 'compileOnly'.
+106:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:53:5: Unresolved reference 'implementation'.
+107:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:54:5: Unresolved reference 'implementation'.
+108:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:57:5: Unresolved reference 'implementation'.
+109:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:58:5: Unresolved reference 'implementation'.
+110:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:59:5: Unresolved reference 'implementation'.
+111:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:60:5: Unresolved reference 'implementation'.
+112:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:61:5: Unresolved reference 'implementation'.
+113:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:62:5: Unresolved reference 'implementation'.
+114:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:63:5: Unresolved reference 'debugImplementation'.
+115:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:66:5: Unresolved reference 'implementation'.
+116:e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:67:5: Unresolved reference 'implementation'.
+
+=== gradle 'What went wrong' block ===
+
+=== gradle '* Exception is:' block ===
+* Exception is:
+ScriptCompilationException(scriptCompilationErrors=[ScriptCompilationError(message=Unresolved reference 'android'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (6:1)), ScriptCompilationError(message=Unresolved reference 'namespace'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (7:5)), ScriptCompilationError(message=Unresolved reference 'compileSdk'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (8:5)), ScriptCompilationError(message=Unresolved reference 'release'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (9:19)), ScriptCompilationError(message=Unresolved reference 'minorApiLevel'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (10:13)), ScriptCompilationError(message=Unresolved reference 'buildFeatures'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (14:5)), ScriptCompilationError(message=Unresolved reference 'buildConfig'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (15:9)), ScriptCompilationError(message=Unresolved reference 'compose'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (16:9)), ScriptCompilationError(message=Unresolved reference 'defaultConfig'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (19:5)), ScriptCompilationError(message=Unresolved reference 'applicationId'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (20:9)), ScriptCompilationError(message=Unresolved reference 'minSdk'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (21:9)), ScriptCompilationError(message=Unresolved reference 'targetSdk'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (22:9)), ScriptCompilationError(message=Unresolved reference 'versionCode'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (23:9)), ScriptCompilationError(message=Unresolved reference 'versionName'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (24:9)), ScriptCompilationError(message=Unresolved reference 'buildConfigField'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (25:9)), ScriptCompilationError(message=Unresolved reference 'buildTypes'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (28:5)), ScriptCompilationError(message=Unresolved reference 'release'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (29:9)), ScriptCompilationError(message=Unresolved reference 'isMinifyEnabled'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (30:13)), ScriptCompilationError(message=Unresolved reference 'isShrinkResources'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (31:13)), ScriptCompilationError(message=Unresolved reference 'proguardFiles'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (32:13)), ScriptCompilationError(message=Unresolved reference 'getDefaultProguardFile'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (33:17)), ScriptCompilationError(message=Unresolved reference 'packaging'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (37:9)), ScriptCompilationError(message=None of the following candidates is applicable:
+
+fun <T : Any> Action<in T>.invoke(target: T): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T : Any> Action<in T>.invoke(target: T): Unit
+
+fun ArtifactHandler.invoke(configuration: ArtifactHandlerScope.() -> Unit): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun ArtifactHandler.invoke(configuration: ArtifactHandlerScope.() -> Unit): Unit
+
+fun <V> Callable<V>.invoke(): V:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <V> Callable<V>.invoke(): V
+
+fun <D : ModuleDependency> DependencyModifier.invoke(dependency: D): D:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <D : ModuleDependency> DependencyModifier.invoke(dependency: D): D
+
+fun DependencyModifier.invoke(dependencyNotation: CharSequence): ExternalModuleDependency:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyModifier.invoke(dependencyNotation: CharSequence): ExternalModuleDependency
+
+fun DependencyModifier.invoke(dependency: Provider<out ModuleDependency>): Provider<out ModuleDependency>:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyModifier.invoke(dependency: Provider<out ModuleDependency>): Provider<out ModuleDependency>
+
+fun DependencyCollector.invoke(dependencyNotation: CharSequence): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependencyNotation: CharSequence): Unit
+
+fun DependencyCollector.invoke(files: FileCollection): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(files: FileCollection): Unit
+
+fun DependencyCollector.invoke(dependency: Dependency): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependency: Dependency): Unit
+
+fun DependencyCollector.invoke(dependency: Provider<out Dependency>): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependency: Provider<out Dependency>): Unit
+
+fun DependencyCollector.invoke(dependencyConstraint: DependencyConstraint): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependencyConstraint: DependencyConstraint): Unit
+
+fun DependencyCollector.invoke(dependencyConstraint: Provider<out DependencyConstraint>): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependencyConstraint: Provider<out DependencyConstraint>): Unit
+
+fun DependencyConstraintHandler.invoke(configuration: DependencyConstraintHandlerScope.() -> Unit): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyConstraintHandler.invoke(configuration: DependencyConstraintHandlerScope.() -> Unit): Unit
+
+fun <T> ExtraPropertiesExtension.invoke(initialValueProvider: () -> T): InitialValueExtraPropertyDelegateProvider<T>:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> ExtraPropertiesExtension.invoke(initialValueProvider: () -> T): InitialValueExtraPropertyDelegateProvider<T>
+
+fun <T> ExtraPropertiesExtension.invoke(initialValue: T): InitialValueExtraPropertyDelegateProvider<T>:
+
+=== gradle 'Build failed' / 'FAILURE' block ===
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file '/home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts' line: 6
+
+* What went wrong:
+Script compilation errors:
+
+  Line 06: android {
+           ^ Unresolved reference 'android'.
+
+  Line 07:     namespace = "com.mars.mimarketpurify"
+               ^ Unresolved reference 'namespace'.
+
+  Line 08:     compileSdk {
+               ^ Unresolved reference 'compileSdk'.
+
+  Line 09:         version = release(36) {
+                             ^ Unresolved reference 'release'.
+
+  Line 10:             minorApiLevel = 1
+                       ^ Unresolved reference 'minorApiLevel'.
+
+  Line 14:     buildFeatures {
+               ^ Unresolved reference 'buildFeatures'.
+
+  Line 15:         buildConfig = true
+                   ^ Unresolved reference 'buildConfig'.
+
+  Line 16:         compose = true
+                   ^ Unresolved reference 'compose'.
+
+  Line 19:     defaultConfig {
+               ^ Unresolved reference 'defaultConfig'.
+
+  Line 20:         applicationId = "com.mars.mimarketpurify"
+                   ^ Unresolved reference 'applicationId'.
+
+  Line 21:         minSdk = 29
+                   ^ Unresolved reference 'minSdk'.
+
+  Line 22:         targetSdk = 36
+                   ^ Unresolved reference 'targetSdk'.
+
+  Line 23:         versionCode = 6
+                   ^ Unresolved reference 'versionCode'.
+
+  Line 24:         versionName = "1.2.0"
+                   ^ Unresolved reference 'versionName'.
+
+  Line 25:         buildConfigField("String", "APP_NAME", "\"Mi Market Purify\"")
+                   ^ Unresolved reference 'buildConfigField'.
+
+  Line 28:     buildTypes {
+               ^ Unresolved reference 'buildTypes'.
+
+  Line 29:         release {
+                   ^ Unresolved reference 'release'.
+
+  Line 30:             isMinifyEnabled = true
+
+=== gradle-build.log tail (1000) ===
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Configure project :app
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:6:1: Unresolved reference 'android'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:7:5: Unresolved reference 'namespace'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:8:5: Unresolved reference 'compileSdk'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:9:19: Unresolved reference 'release'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:10:13: Unresolved reference 'minorApiLevel'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:14:5: Unresolved reference 'buildFeatures'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:15:9: Unresolved reference 'buildConfig'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:16:9: Unresolved reference 'compose'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:19:5: Unresolved reference 'defaultConfig'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:20:9: Unresolved reference 'applicationId'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:21:9: Unresolved reference 'minSdk'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:22:9: Unresolved reference 'targetSdk'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:23:9: Unresolved reference 'versionCode'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:24:9: Unresolved reference 'versionName'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:25:9: Unresolved reference 'buildConfigField'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:28:5: Unresolved reference 'buildTypes'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:29:9: Unresolved reference 'release'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:30:13: Unresolved reference 'isMinifyEnabled'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:31:13: Unresolved reference 'isShrinkResources'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:32:13: Unresolved reference 'proguardFiles'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:33:17: Unresolved reference 'getDefaultProguardFile'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:37:9: Unresolved reference 'packaging'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:38:13: None of the following candidates is applicable:
+
+fun <T : Any> Action<in T>.invoke(target: T): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T : Any> Action<in T>.invoke(target: T): Unit
+
+fun ArtifactHandler.invoke(configuration: ArtifactHandlerScope.() -> Unit): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun ArtifactHandler.invoke(configuration: ArtifactHandlerScope.() -> Unit): Unit
+
+fun <V> Callable<V>.invoke(): V:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <V> Callable<V>.invoke(): V
+
+fun <D : ModuleDependency> DependencyModifier.invoke(dependency: D): D:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <D : ModuleDependency> DependencyModifier.invoke(dependency: D): D
+
+fun DependencyModifier.invoke(dependencyNotation: CharSequence): ExternalModuleDependency:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyModifier.invoke(dependencyNotation: CharSequence): ExternalModuleDependency
+
+fun DependencyModifier.invoke(dependency: Provider<out ModuleDependency>): Provider<out ModuleDependency>:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyModifier.invoke(dependency: Provider<out ModuleDependency>): Provider<out ModuleDependency>
+
+fun DependencyCollector.invoke(dependencyNotation: CharSequence): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependencyNotation: CharSequence): Unit
+
+fun DependencyCollector.invoke(files: FileCollection): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(files: FileCollection): Unit
+
+fun DependencyCollector.invoke(dependency: Dependency): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependency: Dependency): Unit
+
+fun DependencyCollector.invoke(dependency: Provider<out Dependency>): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependency: Provider<out Dependency>): Unit
+
+fun DependencyCollector.invoke(dependencyConstraint: DependencyConstraint): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependencyConstraint: DependencyConstraint): Unit
+
+fun DependencyCollector.invoke(dependencyConstraint: Provider<out DependencyConstraint>): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependencyConstraint: Provider<out DependencyConstraint>): Unit
+
+fun DependencyConstraintHandler.invoke(configuration: DependencyConstraintHandlerScope.() -> Unit): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyConstraintHandler.invoke(configuration: DependencyConstraintHandlerScope.() -> Unit): Unit
+
+fun <T> ExtraPropertiesExtension.invoke(initialValueProvider: () -> T): InitialValueExtraPropertyDelegateProvider<T>:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> ExtraPropertiesExtension.invoke(initialValueProvider: () -> T): InitialValueExtraPropertyDelegateProvider<T>
+
+fun <T> ExtraPropertiesExtension.invoke(initialValue: T): InitialValueExtraPropertyDelegateProvider<T>:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> ExtraPropertiesExtension.invoke(initialValue: T): InitialValueExtraPropertyDelegateProvider<T>
+
+fun <T> Closure<T>.invoke(): T:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> Closure<T>.invoke(): T
+
+fun <T> Closure<T>.invoke(x: Any?): T:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> Closure<T>.invoke(x: Any?): T
+
+fun <T> Closure<T>.invoke(vararg xs: Any?): T:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> Closure<T>.invoke(vararg xs: Any?): T
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:39:17: Unresolved reference 'excludes'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:40:17: Unresolved reference 'merges'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:44:5: Unresolved reference 'compileOptions'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:45:9: Unresolved reference 'sourceCompatibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:46:9: Unresolved reference 'targetCompatibility'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:51:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:52:5: Unresolved reference 'compileOnly'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:53:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:54:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:57:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:58:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:59:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:60:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:61:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:62:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:63:5: Unresolved reference 'debugImplementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:66:5: Unresolved reference 'implementation'.
+e: file:///home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts:67:5: Unresolved reference 'implementation'.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1790683121346.json
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file '/home/runner/work/MiMarketPurify/MiMarketPurify/app/build.gradle.kts' line: 6
+
+* What went wrong:
+Script compilation errors:
+
+  Line 06: android {
+           ^ Unresolved reference 'android'.
+
+  Line 07:     namespace = "com.mars.mimarketpurify"
+               ^ Unresolved reference 'namespace'.
+
+  Line 08:     compileSdk {
+               ^ Unresolved reference 'compileSdk'.
+
+  Line 09:         version = release(36) {
+                             ^ Unresolved reference 'release'.
+
+  Line 10:             minorApiLevel = 1
+                       ^ Unresolved reference 'minorApiLevel'.
+
+  Line 14:     buildFeatures {
+               ^ Unresolved reference 'buildFeatures'.
+
+  Line 15:         buildConfig = true
+                   ^ Unresolved reference 'buildConfig'.
+
+  Line 16:         compose = true
+                   ^ Unresolved reference 'compose'.
+
+  Line 19:     defaultConfig {
+               ^ Unresolved reference 'defaultConfig'.
+
+  Line 20:         applicationId = "com.mars.mimarketpurify"
+                   ^ Unresolved reference 'applicationId'.
+
+  Line 21:         minSdk = 29
+                   ^ Unresolved reference 'minSdk'.
+
+  Line 22:         targetSdk = 36
+                   ^ Unresolved reference 'targetSdk'.
+
+  Line 23:         versionCode = 6
+                   ^ Unresolved reference 'versionCode'.
+
+  Line 24:         versionName = "1.2.0"
+                   ^ Unresolved reference 'versionName'.
+
+  Line 25:         buildConfigField("String", "APP_NAME", "\"Mi Market Purify\"")
+                   ^ Unresolved reference 'buildConfigField'.
+
+  Line 28:     buildTypes {
+               ^ Unresolved reference 'buildTypes'.
+
+  Line 29:         release {
+                   ^ Unresolved reference 'release'.
+
+  Line 30:             isMinifyEnabled = true
+                       ^ Unresolved reference 'isMinifyEnabled'.
+
+  Line 31:             isShrinkResources = true
+                       ^ Unresolved reference 'isShrinkResources'.
+
+  Line 32:             proguardFiles(
+                       ^ Unresolved reference 'proguardFiles'.
+
+  Line 33:                 getDefaultProguardFile("proguard-android-optimize.txt"),
+                           ^ Unresolved reference 'getDefaultProguardFile'.
+
+  Line 37:         packaging {
+                   ^ Unresolved reference 'packaging'.
+
+  Line 38:             resources {
+                       ^ None of the following candidates is applicable:
+                         
+                           fun <T : Any> Action<in T>.invoke(target: T): Unit:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun <T : Any> Action<in T>.invoke(target: T): Unit
+                         
+                           fun ArtifactHandler.invoke(configuration: ArtifactHandlerScope.() -> Unit): Unit:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun ArtifactHandler.invoke(configuration: ArtifactHandlerScope.() -> Unit): Unit
+                         
+                           fun <V> Callable<V>.invoke(): V:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun <V> Callable<V>.invoke(): V
+                         
+                           fun <D : ModuleDependency> DependencyModifier.invoke(dependency: D): D:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun <D : ModuleDependency> DependencyModifier.invoke(dependency: D): D
+                         
+                           fun DependencyModifier.invoke(dependencyNotation: CharSequence): ExternalModuleDependency:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun DependencyModifier.invoke(dependencyNotation: CharSequence): ExternalModuleDependency
+                         
+                           fun DependencyModifier.invoke(dependency: Provider<out ModuleDependency>): Provider<out ModuleDependency>:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun DependencyModifier.invoke(dependency: Provider<out ModuleDependency>): Provider<out ModuleDependency>
+                         
+                           fun DependencyCollector.invoke(dependencyNotation: CharSequence): Unit:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun DependencyCollector.invoke(dependencyNotation: CharSequence): Unit
+                         
+                           fun DependencyCollector.invoke(files: FileCollection): Unit:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun DependencyCollector.invoke(files: FileCollection): Unit
+                         
+                           fun DependencyCollector.invoke(dependency: Dependency): Unit:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun DependencyCollector.invoke(dependency: Dependency): Unit
+                         
+                           fun DependencyCollector.invoke(dependency: Provider<out Dependency>): Unit:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun DependencyCollector.invoke(dependency: Provider<out Dependency>): Unit
+                         
+                           fun DependencyCollector.invoke(dependencyConstraint: DependencyConstraint): Unit:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun DependencyCollector.invoke(dependencyConstraint: DependencyConstraint): Unit
+                         
+                           fun DependencyCollector.invoke(dependencyConstraint: Provider<out DependencyConstraint>): Unit:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun DependencyCollector.invoke(dependencyConstraint: Provider<out DependencyConstraint>): Unit
+                         
+                           fun DependencyConstraintHandler.invoke(configuration: DependencyConstraintHandlerScope.() -> Unit): Unit:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun DependencyConstraintHandler.invoke(configuration: DependencyConstraintHandlerScope.() -> Unit): Unit
+                         
+                           fun <T> ExtraPropertiesExtension.invoke(initialValueProvider: () -> T): InitialValueExtraPropertyDelegateProvider<T>:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun <T> ExtraPropertiesExtension.invoke(initialValueProvider: () -> T): InitialValueExtraPropertyDelegateProvider<T>
+                         
+                           fun <T> ExtraPropertiesExtension.invoke(initialValue: T): InitialValueExtraPropertyDelegateProvider<T>:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun <T> ExtraPropertiesExtension.invoke(initialValue: T): InitialValueExtraPropertyDelegateProvider<T>
+                         
+                           fun <T> Closure<T>.invoke(): T:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun <T> Closure<T>.invoke(): T
+                         
+                           fun <T> Closure<T>.invoke(x: Any?): T:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun <T> Closure<T>.invoke(x: Any?): T
+                         
+                           fun <T> Closure<T>.invoke(vararg xs: Any?): T:
+                             Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+                           fun <T> Closure<T>.invoke(vararg xs: Any?): T
+
+  Line 39:                 excludes += "**"
+                           ^ Unresolved reference 'excludes'.
+
+  Line 40:                 merges += "META-INF/xposed/*"
+                           ^ Unresolved reference 'merges'.
+
+  Line 44:     compileOptions {
+               ^ Unresolved reference 'compileOptions'.
+
+  Line 45:         sourceCompatibility = JavaVersion.VERSION_21
+                   ^ Unresolved reference 'sourceCompatibility'.
+
+  Line 46:         targetCompatibility = JavaVersion.VERSION_21
+                   ^ Unresolved reference 'targetCompatibility'.
+
+  Line 51:     implementation(libs.androidx.core.ktx)
+               ^ Unresolved reference 'implementation'.
+
+  Line 52:     compileOnly(libs.libxposed.api)
+               ^ Unresolved reference 'compileOnly'.
+
+  Line 53:     implementation(libs.libxposed.service)
+               ^ Unresolved reference 'implementation'.
+
+  Line 54:     implementation(libs.ezxhelper.core)
+               ^ Unresolved reference 'implementation'.
+
+  Line 57:     implementation(platform(libs.androidx.compose.bom))
+               ^ Unresolved reference 'implementation'.
+
+  Line 58:     implementation(libs.androidx.compose.ui)
+               ^ Unresolved reference 'implementation'.
+
+  Line 59:     implementation(libs.androidx.compose.ui.graphics)
+               ^ Unresolved reference 'implementation'.
+
+  Line 60:     implementation(libs.androidx.compose.ui.tooling.preview)
+               ^ Unresolved reference 'implementation'.
+
+  Line 61:     implementation(libs.androidx.compose.material3)
+               ^ Unresolved reference 'implementation'.
+
+  Line 62:     implementation(libs.androidx.activity.compose)
+               ^ Unresolved reference 'implementation'.
+
+  Line 63:     debugImplementation("androidx.compose.ui:ui-tooling")
+               ^ Unresolved reference 'debugImplementation'.
+
+  Line 66:     implementation(libs.miuix.ui.android)
+               ^ Unresolved reference 'implementation'.
+
+  Line 67:     implementation(libs.miuix.blur.android)
+               ^ Unresolved reference 'implementation'.
+
+41 errors
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+ScriptCompilationException(scriptCompilationErrors=[ScriptCompilationError(message=Unresolved reference 'android'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (6:1)), ScriptCompilationError(message=Unresolved reference 'namespace'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (7:5)), ScriptCompilationError(message=Unresolved reference 'compileSdk'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (8:5)), ScriptCompilationError(message=Unresolved reference 'release'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (9:19)), ScriptCompilationError(message=Unresolved reference 'minorApiLevel'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (10:13)), ScriptCompilationError(message=Unresolved reference 'buildFeatures'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (14:5)), ScriptCompilationError(message=Unresolved reference 'buildConfig'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (15:9)), ScriptCompilationError(message=Unresolved reference 'compose'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (16:9)), ScriptCompilationError(message=Unresolved reference 'defaultConfig'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (19:5)), ScriptCompilationError(message=Unresolved reference 'applicationId'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (20:9)), ScriptCompilationError(message=Unresolved reference 'minSdk'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (21:9)), ScriptCompilationError(message=Unresolved reference 'targetSdk'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (22:9)), ScriptCompilationError(message=Unresolved reference 'versionCode'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (23:9)), ScriptCompilationError(message=Unresolved reference 'versionName'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (24:9)), ScriptCompilationError(message=Unresolved reference 'buildConfigField'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (25:9)), ScriptCompilationError(message=Unresolved reference 'buildTypes'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (28:5)), ScriptCompilationError(message=Unresolved reference 'release'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (29:9)), ScriptCompilationError(message=Unresolved reference 'isMinifyEnabled'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (30:13)), ScriptCompilationError(message=Unresolved reference 'isShrinkResources'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (31:13)), ScriptCompilationError(message=Unresolved reference 'proguardFiles'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (32:13)), ScriptCompilationError(message=Unresolved reference 'getDefaultProguardFile'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (33:17)), ScriptCompilationError(message=Unresolved reference 'packaging'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (37:9)), ScriptCompilationError(message=None of the following candidates is applicable:
+
+fun <T : Any> Action<in T>.invoke(target: T): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T : Any> Action<in T>.invoke(target: T): Unit
+
+fun ArtifactHandler.invoke(configuration: ArtifactHandlerScope.() -> Unit): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun ArtifactHandler.invoke(configuration: ArtifactHandlerScope.() -> Unit): Unit
+
+fun <V> Callable<V>.invoke(): V:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <V> Callable<V>.invoke(): V
+
+fun <D : ModuleDependency> DependencyModifier.invoke(dependency: D): D:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <D : ModuleDependency> DependencyModifier.invoke(dependency: D): D
+
+fun DependencyModifier.invoke(dependencyNotation: CharSequence): ExternalModuleDependency:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyModifier.invoke(dependencyNotation: CharSequence): ExternalModuleDependency
+
+fun DependencyModifier.invoke(dependency: Provider<out ModuleDependency>): Provider<out ModuleDependency>:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyModifier.invoke(dependency: Provider<out ModuleDependency>): Provider<out ModuleDependency>
+
+fun DependencyCollector.invoke(dependencyNotation: CharSequence): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependencyNotation: CharSequence): Unit
+
+fun DependencyCollector.invoke(files: FileCollection): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(files: FileCollection): Unit
+
+fun DependencyCollector.invoke(dependency: Dependency): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependency: Dependency): Unit
+
+fun DependencyCollector.invoke(dependency: Provider<out Dependency>): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependency: Provider<out Dependency>): Unit
+
+fun DependencyCollector.invoke(dependencyConstraint: DependencyConstraint): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependencyConstraint: DependencyConstraint): Unit
+
+fun DependencyCollector.invoke(dependencyConstraint: Provider<out DependencyConstraint>): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyCollector.invoke(dependencyConstraint: Provider<out DependencyConstraint>): Unit
+
+fun DependencyConstraintHandler.invoke(configuration: DependencyConstraintHandlerScope.() -> Unit): Unit:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun DependencyConstraintHandler.invoke(configuration: DependencyConstraintHandlerScope.() -> Unit): Unit
+
+fun <T> ExtraPropertiesExtension.invoke(initialValueProvider: () -> T): InitialValueExtraPropertyDelegateProvider<T>:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> ExtraPropertiesExtension.invoke(initialValueProvider: () -> T): InitialValueExtraPropertyDelegateProvider<T>
+
+fun <T> ExtraPropertiesExtension.invoke(initialValue: T): InitialValueExtraPropertyDelegateProvider<T>:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> ExtraPropertiesExtension.invoke(initialValue: T): InitialValueExtraPropertyDelegateProvider<T>
+
+fun <T> Closure<T>.invoke(): T:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> Closure<T>.invoke(): T
+
+fun <T> Closure<T>.invoke(x: Any?): T:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> Closure<T>.invoke(x: Any?): T
+
+fun <T> Closure<T>.invoke(vararg xs: Any?): T:
+  Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T> Closure<T>.invoke(vararg xs: Any?): T, location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (38:13)), ScriptCompilationError(message=Unresolved reference 'excludes'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (39:17)), ScriptCompilationError(message=Unresolved reference 'merges'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (40:17)), ScriptCompilationError(message=Unresolved reference 'compileOptions'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (44:5)), ScriptCompilationError(message=Unresolved reference 'sourceCompatibility'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (45:9)), ScriptCompilationError(message=Unresolved reference 'targetCompatibility'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (46:9)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (51:5)), ScriptCompilationError(message=Unresolved reference 'compileOnly'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (52:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (53:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (54:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (57:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (58:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (59:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (60:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (61:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (62:5)), ScriptCompilationError(message=Unresolved reference 'debugImplementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (63:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (66:5)), ScriptCompilationError(message=Unresolved reference 'implementation'., location=/home/runner/.gradle/.tmp/gradle-kotlin-dsl-13478001452639315685.tmp/build.gradle.kts (67:5))])
+	at org.gradle.kotlin.dsl.support.KotlinCompilerKt.reportToMessageCollectorAndThrowOnErrors(KotlinCompiler.kt:211)
+	at org.gradle.kotlin.dsl.support.KotlinCompilerKt.compileKotlinScriptModuleTo(KotlinCompiler.kt:180)
+	at org.gradle.kotlin.dsl.support.KotlinCompilerKt.compileKotlinScriptToDirectory(KotlinCompiler.kt:134)
+	at org.gradle.kotlin.dsl.execution.ResidualProgramCompiler.compileScript_C5AE47M$lambda$0(ResidualProgramCompiler.kt:717)
+	at org.gradle.kotlin.dsl.provider.StandardKotlinScriptEvaluator$InterpreterHost$runCompileBuildOperation$1.call(KotlinScriptEvaluator.kt:209)
+	at org.gradle.kotlin.dsl.provider.StandardKotlinScriptEvaluator$InterpreterHost$runCompileBuildOperation$1.call(KotlinScriptEvaluator.kt:206)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.kotlin.dsl.provider.StandardKotlinScriptEvaluator$InterpreterHost.runCompileBuildOperation(KotlinScriptEvaluator.kt:206)
+	at org.gradle.kotlin.dsl.execution.Interpreter$ProgramHost$compileSecondStageOf$cacheDir$1$1$1$1$1.invoke(Interpreter.kt:501)
+	at org.gradle.kotlin.dsl.execution.Interpreter$ProgramHost$compileSecondStageOf$cacheDir$1$1$1$1$1.invoke(Interpreter.kt:501)
+	at org.gradle.kotlin.dsl.execution.ResidualProgramCompiler.compileScript-C5AE47M(ResidualProgramCompiler.kt:715)
+	at org.gradle.kotlin.dsl.execution.ResidualProgramCompiler.compileScript-C5AE47M$default(ResidualProgramCompiler.kt:707)
+	at org.gradle.kotlin.dsl.execution.ResidualProgramCompiler.emitStage2ProgramFor(ResidualProgramCompiler.kt:366)
+	at org.gradle.kotlin.dsl.execution.Interpreter$ProgramHost.compileSecondStageOf$lambda$0(Interpreter.kt:502)
+	at org.gradle.kotlin.dsl.provider.StandardKotlinScriptEvaluator$KotlinScriptCompilationAndInstrumentation.compile(KotlinScriptEvaluator.kt:444)
+	at org.gradle.internal.scripts.BuildScriptCompilationAndInstrumentation.execute(BuildScriptCompilationAndInstrumentation.java:140)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:167)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:47)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:137)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:134)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:134)
+	at org.gradle.internal.execution.steps.ExecuteStep$Immutable.execute(ExecuteStep.java:49)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:51)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:29)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:42)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:24)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:76)
+	at org.gradle.internal.Either$Right.fold(Either.java:176)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:74)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:49)
+	at org.gradle.internal.execution.steps.NeverUpToDateStep.execute(NeverUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.NeverUpToDateStep.execute(NeverUpToDateStep.java:23)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveImmutableCachingStateStep.executeDelegate(ResolveImmutableCachingStateStep.java:45)
+	at org.gradle.internal.execution.steps.ResolveImmutableCachingStateStep.executeDelegate(ResolveImmutableCachingStateStep.java:25)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:69)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:37)
+	at org.gradle.internal.execution.steps.ValidateStep$Immutable.executeDelegate(ValidateStep.java:61)
+	at org.gradle.internal.execution.steps.ValidateStep$Immutable.executeDelegate(ValidateStep.java:47)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:99)
+	at org.gradle.internal.execution.steps.ValidateStep$Immutable.execute(ValidateStep.java:47)
+	at org.gradle.internal.execution.steps.CaptureImmutableStateBeforeExecutionStep.execute(CaptureImmutableStateBeforeExecutionStep.java:45)
+	at org.gradle.internal.execution.steps.CaptureImmutableStateBeforeExecutionStep.execute(CaptureImmutableStateBeforeExecutionStep.java:26)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.AssignImmutableWorkspaceStep.executeInWorkspace(AssignImmutableWorkspaceStep.java:229)
+	at org.gradle.internal.execution.steps.AssignImmutableWorkspaceStep.lambda$loadOrCreateWorkspace$2(AssignImmutableWorkspaceStep.java:145)
+	at org.gradle.cache.internal.DefaultFineGrainedPersistentCache.withFileLock(DefaultFineGrainedPersistentCache.java:126)
+	at org.gradle.cache.internal.DefaultCacheFactory$ReferenceTrackingFineGrainedCache.withFileLock(DefaultCacheFactory.java:294)
+	at org.gradle.internal.execution.workspace.impl.CacheBasedImmutableWorkspaceProvider$1.withFileLock(CacheBasedImmutableWorkspaceProvider.java:70)
+	at org.gradle.internal.execution.steps.AssignImmutableWorkspaceStep.loadOrCreateWorkspace(AssignImmutableWorkspaceStep.java:137)
+	at org.gradle.internal.execution.steps.AssignImmutableWorkspaceStep.lambda$execute$0(AssignImmutableWorkspaceStep.java:111)
+	at org.gradle.internal.execution.workspace.impl.CacheBasedImmutableWorkspaceProvider$1.getOrCompute(CacheBasedImmutableWorkspaceProvider.java:85)
+	at org.gradle.internal.execution.steps.AssignImmutableWorkspaceStep.execute(AssignImmutableWorkspaceStep.java:111)
+	at org.gradle.internal.execution.steps.AssignImmutableWorkspaceStep.execute(AssignImmutableWorkspaceStep.java:79)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:38)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:56)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:38)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:68)
+	at org.gradle.kotlin.dsl.provider.StandardKotlinScriptEvaluator$InterpreterHost.cachedDirFor(KotlinScriptEvaluator.kt:304)
+	at org.gradle.kotlin.dsl.execution.Interpreter$ProgramHost.compileSecondStageOf(Interpreter.kt:477)
+	at Program.loadSecondStageFor(Unknown Source)
+	at org.gradle.kotlin.dsl.execution.Interpreter$ProgramHost.evaluateSecondStageOf(Interpreter.kt:441)
+	at Program.execute(Unknown Source)
+	at org.gradle.kotlin.dsl.execution.Interpreter$ProgramHost.eval(Interpreter.kt:525)
+	at org.gradle.kotlin.dsl.execution.Interpreter.eval(Interpreter.kt:217)
+	at org.gradle.kotlin.dsl.provider.StandardKotlinScriptEvaluator.evaluate(KotlinScriptEvaluator.kt:133)
+	at org.gradle.kotlin.dsl.provider.KotlinScriptPluginFactory.create$lambda$0(KotlinScriptPluginFactory.kt:61)
+	at org.gradle.kotlin.dsl.provider.KotlinScriptPlugin.apply(KotlinScriptPlugin.kt:35)
+	at org.gradle.configuration.BuildOperationScriptPlugin$1.run(BuildOperationScriptPlugin.java:68)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.configuration.BuildOperationScriptPlugin.lambda$apply$0(BuildOperationScriptPlugin.java:65)
+	at org.gradle.internal.code.DefaultUserCodeApplicationContext.apply(DefaultUserCodeApplicationContext.java:44)
+	at org.gradle.configuration.BuildOperationScriptPlugin.apply(BuildOperationScriptPlugin.java:65)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.lambda$applyToMutableState$0(DefaultProjectStateRegistry.java:443)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.lambda$fromMutableState$1(DefaultProjectStateRegistry.java:450)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.runWithModelLock(DefaultProjectStateRegistry.java:466)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.fromMutableState(DefaultProjectStateRegistry.java:450)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.applyToMutableState(DefaultProjectStateRegistry.java:442)
+	at org.gradle.configuration.project.BuildScriptProcessor.execute(BuildScriptProcessor.java:46)
+	at org.gradle.configuration.project.BuildScriptProcessor.execute(BuildScriptProcessor.java:27)
+	at org.gradle.configuration.project.ConfigureActionsProjectEvaluator.evaluate(ConfigureActionsProjectEvaluator.java:35)
+	at org.gradle.configuration.project.LifecycleProjectEvaluator$EvaluateProject.lambda$run$0(LifecycleProjectEvaluator.java:109)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.lambda$applyToMutableState$0(DefaultProjectStateRegistry.java:443)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.lambda$fromMutableState$1(DefaultProjectStateRegistry.java:450)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:275)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:273)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withReplacedLocks$3(DefaultWorkerLeaseService.java:371)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:343)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withReplacedLocks(DefaultWorkerLeaseService.java:370)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.runWithModelLock(DefaultProjectStateRegistry.java:471)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.fromMutableState(DefaultProjectStateRegistry.java:450)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.applyToMutableState(DefaultProjectStateRegistry.java:442)
+	at org.gradle.configuration.project.LifecycleProjectEvaluator$EvaluateProject.run(LifecycleProjectEvaluator.java:100)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.configuration.project.LifecycleProjectEvaluator.evaluate(LifecycleProjectEvaluator.java:72)
+	at org.gradle.api.internal.project.DefaultProject.evaluateUnchecked(DefaultProject.java:796)
+	at org.gradle.api.internal.project.ProjectLifecycleController.lambda$ensureSelfConfigured$2(ProjectLifecycleController.java:93)
+	at org.gradle.internal.model.StateTransitionController.lambda$doTransition$15(StateTransitionController.java:293)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:304)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:292)
+	at org.gradle.internal.model.StateTransitionController.lambda$maybeTransitionIfNotCurrentlyTransitioning$11(StateTransitionController.java:237)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:35)
+	at org.gradle.internal.model.StateTransitionController.maybeTransitionIfNotCurrentlyTransitioning(StateTransitionController.java:233)
+	at org.gradle.api.internal.project.ProjectLifecycleController.ensureSelfConfigured(ProjectLifecycleController.java:93)
+	at org.gradle.api.internal.project.DefaultProjectStateRegistry$ProjectStateImpl.ensureConfigured(DefaultProjectStateRegistry.java:408)
+	at org.gradle.execution.TaskPathProjectEvaluator.configure(TaskPathProjectEvaluator.java:71)
+	at org.gradle.execution.TaskPathProjectEvaluator.configureHierarchy(TaskPathProjectEvaluator.java:87)
+	at org.gradle.configuration.DefaultProjectsPreparer.prepareProjects(DefaultProjectsPreparer.java:50)
+	at org.gradle.configuration.BuildTreePreparingProjectsPreparer.prepareProjects(BuildTreePreparingProjectsPreparer.java:65)
+	at org.gradle.configuration.BuildOperationFiringProjectsPreparer$ConfigureBuild.run(BuildOperationFiringProjectsPreparer.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.configuration.BuildOperationFiringProjectsPreparer.prepareProjects(BuildOperationFiringProjectsPreparer.java:40)
+	at org.gradle.initialization.VintageBuildModelController.lambda$prepareProjects$2(VintageBuildModelController.java:83)
+	at org.gradle.internal.model.StateTransitionController.lambda$doTransition$15(StateTransitionController.java:293)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:304)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:292)
+	at org.gradle.internal.model.StateTransitionController.lambda$transitionIfNotPreviously$12(StateTransitionController.java:251)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:35)
+	at org.gradle.internal.model.StateTransitionController.transitionIfNotPreviously(StateTransitionController.java:247)
+	at org.gradle.initialization.VintageBuildModelController.prepareProjects(VintageBuildModelController.java:83)
+	at org.gradle.initialization.VintageBuildModelController.prepareToScheduleTasks(VintageBuildModelController.java:70)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$prepareToScheduleTasks$7(DefaultBuildLifecycleController.java:185)
+	at org.gradle.internal.model.StateTransitionController.lambda$doTransition$15(StateTransitionController.java:293)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:304)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:292)
+	at org.gradle.internal.model.StateTransitionController.lambda$maybeTransition$10(StateTransitionController.java:228)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:35)
+	at org.gradle.internal.model.StateTransitionController.maybeTransition(StateTransitionController.java:224)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.prepareToScheduleTasks(DefaultBuildLifecycleController.java:183)
+	at org.gradle.internal.buildtree.DefaultBuildTreeWorkPreparer.scheduleRequestedTasks(DefaultBuildTreeWorkPreparer.java:35)
+	at org.gradle.internal.cc.impl.barrier.BarrierAwareBuildTreeWorkPreparer.scheduleRequestedTasks$lambda$0(BarrierAwareBuildTreeWorkPreparer.kt:34)
+	at org.gradle.internal.cc.impl.barrier.VintageConfigurationTimeActionRunner.runConfigurationTimeAction(VintageConfigurationTimeActionRunner.kt:48)
+	at org.gradle.internal.cc.impl.barrier.BarrierAwareBuildTreeWorkPreparer.scheduleRequestedTasks(BarrierAwareBuildTreeWorkPreparer.kt:33)
+	at org.gradle.internal.cc.impl.VintageBuildTreeWorkController$scheduleAndRunRequestedTasks$1$finalizedGraph$1.call(VintageBuildTreeWorkController.kt:37)
+	at org.gradle.internal.cc.impl.VintageBuildTreeWorkController$scheduleAndRunRequestedTasks$1$finalizedGraph$1.call(VintageBuildTreeWorkController.kt:37)
+	at org.gradle.internal.Try.ofFailable(Try.java:46)
+	at org.gradle.internal.cc.impl.VintageBuildTreeWorkController$scheduleAndRunRequestedTasks$1.apply(VintageBuildTreeWorkController.kt:37)
+	at org.gradle.internal.cc.impl.VintageBuildTreeWorkController$scheduleAndRunRequestedTasks$1.apply(VintageBuildTreeWorkController.kt:36)
+	at org.gradle.composite.internal.DefaultIncludedBuildTaskGraph.withNewWorkGraph(DefaultIncludedBuildTaskGraph.java:115)
+	at org.gradle.internal.cc.impl.VintageBuildTreeWorkController.scheduleAndRunRequestedTasks(VintageBuildTreeWorkController.kt:36)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.lambda$scheduleAndRunTasks$1(DefaultBuildTreeLifecycleController.java:84)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.lambda$runBuild$5(DefaultBuildTreeLifecycleController.java:142)
+	at org.gradle.internal.model.StateTransitionController.lambda$transition$7(StateTransitionController.java:207)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:304)
+	at org.gradle.internal.model.StateTransitionController.lambda$transition$8(StateTransitionController.java:207)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:45)
+	at org.gradle.internal.model.StateTransitionController.transition(StateTransitionController.java:207)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.runBuild(DefaultBuildTreeLifecycleController.java:139)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.scheduleAndRunTasks(DefaultBuildTreeLifecycleController.java:84)
+	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.scheduleAndRunTasks(DefaultBuildTreeLifecycleController.java:79)
+	at org.gradle.tooling.internal.provider.ExecuteBuildActionRunner.run(ExecuteBuildActionRunner.java:31)
+	at org.gradle.launcher.exec.ChainingBuildActionRunner.run(ChainingBuildActionRunner.java:35)
+	at org.gradle.internal.buildtree.ProblemReportingBuildActionRunner.run(ProblemReportingBuildActionRunner.java:54)
+	at org.gradle.launcher.exec.BuildOutcomeReportingBuildActionRunner.run(BuildOutcomeReportingBuildActionRunner.java:83)
+	at org.gradle.tooling.internal.provider.FileSystemWatchingBuildActionRunner.run(FileSystemWatchingBuildActionRunner.java:135)
+	at org.gradle.launcher.exec.BuildCompletionNotifyingBuildActionRunner.run(BuildCompletionNotifyingBuildActionRunner.java:54)
+	at org.gradle.launcher.exec.RootBuildLifecycleBuildActionExecutor.lambda$execute$0(RootBuildLifecycleBuildActionExecutor.java:101)
+	at org.gradle.composite.internal.DefaultRootBuildState.run(DefaultRootBuildState.java:126)
+	at org.gradle.launcher.exec.RootBuildLifecycleBuildActionExecutor.execute(RootBuildLifecycleBuildActionExecutor.java:101)
+	at org.gradle.launcher.exec.BuildTreeLifecycleBuildActionExecutor.runRootBuildAction(BuildTreeLifecycleBuildActionExecutor.java:104)
+	at org.gradle.launcher.exec.BuildTreeLifecycleBuildActionExecutor.execute(BuildTreeLifecycleBuildActionExecutor.java:74)
+	at org.gradle.launcher.exec.RunAsBuildOperationBuildActionExecutor$2.call(RunAsBuildOperationBuildActionExecutor.java:65)
+	at org.gradle.launcher.exec.RunAsBuildOperationBuildActionExecutor$2.call(RunAsBuildOperationBuildActionExecutor.java:61)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.launcher.exec.RunAsBuildOperationBuildActionExecutor.execute(RunAsBuildOperationBuildActionExecutor.java:61)
+	at org.gradle.launcher.exec.RunAsWorkerThreadBuildActionExecutor.lambda$execute$0(RunAsWorkerThreadBuildActionExecutor.java:36)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:275)
+	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:273)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:265)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:128)
+	at org.gradle.launcher.exec.RunAsWorkerThreadBuildActionExecutor.execute(RunAsWorkerThreadBuildActionExecutor.java:36)
+	at org.gradle.tooling.internal.provider.continuous.ContinuousBuildActionExecutor.execute(ContinuousBuildActionExecutor.java:110)
+	at org.gradle.tooling.internal.provider.SubscribableBuildActionExecutor.execute(SubscribableBuildActionExecutor.java:64)
+	at org.gradle.internal.session.DefaultBuildSessionContext.execute(DefaultBuildSessionContext.java:46)
+	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor$ActionImpl.apply(BuildSessionLifecycleBuildActionExecutor.java:106)
+	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor$ActionImpl.apply(BuildSessionLifecycleBuildActionExecutor.java:94)
+	at org.gradle.internal.session.BuildSessionState.run(BuildSessionState.java:73)
+	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor.execute(BuildSessionLifecycleBuildActionExecutor.java:67)
+	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor.execute(BuildSessionLifecycleBuildActionExecutor.java:45)
+	at org.gradle.internal.buildprocess.execution.StartParamsValidatingActionExecutor.execute(StartParamsValidatingActionExecutor.java:57)
+	at org.gradle.internal.buildprocess.execution.StartParamsValidatingActionExecutor.execute(StartParamsValidatingActionExecutor.java:32)
+	at org.gradle.internal.buildprocess.execution.SessionFailureReportingActionExecutor.execute(SessionFailureReportingActionExecutor.java:51)
+	at org.gradle.internal.buildprocess.execution.SessionFailureReportingActionExecutor.execute(SessionFailureReportingActionExecutor.java:39)
+	at org.gradle.internal.buildprocess.execution.SetupLoggingActionExecutor.execute(SetupLoggingActionExecutor.java:47)
+	at org.gradle.internal.buildprocess.execution.SetupLoggingActionExecutor.execute(SetupLoggingActionExecutor.java:31)
+	at org.gradle.launcher.daemon.server.exec.ExecuteBuild.doBuild(ExecuteBuild.java:70)
+	at org.gradle.launcher.daemon.server.exec.BuildCommandOnly.execute(BuildCommandOnly.java:37)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.WatchForDisconnection.execute(WatchForDisconnection.java:39)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.ResetDeprecationLogger.execute(ResetDeprecationLogger.java:29)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.RequestStopIfSingleUsedDaemon.execute(RequestStopIfSingleUsedDaemon.java:35)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.ForwardClientInput.lambda$execute$0(ForwardClientInput.java:40)
+	at org.gradle.internal.daemon.clientinput.ClientInputForwarder.forwardInput(ClientInputForwarder.java:80)
+	at org.gradle.launcher.daemon.server.exec.ForwardClientInput.execute(ForwardClientInput.java:37)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.LogAndCheckHealth.execute(LogAndCheckHealth.java:64)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.LogToClient.doBuild(LogToClient.java:63)
+	at org.gradle.launcher.daemon.server.exec.BuildCommandOnly.execute(BuildCommandOnly.java:37)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.EstablishBuildEnvironment.doBuild(EstablishBuildEnvironment.java:84)
+	at org.gradle.launcher.daemon.server.exec.BuildCommandOnly.execute(BuildCommandOnly.java:37)
+	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+	at org.gradle.launcher.daemon.server.exec.StartBuildOrRespondWithBusy$1.run(StartBuildOrRespondWithBusy.java:52)
+	at org.gradle.launcher.daemon.server.DaemonStateCoordinator.lambda$runCommand$0(DaemonStateCoordinator.java:321)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+
+
+BUILD FAILED in 24s
