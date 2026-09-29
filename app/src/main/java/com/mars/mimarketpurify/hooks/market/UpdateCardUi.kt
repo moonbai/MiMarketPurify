@@ -1,10 +1,8 @@
 package com.mars.mimarketpurify.hooks.market
 
 import android.content.SharedPreferences
+import android.content.res.ColorStateList
 import android.content.res.Configuration
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.StateListDrawable
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
@@ -23,18 +21,14 @@ object UpdateCardUi : BaseHook() {
     override val prefKey: String? = null
     override val name: String = "更新卡片UI调整"
 
-    private const val CARD_RADIUS_DP = 16f
     private const val UPDATE_BTN_COLOR = 0xFF0DAE73.toInt()       // 日间按钮色
     private const val UPDATE_BTN_COLOR_NIGHT = 0xFF0F9B68.toInt() // 夜间适配（略暗）
-    private const val BTN_RADIUS_DP = 24f
-    private const val UPDATE_BTN_MARGIN_HORIZONTAL_DP = 12f
     private const val TITLE_WHITE = 0xFFFFFFFF.toInt() // 白色
 
-    /** 「更新卡片背景」开关关闭时，用于还原按钮/文字的原始样式 */
-    private val originalBtnBg = java.util.WeakHashMap<View, Drawable?>()
+    /** 「更新卡片背景」开关关闭时，用于还原按钮的原始着色 */
+    /** 仅缓存官方背景的 tint（着色），按钮的圆角/形状/尺寸/位置/padding 一律保持官方原样，从不替换 background 对象 */
+    private val originalBtnTint = java.util.WeakHashMap<View, ColorStateList?>()
     private val originalTextColor = java.util.WeakHashMap<TextView, Int>()
-    /** 缓存按钮原始 padding（仅内层 update_button_layout 会改小高度），关闭开关时一并还原 */
-    private val originalBtnPadding = java.util.WeakHashMap<View, IntArray>()
 
     /** 当前更新卡片（MineUpdateView）实例，用于开关变化时实时重绘 */
     private var liveUpdateView = WeakReference<View?>(null)
@@ -94,12 +88,12 @@ object UpdateCardUi : BaseHook() {
         rootView ?: return
         val resName = MinePageClean.getResourceName(rootView)
 
-        // 1. 一键升级按钮
+        // 1. 一键升级按钮（仅改颜色，圆角/尺寸/位置/padding 保持官方原样）
         if (resName == "update_button_layout") {
-            applyBtnColorOnly(rootView, true) // 内层按钮：设置背景 + 还原官方高度
+            applyBtnColorOnly(rootView, true)
         }
         if (resName == "update_button_parent_layout") {
-            applyBtnColorOnly(rootView, false) // 外层容器：仅上色，不修改padding
+            applyBtnColorOnly(rootView, false)
         }
 
         // 2~4. 标题 / empty 文字 / 箭头文字：受「更新卡片背景」开关控制
@@ -242,76 +236,40 @@ object UpdateCardUi : BaseHook() {
     }
 
     /**
-     * 一键升级按钮样式：绿色胶囊背景，保留官方原始高度。
-     * 受「更新卡片背景」开关（[Settings.KEY_ORCHARD_SKIN]）控制：
-     *  - 关闭时还原原始背景与 padding；
-     *  - 开启时按日间/夜间取色，并用 StateListDrawable 保留按下反馈。
+     * 一键升级按钮样式（仅改颜色，不动形状/圆角/尺寸/位置/padding）：
+     *  - 不替换官方 background 对象，仅对其调用 [View.getBackground].setTintList(ColorStateList)，
+     *    因此官方背景自带的圆角、形状、宽高、位置、内边距全部保持原样；
+     *  - 用 ColorStateList 同时给定「正常态 / 按下态」两档颜色（按下态略深）以保留点击反馈；
+     *  - 受「更新卡片背景」开关（[Settings.KEY_ORCHARD_SKIN]）控制，关闭时把 tint 还原为官方。
      *
-     * @param modifyPadding true=参与 padding 还原（仅内层 update_button_layout）；false=外层容器不变
+     * @param modifyPadding 该参数已废弃：本实现不再修改任何 padding，保留仅为兼容既有调用点。
      */
     fun applyBtnColorOnly(view: View?, modifyPadding: Boolean) {
         view ?: return
         val on = Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, true)
-        val original = originalBtnBg[view]
         if (!on) {
-            // 开关关闭：还原原始背景与 padding（若曾改过），呈现官方效果
-            if (original != null) {
-                view.background = original
-                originalBtnBg.remove(view)
-            }
-            originalBtnPadding[view]?.let { p ->
-                view.setPadding(p[0], p[1], p[2], p[3])
-                originalBtnPadding.remove(view)
-            }
+            // 开关关闭：仅清除我们的着色，还原官方背景（圆角/形状/尺寸/位置/padding 全部官方原样）
+            originalBtnTint[view]?.let { view.background?.setTintList(it) }
+                ?: view.background?.setTintList(null)
+            originalBtnTint.remove(view)
             return
         }
-        // 首次见到该 View 时缓存商店原始背景与 padding，便于关闭开关后还原
-        if (original == null) {
-            originalBtnBg[view] = view.background
-            if (modifyPadding) {
-                originalBtnPadding[view] = intArrayOf(
-                    view.paddingLeft, view.paddingTop, view.paddingRight, view.paddingBottom
-                )
-            }
+        // 首次见到该 View 时缓存商店官方背景着色，便于关闭开关后还原
+        if (!originalBtnTint.containsKey(view)) {
+            originalBtnTint[view] = view.background?.tintList
         }
 
-        val density = view.resources.displayMetrics.density
         val isNight = view.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         val color = if (isNight) UPDATE_BTN_COLOR_NIGHT else UPDATE_BTN_COLOR
-
-        val normal = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            setColor(color)
-            cornerRadius = BTN_RADIUS_DP * density
-        }
-        val pressed = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            setColor(shade(color, 0.85f))
-            cornerRadius = BTN_RADIUS_DP * density
-        }
-        val bg = StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_pressed), pressed)
-            addState(intArrayOf(), normal)
-        }
-        view.background = bg
-
-        // 保留按钮原始高度：不再把垂直 padding 压到 6dp，否则「更新卡片背景」开启后
-        // 一键升级按钮会被压扁、与上方的应用图标贴在一起。内层按钮（modifyPadding=true）
-        // 还原官方 padding；外层容器（modifyPadding=false）本就不改高度，保持原样。
-        if (modifyPadding) {
-            originalBtnPadding[view]?.let { p ->
-                view.setPadding(p[0], p[1], p[2], p[3])
-            }
-        }
-
-        runCatching {
-            val setTint = view::class.java.getDeclaredMethod(
-                "setBackgroundTintList",
-                android.content.res.ColorStateList::class.java
-            )
-            setTint.isAccessible = true
-            setTint.invoke(view, null)
-        }
+        // 仅着色：保留官方背景的形状与圆角，仅替换颜色；按下态略深以保留点击反馈
+        val csl = ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_pressed),
+                intArrayOf()
+            ),
+            intArrayOf(shade(color, 0.85f), color)
+        )
+        view.background?.setTintList(csl)
     }
 
     /** 颜色按比例变暗，用于按下态 */
