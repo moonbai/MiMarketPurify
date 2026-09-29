@@ -138,8 +138,10 @@ object UpdateCardUi : BaseHook() {
     }
 
     private fun hookCardExpand() {
-        if (!Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)) return
-
+        // 注意：不在此处做安装期开关判断（过去在 init 阶段就 return，导致用户在设置页
+        // 打开「升级卡片横向展开」后已运行的会话无法重新挂钩、开关形同虚设）。
+        // 改为每次 onFinishInflate 时实时读取开关（与 BaseHook.hooked 的实时 enabled() 原则一致），
+        // 打开/关闭开关后无需重启应用商店即可生效。
         runCatching {
             val cls = ClassUtil.loadClass("com.xiaomi.market.business_ui.main.mine.view.MineUpdateView")
             cls?.methodFinder()
