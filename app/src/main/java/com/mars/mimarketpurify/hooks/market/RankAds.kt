@@ -98,7 +98,7 @@ object RankAds : BaseHook() {
      *  - 第二个参数本身就是 View（多数 Binder 的 onBindData(model, itemView)）→ 直接用；
      *  - 否则退化为读取其 itemView 字段（ViewHolder 形态），兼容 `...Binder` 之外的写法。
      */
-    private fun extractItemView(args: Array<out Any?>, className: String): View? {
+    private fun extractItemView(args: List<Any?>, className: String): View? {
         val second = args.getOrNull(1)
         if (second is View) return second
         return runCatching { second?.getFieldValue("itemView") }.getOrNull() as? View
