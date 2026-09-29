@@ -18,7 +18,9 @@ android {
 
     defaultConfig {
         applicationId = "com.mars.mimarketpurify"
-        minSdk = 29
+        // miuix-blur-android:0.9.4-rc01 在 Manifest 中声明 minSdk 33，模块必须不低于该值
+        // （Mi Market 实际运行于 HyperOS / Android 14+，即 API 34+，无功能影响）。
+        minSdk = 33
         targetSdk = 36
         versionCode = 6
         versionName = "1.2.0"
