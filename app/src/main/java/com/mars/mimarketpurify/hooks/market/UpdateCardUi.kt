@@ -248,15 +248,15 @@ object UpdateCardUi : BaseHook() {
         view ?: return
         val on = Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, true)
         if (!on) {
-            // 开关关闭：仅清除我们的着色，还原官方背景（圆角/形状/尺寸/位置/padding 全部官方原样）
-            originalBtnTint[view]?.let { view.background?.setTintList(it) }
-                ?: view.background?.setTintList(null)
+            // 开关关闭：仅还原我们的着色（缓存值；null 即清除着色回到官方原色），
+            // 官方背景的圆角/形状/尺寸/位置/padding 始终不变
+            view.background?.setTintList(originalBtnTint[view])
             originalBtnTint.remove(view)
             return
         }
-        // 首次见到该 View 时缓存商店官方背景着色，便于关闭开关后还原
+        // 首次见到该 View 时反射缓存商店官方背景着色，便于关闭开关后精确还原
         if (!originalBtnTint.containsKey(view)) {
-            originalBtnTint[view] = view.background?.tintList
+            originalBtnTint[view] = readTintList(view.background)
         }
 
         val isNight = view.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
@@ -270,6 +270,13 @@ object UpdateCardUi : BaseHook() {
             intArrayOf(shade(color, 0.85f), color)
         )
         view.background?.setTintList(csl)
+    }
+
+    /** 反射读取 Drawable 原始 TintList（getTintList 在某些 compileSdk 下无 Kotlin 合成属性，故用反射保编译兼容） */
+    private fun readTintList(drawable: android.graphics.drawable.Drawable?): ColorStateList? {
+        return runCatching {
+            drawable?.javaClass?.getMethod("getTintList")?.invoke(drawable) as? ColorStateList
+        }.getOrNull()
     }
 
     /** 颜色按比例变暗，用于按下态 */
