@@ -96,7 +96,7 @@ object UpdateCardUi : BaseHook() {
 
         // 1. 一键升级按钮
         if (resName == "update_button_layout") {
-            applyBtnColorOnly(rootView, true) // 内层按钮：设置背景 + 修改padding（降低高度）
+            applyBtnColorOnly(rootView, true) // 内层按钮：设置背景 + 还原官方高度
         }
         if (resName == "update_button_parent_layout") {
             applyBtnColorOnly(rootView, false) // 外层容器：仅上色，不修改padding
@@ -242,12 +242,12 @@ object UpdateCardUi : BaseHook() {
     }
 
     /**
-     * 一键升级按钮样式：绿色胶囊背景 + 降高。
+     * 一键升级按钮样式：绿色胶囊背景，保留官方原始高度。
      * 受「更新卡片背景」开关（[Settings.KEY_ORCHARD_SKIN]）控制：
-     *  - 关闭时还原原始背景；
+     *  - 关闭时还原原始背景与 padding；
      *  - 开启时按日间/夜间取色，并用 StateListDrawable 保留按下反馈。
      *
-     * @param modifyPadding true=修改垂直padding降低高度（仅内层 update_button_layout）
+     * @param modifyPadding true=参与 padding 还原（仅内层 update_button_layout）；false=外层容器不变
      */
     fun applyBtnColorOnly(view: View?, modifyPadding: Boolean) {
         view ?: return
@@ -295,9 +295,13 @@ object UpdateCardUi : BaseHook() {
         }
         view.background = bg
 
+        // 保留按钮原始高度：不再把垂直 padding 压到 6dp，否则「更新卡片背景」开启后
+        // 一键升级按钮会被压扁、与上方的应用图标贴在一起。内层按钮（modifyPadding=true）
+        // 还原官方 padding；外层容器（modifyPadding=false）本就不改高度，保持原样。
         if (modifyPadding) {
-            val padVertical = (6f * density).toInt()
-            view.setPadding(view.paddingLeft, padVertical, view.paddingRight, padVertical)
+            originalBtnPadding[view]?.let { p ->
+                view.setPadding(p[0], p[1], p[2], p[3])
+            }
         }
 
         runCatching {
