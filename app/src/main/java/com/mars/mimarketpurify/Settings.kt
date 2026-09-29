@@ -216,8 +216,9 @@ object Settings {
         if (raw != null) {
             return raw == "true"
         }
-        HookEnv.base.log(Log.WARN, TAG, "Settings.isEnabled($key): 远程+目标SP都不可用，默认 false")
-        return false
+        // 远程偏好与目标 SP 都不可用时，回退到调用方传入的默认值 def，
+        // 而不是硬编码 false——否则总开关 master 也会被判 false，导致模块整体功能全部失效。
+        return def
     }
 
     /**
