@@ -67,4 +67,7 @@ dependencies {
     // ── Miuix KMP：悬浮底栏主题（MiuixTheme/Colors）与毛玻璃（rememberLayerBackdrop/layerBackdrop）──
     implementation(libs.miuix.ui.android)
     implementation(libs.miuix.blur.android)
+
+    // ── Compose 浮层所需的 AndroidX lifecycle ViewTree owner 扩展 ──
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 }

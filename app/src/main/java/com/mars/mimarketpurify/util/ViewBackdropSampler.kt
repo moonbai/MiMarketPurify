@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlin.math.ceil
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -67,7 +68,7 @@ internal fun ViewBackdropLayer(
 
 internal data class ViewBackdropBounds(val left: Int, val top: Int, val width: Int, val height: Int)
 
-internal data class ViewBackdropSnapshot(
+data class ViewBackdropSnapshot(
     val bitmap: Bitmap,
     val sourceWidthPx: Int,
     val sourceHeightPx: Int,

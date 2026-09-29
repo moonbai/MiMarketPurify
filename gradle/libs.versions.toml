@@ -13,6 +13,9 @@ composeBom     = "2025.01.00"
 material3      = "1.5.0-alpha22"
 activityCompose = "1.10.1"
 miuixKmp       = "0.9.4-rc01"
+# lifecycle-runtime-ktx：提供 find/setViewTreeLifecycleOwner、find/setViewTreeSavedStateRegistryOwner 等
+# ViewTree owner 扩展（ComposeFloatingBarHost / InjectedViewTreeOwner 依赖）。
+lifecycleRuntimeKtx = "2.8.7"
 
 [libraries]
 androidx-core-ktx        = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -27,6 +30,7 @@ androidx-compose-ui-graphics    = { group = "androidx.compose.ui", name = "ui-gr
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-material3      = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-activity-compose       = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-lifecycle-runtime-ktx   = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 # ── 新增：Miuix KMP（公开依赖，非 HyperModifier 私有死liner 包）──
 # miuix-ui-android 提供 MiuixTheme / Colors / lightColorScheme / darkColorScheme
 # miuix-blur-android 提供 rememberLayerBackdrop / layerBackdrop（毛玻璃）

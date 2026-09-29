@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import com.mars.mimarketpurify.util.ViewBackdropLayer
 import com.mars.mimarketpurify.util.ViewBackdropSnapshot
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
@@ -162,7 +163,7 @@ private fun FloatingTabItem(
     modifier: Modifier = Modifier,
 ) {
     val theme = MiuixTheme.colorScheme
-    val contentColor = if (selected) theme.primary else theme.onSurfaceVariant
+    val contentColor = if (selected) theme.primary else theme.onSurface
     val iconScale by animateFloatAsState(
         targetValue = if (selected) 1.15f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 500f),

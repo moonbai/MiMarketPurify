@@ -12,8 +12,8 @@ import android.widget.FrameLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,6 +32,7 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeSavedStateRegistryOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import com.mars.mimarketpurify.Settings
+import kotlin.math.roundToInt
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.ui.floatingbar.FloatingTabBar
 import com.mars.mimarketpurify.ui.floatingbar.FloatingTabItemData
@@ -229,7 +230,7 @@ class ComposeFloatingBarHost private constructor(
             active[activity]?.let { return it }
             // 启动期压制官方底栏，消除「原生先闪一帧再被替换」的闪烁；
             // 在宿主接管前还原，使宿主读取到官方真实 alpha 后再自行持续压制。
-            val suppressor = EarlyBottomBarSuppressor(activity) { findBottomBar(activity) }
+            val suppressor = EarlyBottomBarSuppressor(activity, findBottomBar = { findBottomBar(activity) })
             suppressor.start()
             suppressor.restore()
             val host = create(activity) ?: return null
