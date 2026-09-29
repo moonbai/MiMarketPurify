@@ -1,8 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
-    // Kotlin 2.x 已内置 Compose 编译器；本模块 compose 由该 Gradle 插件接线。
-    // 版本与真实仓库里已声明的 Kotlin Gradle 插件保持一致（CI 使用 2.3.0）。
-    id("org.jetbrains.kotlin.plugin.compose")
+    // Compose 编译器插件：版本由根 build 的 `apply false` 声明（libs.plugins.kotlin.compose，
+    // 版本与 libs.versions.toml 的 kotlin 同号 2.4.20）。AGP 9 内置 Kotlin 编译，无需 kotlin-android 插件。
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -22,8 +22,8 @@ android {
         applicationId = "com.mars.mimarketpurify"
         minSdk = 29
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.1.1"
+        versionCode = 6
+        versionName = "1.2.0"
         buildConfigField("String", "APP_NAME", "\"Mi Market Purify\"")
     }
 
