@@ -7,11 +7,9 @@ plugins {
 
 android {
     namespace = "com.mars.mimarketpurify"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    // miuix 0.9.4-rc01 及其传递依赖（compose runtime-saveable 1.12.0-rc01、material3-window-size-class
+    // 1.5.0-alpha22、materialkolor 5.0.0）均要求 compileSdk 37。
+    compileSdk = 37
 
     buildFeatures {
         buildConfig = true

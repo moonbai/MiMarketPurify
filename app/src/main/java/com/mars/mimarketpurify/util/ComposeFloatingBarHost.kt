@@ -26,11 +26,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.findViewTreeLifecycleOwner
-import androidx.lifecycle.findViewTreeSavedStateRegistryOwner
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
-import androidx.lifecycle.setViewTreeSavedStateRegistryOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
+// ViewTreeSavedStateRegistryOwner 的 find/set 扩展由 androidx.savedstate 提供（lifecycle-ktx 不含），
+// 与 InjectedViewTreeOwner 实现的 androidx.savedstate.SavedStateRegistryOwner 同一包。
+import androidx.savedstate.findViewTreeSavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.mars.mimarketpurify.Settings
 import kotlin.math.roundToInt
 import com.mars.mimarketpurify.TAG
