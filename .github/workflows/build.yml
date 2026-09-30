@@ -13,6 +13,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HAS_SIGNING_KEY: ${{ secrets.SIGNING_KEY != '' }}
 
     steps:
       - name: Checkout code
@@ -30,15 +32,38 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # 还原签名密钥：仅当配置了 SIGNING_KEY secret 时执行（base64 解码为 jks 文件）。
+      # 密钥库密码 / 别名密码 / 别名分别由 SIGNING_KEY_PASSWORD / SIGNING_PASSWORD /
+      # SIGNING_KEY_ALIAS 环境变量传入，Gradle 在 build.gradle.kts 中读取。
+      - name: Restore signing key
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: |
+          echo "$SIGNING_KEY" | base64 -d > "$RUNNER_TEMP/mimarket.jks"
+          echo "签名密钥已还原 -> $RUNNER_TEMP/mimarket.jks"
+
       # NOTE: `set -o pipefail` is mandatory here. Without it the exit status of
       # `gradlew | tee` is tee's (always 0), which silently turns every build
       # failure into a green outcome.
-      - name: Build Debug APK
+      # 打 release 包：isMinifyEnabled + isShrinkResources + R8 full mode 已将体积
+      # 从 debug 的约 33M 压到几 MB（33M 的根因是此前一直打未混淆的 debug 包）。
+      # 配置签名密钥时产出「已签名、可安装」的 release APK；未配置则仍打已裁剪的未签名包。
+      - name: Build Release APK
         id: build
         continue-on-error: true
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: |
           set -o pipefail
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee gradle-build.log
+          if [ "$HAS_SIGNING_KEY" = "true" ]; then
+            ./gradlew assembleRelease --stacktrace \
+              -PmimarketSigningStoreFile="$RUNNER_TEMP/mimarket.jks" 2>&1 | tee gradle-build.log
+          else
+            ./gradlew assembleRelease --stacktrace 2>&1 | tee gradle-build.log
+          fi
           echo "gradlew_exit_code=${PIPESTATUS[0]}"
 
       # Always produce a diagnostics bundle: useful for debugging even when the
@@ -108,8 +133,8 @@ jobs:
         if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v5
         with:
-          name: MiMarketPurify-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: MiMarketPurify-release
+          path: app/build/outputs/apk/release/*.apk
           retention-days: 30
           if-no-files-found: error
 

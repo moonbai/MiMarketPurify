@@ -39,7 +39,10 @@ android {
         versionName = "1.2.0"
         buildConfigField("String", "APP_NAME", "\"Mi Market Purify\"")
         // 只打包用到的语言资源，丢弃 Compose / Miuix 等库自带的其余 locale，进一步压缩体积
-        resourceConfigurations += listOf("zh-rCN", "en")
+        // （AGP 9 起 resourceConfigurations 已废弃并强制报错，改用 androidResources.localeFilters）
+        androidResources {
+            localeFilters += listOf("zh-rCN", "en")
+        }
     }
 
     signingConfigs {
