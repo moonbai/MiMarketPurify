@@ -61,6 +61,15 @@ object NavIcons {
         vector("M3 5h2v2H3zm0 4h2v2H3zm0 4h2v2H3zm4-8h14v2H7zm0 4h14v2H7zm0 4h14v2H7z")
     }
 
+    /** 更新（环形箭头），供「移花接木」注入的原生更新 tab / 悬浮底栏独立更新按钮使用。 */
+    val Update: ImageVector by lazy {
+        vector(
+            "M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8" +
+                "c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6" +
+                "s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z",
+        )
+    }
+
     private fun vector(path: String): ImageVector {
         val parser = PathParser()
         parser.parsePathString(path)

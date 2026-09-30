@@ -9,16 +9,27 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
@@ -26,6 +37,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Icon
+import com.kyant.shapes.Capsule
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -37,6 +50,7 @@ import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.util.NavIcons
 import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
@@ -206,6 +220,7 @@ class ComposeFloatingBarHost private constructor(
             label = label,
             tag = tag,
             badge = badge,
+            isUpdate = tag == UPDATE_TAB_TAG || label.contains("更新"),
         )
     }
 
@@ -275,11 +290,16 @@ class ComposeFloatingBarHost private constructor(
     }
 }
 
+/** TabFilter（移花接木）注入到原生底栏的更新 tab 的 tag，需与 TabFilter.PURIFY_UPDATE 一致。 */
+private const val UPDATE_TAB_TAG = "purify_update"
+
 private data class MarketTabState(
     val nativeIndex: Int,
     val label: String,
     val tag: String,
     val badge: Boolean,
+    /** 该项是不是「移花接木」注入的更新入口。 */
+    val isUpdate: Boolean = false,
 ) {
     /** 按标题/标签把原生 Tab 映射到自绘图标；匹配不到返回 null（该项仅显示文字）。 */
     fun icon(): ImageVector? = resolveIcon(label, tag)
@@ -306,6 +326,8 @@ private fun resolveIcon(label: String, tag: String): ImageVector? {
         l.contains("软件") || t.contains("soft") -> NavIcons.Apps
         l.contains("我的") || t.contains("mine") || t.contains("账户") -> NavIcons.Person
         l.contains("分类") || t.contains("category") -> NavIcons.List
+        // 移花接木：TabFilter 注入的更新入口（tag=purify_update，标题「更新」）
+        l.contains("更新") || t.contains(UPDATE_TAB_TAG) || t.contains("update") -> NavIcons.Update
         else -> null
     }
 }
@@ -338,7 +360,12 @@ private fun MarketNavigationContent(
         val textNormal = if (textNormRaw == -1) null else Color(textNormRaw)
         val bgRaw = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, -1)
         val barColor = if (bgRaw == -1) null else Color(bgRaw)
-        val items = state.tabs.map { tab ->
+
+        // 移花接木：TabFilter 注入的原生更新 tab 不再塞进胶囊底栏，改由底栏**右侧独立的
+        // 更新按钮**呈现（对应 HyperModifier 悬浮底栏旁的独立软玻璃动作按钮）。
+        val updateTab = state.tabs.firstOrNull { it.isUpdate }
+        val barTabs = state.tabs.filterNot { it.isUpdate }
+        val items = barTabs.map { tab ->
             FloatingTabItem(
                 key = tab.nativeIndex.toString(),
                 label = if (showLabel) tab.label else "",
@@ -346,10 +373,18 @@ private fun MarketNavigationContent(
                 badge = tab.badge,
             )
         }
+        // 过滤更新 tab 后下标会错位，这里一律用「原生下标」做映射再回传。
+        val selectedIndexInBar = barTabs.indexOfFirst { it.nativeIndex == state.selectedIndex }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
                 .padding(start = 16.dp, end = 16.dp, bottom = bottomMargin.dp)
+                // 关键：容器显式固定为底栏高度。ViewBackdropLayer 会按采样区域 requiredSize，
+                // 若父容器高度由内容决定，就会被它撑高并随采样范围不断放大（正反馈），最终
+                // 撑满整个 decorView，把底栏顶到屏幕顶部。固定高度后不再受其影响。
+                .height(FloatingTabBarDefaults.Height)
                 .onGloballyPositioned { coords ->
                     val pos = coords.positionInWindow()
                     onBackdropBoundsChanged(
@@ -361,22 +396,86 @@ private fun MarketNavigationContent(
                         ),
                     )
                 },
+            contentAlignment = Alignment.Center,
         ) {
-            // 毛玻璃：复用 Miuix 内置模糊，采样缺失时由胶囊半透明色兜底。
+            // 毛玻璃内容源：图像 alpha ≈ 0（不可见），只为 LayerBackdrop 提供底图。
+            // 它不再参与上层尺寸测量，缺帧时由底栏自身的半透明色兜底。
             ViewBackdropLayer(backdropSnapshot, backdrop)
-            FloatingTabBar(
-                items = items,
-                selectedIndex = state.selectedIndex,
-                onSelect = onDestinationSelected,
-                layout = FloatingTabLayout.Stacked,
-                showLabel = showLabel,
-                radius = radius,
-                barColor = barColor,
-                indicatorColor = indicatorColor,
-                contentSelectedColor = textSelected,
-                contentNormalColor = textNormal,
-                modifier = Modifier.navigationBarsPadding(),
-            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                FloatingTabBar(
+                    items = items,
+                    selectedIndex = selectedIndexInBar,
+                    onSelect = { index -> barTabs.getOrNull(index)?.let { onDestinationSelected(it.nativeIndex) } },
+                    layout = FloatingTabLayout.Stacked,
+                    showLabel = showLabel,
+                    radius = radius,
+                    barColor = barColor,
+                    indicatorColor = indicatorColor,
+                    contentSelectedColor = textSelected,
+                    contentNormalColor = textNormal,
+                    backdrop = backdrop,
+                    expandWidth = false,
+                )
+                if (updateTab != null) {
+                    Spacer(Modifier.width(8.dp))
+                    UpdateActionButton(
+                        backdrop = backdrop,
+                        barColor = barColor,
+                        selected = selectedIndexInBar < 0,
+                        contentColor = textSelected ?: (if (dark) Color.White else Color.Black),
+                        onClick = { onDestinationSelected(updateTab.nativeIndex) },
+                    )
+                }
+            }
         }
+    }
+}
+
+/**
+ * 「移花接木」的独立更新按钮：悬浮底栏开启时，替代原生注入的更新 tab，位于底栏右侧。
+ * 参考 HyperModifier 悬浮底栏旁的 RestartScopeGlassButton——同材质、同高度的胶囊动作按钮。
+ */
+@Composable
+private fun UpdateActionButton(
+    backdrop: LayerBackdrop?,
+    barColor: Color?,
+    selected: Boolean,
+    contentColor: Color,
+    onClick: () -> Unit,
+) {
+    val scheme = MiuixTheme.colorScheme
+    val isDark = scheme.onSurfaceContainer.luminance() > 0.5f
+    val tint = barColor ?: scheme.surfaceContainer.copy(
+        alpha = if (backdrop != null) {
+            FloatingTabBarDefaults.GlassTintAlpha
+        } else {
+            FloatingTabBarDefaults.BarAlpha
+        },
+    )
+    val highlight = if (selected) {
+        if (isDark) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.08f)
+    } else {
+        Color.Transparent
+    }
+    Box(
+        modifier = Modifier
+            .size(FloatingTabBarDefaults.Height)
+            .floatingGlassSurface(backdrop = backdrop, shape = Capsule(), tint = tint)
+            .clip(Capsule())
+            .background(highlight)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = NavIcons.Update,
+            contentDescription = "更新",
+            tint = contentColor,
+            modifier = Modifier.size(FloatingTabBarDefaults.TabIconSize),
+        )
     }
 }

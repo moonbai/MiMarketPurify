@@ -45,20 +45,26 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.shapes.Capsule
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.blur
+import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
 /**
- * 悬浮底栏（MiuiX 风格，对标 AritxOnly/HyperModifier 的 MiuixFloatingTabBar 视觉）。
+ * 悬浮底栏（MiuiX 风格，形态对标 AritxOnly/HyperModifier 的 MiuixFloatingTabBar）。
  *
- * 形态：胶囊形容器（[Capsule]，来自 HyperModifier 实际依赖 io.github.kyant0:shapes）+ 滑动胶囊
- * 指示器（选中项高亮用中性半透明胶囊，暗色白 / 亮色黑，不含主色）+ 图标与文字（默认竖排 Stacked）。
- * 内容色（图标 + 文字）在暗色背景下为白、亮色背景下为黑，与 HyperModifier 一致；选中态仅靠滑动
- * 胶囊表达，文字字重 SemiBold ↔ Medium 区分，颜色不随选中变化（除非在「悬浮底栏配置」中手动指定）。
+ * 视觉要点：
+ * - **居中**：外层 [Box] 撑满可用宽度并 [Alignment.Center] 居中内层胶囊，因此无论几个按钮、
+ *   悬浮底栏都水平居中（此前内层没有居中容器，被父布局默认靠左摆放）。
+ * - **透明**：默认容器色是半透明的 surfaceContainer（见 [FloatingTabBarDefaults.BarAlpha]）；
+ *   传入 [backdrop] 时改用 miuix 的真实背景模糊（[drawBackdrop] + [blur]）绘制毛玻璃，
+ *   玻璃上的着色比纯色更淡（[FloatingTabBarDefaults.GlassTintAlpha]），保证「透」。
+ * - 滑动胶囊指示器 + 图标文字竖排，选中态仅靠中性半透明胶囊表达（暗色白 / 亮色黑，不含主色）。
  *
- * 为避免直接复制 GPL-3.0 的 HyperModifier 源码，本文件在本仓库自有包内重新实现其视觉，
- * 但复用其 [Capsule] 胶囊形状依赖。毛玻璃：商店底栏由调用方已有的 ViewBackdropLayer 采样器提供，
- * 程序主页使用 MiuiX 原生半透明胶囊（与 miuix FloatingNavigationBar 一致，零运行时着色器风险）。
+ * 毛玻璃实现依据 miuix **0.9.4**：[drawBackdrop] 与 [blur] / colorControls / effect 等在此版本
+ * 已变为 `BackdropEffectScope` 的扩展成员（不再是顶层 import），因此本文件只 import 顶层
+ * `drawBackdrop` 与成员 `blur`，不引用 rc01 时期的顶层 `colorControls` / `runtimeShaderEffect`。
  */
 data class FloatingTabItem(
     val key: String,
@@ -83,6 +89,41 @@ object FloatingTabBarDefaults {
     val TabIconSize = 26.dp
     val ContainerShape: Shape = Capsule()
     val IndicatorShape: Shape = Capsule()
+
+    /** 无毛玻璃时的默认容器背景不透明度——刻意偏低，保证「背景透明」。 */
+    const val BarAlpha = 0.55f
+
+    /** 毛玻璃（有 backdrop）时叠在模糊层上的着色不透明度。 */
+    const val GlassTintAlpha = 0.42f
+
+    /** 默认背景模糊半径（像素）。 */
+    const val BlurRadiusPx = 28f
+}
+
+/**
+ * 悬浮底栏的统一「表面」修饰符：有 [backdrop] 时画真实模糊毛玻璃，否则退回半透明纯色。
+ *
+ * 对应 HyperModifier 的 SoftGlassSurface：其内部尺寸交给调用方，本函数只负责材质与着色，
+ * 因此不会像旧 ViewBackdropLayer 那样把 requiredSize 撑给父布局（那正是底栏被顶到顶部的原因）。
+ */
+fun Modifier.floatingGlassSurface(
+    backdrop: LayerBackdrop?,
+    shape: Shape,
+    tint: Color,
+    blurRadiusPx: Float = FloatingTabBarDefaults.BlurRadiusPx,
+): Modifier = if (backdrop != null) {
+    drawBackdrop(
+        backdrop = backdrop,
+        shape = { shape },
+        effects = {
+            blur(radiusX = blurRadiusPx, radiusY = blurRadiusPx)
+        },
+        onDrawSurface = {
+            drawRect(tint)
+        },
+    )
+} else {
+    background(color = tint, shape = shape)
 }
 
 @Composable
@@ -98,6 +139,9 @@ fun FloatingTabBar(
     indicatorColor: Color? = null,
     contentSelectedColor: Color? = null,
     contentNormalColor: Color? = null,
+    backdrop: LayerBackdrop? = null,
+    blurRadiusPx: Float = FloatingTabBarDefaults.BlurRadiusPx,
+    expandWidth: Boolean = true,
 ) {
     if (items.isEmpty()) return
     val scheme = MiuixTheme.colorScheme
@@ -105,7 +149,10 @@ fun FloatingTabBar(
     val defaultContent = if (isDark) Color.White else Color.Black
     val resolvedIndicator = indicatorColor
         ?: if (isDark) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.08f)
-    val resolvedBar = barColor ?: scheme.surfaceContainer.copy(alpha = 0.9f)
+    val resolvedBar = barColor
+        ?: scheme.surfaceContainer.copy(alpha = FloatingTabBarDefaults.BarAlpha)
+    val glassTint = barColor
+        ?: scheme.surfaceContainer.copy(alpha = FloatingTabBarDefaults.GlassTintAlpha)
     val resolvedSelected = contentSelectedColor ?: defaultContent
     val resolvedNormal = contentNormalColor ?: defaultContent
 
@@ -131,62 +178,73 @@ fun FloatingTabBar(
     val visualPosition = motion.value
 
     val density = LocalDensity.current
-    BoxWithConstraints(
-        modifier = modifier
-            .widthIn(
-                max = if (FloatingTabBarDefaults.MaximumWidth <
-                    FloatingTabBarDefaults.MaximumItemWidth * items.size
-                ) {
-                    FloatingTabBarDefaults.MaximumWidth
-                } else {
-                    FloatingTabBarDefaults.MaximumItemWidth * items.size
-                },
-            )
-            .fillMaxWidth()
-            .height(FloatingTabBarDefaults.Height)
-            .background(resolvedBar, containerShape)
-            .clip(containerShape),
+    // 关键：外层撑满可用宽度并居中；内层胶囊宽度 = min(最大宽度, 每项宽度 × 项数)。
+    // 这样无论 2 项还是 5 项，底栏都保持水平居中。
+    Box(
+        modifier = if (expandWidth) modifier.fillMaxWidth() else modifier,
+        contentAlignment = Alignment.Center,
     ) {
-        val itemWidth = maxWidth / items.size
-        val itemWidthPx = with(density) { itemWidth.toPx() }
-        val overflowPx = with(density) {
-            FloatingTabBarDefaults.IndicatorHorizontalOverflow.toPx()
-        }
-
-        // 滑动胶囊指示器：跟随选中项以弹簧动画平移，选中态仅靠它表达（不含主色）。
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
-                .offset {
-                    IntOffset(
-                        (visualPosition * itemWidthPx - overflowPx).roundToInt(),
-                        0,
+                .widthIn(
+                    max = if (FloatingTabBarDefaults.MaximumWidth <
+                        FloatingTabBarDefaults.MaximumItemWidth * items.size
+                    ) {
+                        FloatingTabBarDefaults.MaximumWidth
+                    } else {
+                        FloatingTabBarDefaults.MaximumItemWidth * items.size
+                    },
+                )
+                .height(FloatingTabBarDefaults.Height)
+                .floatingGlassSurface(
+                    backdrop = backdrop,
+                    shape = containerShape,
+                    tint = if (backdrop != null) glassTint else resolvedBar,
+                    blurRadiusPx = blurRadiusPx,
+                )
+                .clip(containerShape),
+        ) {
+            val itemWidth = maxWidth / items.size
+            val itemWidthPx = with(density) { itemWidth.toPx() }
+            val overflowPx = with(density) {
+                FloatingTabBarDefaults.IndicatorHorizontalOverflow.toPx()
+            }
+
+            // 滑动胶囊指示器：跟随选中项以弹簧动画平移，选中态仅靠它表达（不含主色）。
+            Box(
+                modifier = Modifier
+                    .offset {
+                        IntOffset(
+                            (visualPosition * itemWidthPx - overflowPx).roundToInt(),
+                            0,
+                        )
+                    }
+                    .width(itemWidth + FloatingTabBarDefaults.IndicatorHorizontalOverflow * 2)
+                    .fillMaxHeight()
+                    .clip(Capsule())
+                    .background(resolvedIndicator),
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .selectableGroup(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                items.forEachIndexed { index, item ->
+                    FloatingTabItemContent(
+                        item = item,
+                        selected = index == selectedIndex,
+                        selectedColor = resolvedSelected,
+                        normalColor = resolvedNormal,
+                        layout = layout,
+                        showLabel = showLabel,
+                        onClick = { onSelect(index) },
+                        modifier = Modifier
+                            .width(itemWidth)
+                            .fillMaxHeight(),
                     )
                 }
-                .width(itemWidth + FloatingTabBarDefaults.IndicatorHorizontalOverflow * 2)
-                .fillMaxHeight()
-                .clip(Capsule())
-                .background(resolvedIndicator),
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .selectableGroup(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            items.forEachIndexed { index, item ->
-                FloatingTabItemContent(
-                    item = item,
-                    selected = index == selectedIndex,
-                    selectedColor = resolvedSelected,
-                    normalColor = resolvedNormal,
-                    layout = layout,
-                    showLabel = showLabel,
-                    onClick = { onSelect(index) },
-                    modifier = Modifier
-                        .width(itemWidth)
-                        .fillMaxHeight(),
-                )
             }
         }
     }
