@@ -70,7 +70,7 @@ object NavIcons {
             viewportWidth = 24f,
             viewportHeight = 24f,
         ).addPath(
-            pathData = parser.toPathData(),
+            pathData = parser.toNodes(),
             fill = SolidColor(Color.Black),
         ).build()
     }
