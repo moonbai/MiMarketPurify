@@ -27,6 +27,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +39,9 @@ import com.mars.mimarketpurify.App
 import com.mars.mimarketpurify.MainActivity
 import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.Settings
+import com.mars.mimarketpurify.AboutActivity
 import com.mars.mimarketpurify.SubSettingsActivity
+import com.mars.mimarketpurify.isNight
 import io.github.libxposed.service.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 

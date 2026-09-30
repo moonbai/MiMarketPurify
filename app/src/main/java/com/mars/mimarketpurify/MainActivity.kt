@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.util.UpdateCheckResult
+import com.mars.mimarketpurify.ui.MainScreen
 import com.mars.mimarketpurify.util.UpdateChecker
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
@@ -27,7 +28,7 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
  */
 class MainActivity : SettingsBaseActivity() {
 
-    private const val KEY_FIRST_LAUNCH_CHECKED = "first_launch_update_checked"
+    private val KEY_FIRST_LAUNCH_CHECKED = "first_launch_update_checked"
 
     /** 二级页「广告移除」里的开关，用于在主页入口行显示启用数量 */
     internal val adKeys = listOf(
