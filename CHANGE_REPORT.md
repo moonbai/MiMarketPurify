@@ -288,22 +288,26 @@ Compose 主页用 `MiuixTheme` 自行着色、`forceDarkAllowed` 对它无效，
    `MainScreen(activity)` 不再接收 `onOpenAbout`；同步清理 `background/clickable/Box` 等未用导入。
    关于入口统一由底栏"关于" Tab 承担。
 
-3. **`MainActivity.kt` — 程序底栏迁移官方 `NavigationBar`**：删除自绘 `BottomNavBar`/`TabItem`
-   （`Row` + `HorizontalDivider` + `Box.clickable`），改用官方 `NavigationBar` +
-   `NavigationBarItem`（`NavigationBarDefaults.navigationBarItemColors`，`icon: ImageVector`），
-   新增 `res/drawable/ic_nav_home.xml`、`ic_nav_about.xml` 矢量图标。
+3. **`MainActivity.kt` — 程序底栏迁移官方 `NavigationBar` + 自绘图标**：删除自绘 `BottomNavBar`/`TabItem`
+   （`Row` + `HorizontalDivider` + `Box.clickable`），改用官方 `NavigationBar` 容器 + 自定义
+   `ProgramNavItem`（`icon: ImageVector` 形参，随主题 `ColorFilter.tint` 着色）。图标全部来自新增的
+   `util/NavIcons.kt`（`Home`/`Person` 等 `ImageVector` 在代码中手绘），**不再打包任何商店栅格 WebP**，
+   `ic_nav_home.xml` / `ic_nav_about.xml` 亦已删除。顺带修正此前 `import androidx.compose.ui.graphics.Painter`
+   包名写错（正确为 `...graphics.painter.Painter`）导致的 `Unresolved reference 'Painter'` 编译失败。
 
-4. **`util/ComposeFloatingBarHost.kt` — 商店悬浮底栏迁移官方 `FloatingNavigationBar`**：
+4. **`util/ComposeFloatingBarHost.kt` — 商店悬浮底栏迁移官方 `FloatingNavigationBar` + 自绘图标**：
    - 容器改用官方 `FloatingNavigationBar`（悬浮圆角 + 阴影 + 窗口边距 + 分隔线），内部自定义
-     item 渲染**应用商店安装包内的官方 Tab 图标**——这些图标已拷贝进本模块 `res/drawable-nodpi`
-     （规避商店 AndResGuard 资源混淆：混淆映射把 `tab_icon_index_n` 重命名为 `res/7Lo.webp` 等，
-     运行时按名引用必然失败，打包自带最稳）。
-   - 图标保留未选/选中双态（`_n`/`_p` WebP）、多色原色（`tint = Color.Unspecified`）、文字标签、
-     角标与 `Role.Tab` 无障碍语义；暗色用商店官方 `_darkmode` PNG，分类无暗色资源则复用亮色 WebP。
+     item 渲染**代码中手绘的自绘矢量图标**（`util/NavIcons` 的 `Home`/`Game`/`Rank`/`Apps`/`Person`/`List`），
+     按原生 Tab 的标题/标签映射到对应图标；不再拷贝、不再引用商店任何位图，彻底规避 AndResGuard
+     资源混淆、零维护。
+   - 图标单色、随主题 `ColorFilter.tint(contentColor)` 着色、随暗色模式自动反色；文字标签、角标与
+     `Role.Tab` 无障碍语义保留；选中态为中性半透明胶囊背景。
    - 删除不再使用的 `ui/deadliner/MiuixFloatingTabBar.kt`、`FloatingTabMotion.kt`、
      `FloatingNavigationShadow.kt`、`util/NativeTabIconSnapshotter.kt`（仅被本文件引用）。
    - 毛玻璃沿用既有 `ViewBackdropSampler` + `LayerBackdrop` 实时采样，缺失时由 `FloatingNavigationBar`
      半透明 `surfaceContainer` 色块兜底。
+   - 顺带修正 `Image(painter=..., tint=...)` 误用 `tint` 参数（标准 `Image` 仅接受
+     `colorFilter = ColorFilter.tint(...)`）导致的编译失败。
 
 ### 关于"应用商店概率闪退"的归因（非本模块进程内崩溃）
 提供的崩溃栈属于 **`com.xiaomi.market` 自身进程**：`Resources$NotFoundException: String resource
@@ -346,3 +350,49 @@ FloatingNavigationBar(
      角标红点；深浅色图标切换正确；毛玻璃/圆角/阴影观感与原先一致。
 - [ ] 商店无障碍场景：开启 TalkBack 后进入商店，浮底接管期间不再触发原生底栏 `Resources$NotFound`。
 - [ ] 资源：确认 `res/drawable-nodpi/tab_*.{webp,png}` 共 22 个已打入 APK；包体积仍受 release R8 + shrinkResources 控制。
+
+---
+
+## 四、本轮改动（删除 webp 图标 + 代码自绘 + 修编译错误 + CI 脱敏修复）
+
+### 1. 图标全部改为代码自绘，删除打包的 webp
+- **删除** `res/drawable-nodpi/` 下全部 22 个 `tab_*.webp` 与 `tab_*_dark.png`（目录已移除）。
+- **新增 `app/.../util/NavIcons.kt`**：用 `ImageVector` 在代码里手绘全部导航图标
+  （`Home`/`Person`/`Info`/`Game`/`Rank`/`Apps`/`List`），单色、随主题着色、随暗色反色，
+  零位图、零 AndResGuard 混淆风险。
+- **`MainActivity.kt`**：程序底栏改用 `NavIcons.Home`/`NavIcons.Person`，移除 `Painter`/`painterResource` 依赖。
+- **`util/ComposeFloatingBarHost.kt`**：删除整套 webp 引用（`ICON_PAIRS_LIGHT`/`ICON_PAIRS_DARK`/`iconRes`/
+  `resolveIconKey`/`iconKey`），item 改为接收 `ImageVector?` + `colorFilter`；修正 `Image(tint=...)`
+  误用为 `colorFilter = ColorFilter.tint(...)`。
+- 上文"测试注意事项"中关于"22 个 tab_*.{webp,png} 已打入 APK"的条目**已作废**，以本节为准。
+
+### 2. CI 脱敏修复（GitHub 自带 Secret 遮罩导致的 ****）
+- **根因**：`build.yml` 第 56 行 `SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}` 把签名别名作为
+  Secret 注入，而该 Secret 的取值 = `MiMarketPurify`（别名起成了应用名）。GitHub 会把**等于任一
+  Secret 取值**的字符串在日志 / 产物名 / 下载链接中统一遮罩为 `***`，于是 `MiMarketPurify-release`
+  产物名与含 `MiMarketPurify` 的链接全部被替换成 `****`。`build.yml` 中**无任何 sed/replace 脱敏脚本**，
+  属 GitHub 自动遮罩副作用，与"商标"无关。
+- **修复（不碰 keystore、不破坏覆盖更新）**：
+  - `app/build.gradle.kts`：`signingKeyAlias` 改为
+    `providers.environmentVariable("SIGNING_KEY_ALIAS").orNull ?: "MiMarketPurify"`，
+    别名默认硬编码（与 keystore 真实别名一致），不再强制依赖 Secret。
+  - `build.yml`：移除 `Build Release APK` 步骤里的 `SIGNING_KEY_ALIAS` 环境变量注入；
+    别名已非敏感项，GitHub 不再有等于 `MiMarketPurify` 的 Secret，遮罩即消失。
+- **GitHub 侧配套动作（你来执行）**：仓库 Settings → Secrets 中删除或改名已无用的
+  `SIGNING_KEY_ALIAS` Secret（其取值为 `MiMarketPurify`）。仅保留 `SIGNING_KEY` /
+  `SIGNING_KEY_PASSWORD` / `SIGNING_PASSWORD` 三条真实密钥。
+- **⚠️ 额外排查**：若 `SIGNING_KEY_PASSWORD` 或 `SIGNING_PASSWORD` 的取值也等于/包含 `MiMarketPurify`，
+  遮罩仍会残留——需改用 `keytool -storepasswd` / `-keypasswd` 改密码（仅改口令，证书不变，覆盖更新仍可用）。
+- **备选方案（若想保留别名作为 Secret）**：在本地持 keystore 的机器执行
+  `keytool -changealias -alias MiMarketPurify -destalias mimarket -keystore MiMarketPurify.jks`，
+  再把 `SIGNING_KEY_ALIAS` Secret 改为 `mimarket` 并重新提交 base64。仅改别名条目名，密钥对/证书不变。
+
+### 测试注意事项（更新）
+- [ ] `assembleRelease` 编译通过（重点：`NavIcons` 的 `ImageVector` 手绘路径、`ImageVector.Builder` 用法、
+      `ColorFilter.tint` 用法）。
+- [ ] 关于页点击不闪退；深浅色下头像/启动图标均正常显示，缺失时回退灰色块不崩溃。
+- [ ] 主页顶栏无"关于"按钮；程序底栏"主页/关于"切换正常，图标为自绘矢量（非 webp）。
+- [ ] 商店内悬浮底栏：显示自绘 Tab 图标（首页/游戏/排行/软件/我的/分类）、选中态、文字标签、角标红点；
+     深浅色图标切换正确。
+- [ ] 资源：`res/drawable-nodpi/` 已无 `tab_*` 文件；包体积仍受 release R8 + shrinkResources 控制。
+- [ ] CI：产物名与下载链接中 `MiMarketPurify` 正常显示，不再是 `****`；签名 APK 可正常安装/覆盖更新。

@@ -32,13 +32,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +52,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.mars.mimarketpurify.R
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
+import com.mars.mimarketpurify.util.NavIcons
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -64,11 +66,9 @@ import java.util.WeakHashMap
  *
  * 关键点：
  * - 容器采用官方 [FloatingNavigationBar]（悬浮圆角 + 阴影 + 窗口边距 + 分隔线），内部 item 为
- *   自定义实现，以便直接渲染**应用商店安装包内的官方 Tab 图标**——这些图标已拷贝进本模块
- *   res/drawable-nodpi（规避商店 AndResGuard 资源混淆；混淆映射把 tab_icon_index_n 重命名为
- *   res/7Lo.webp 等，运行时按名引用必然失败，故打包自带最稳）。
- * - 图标保留未选/选中双态（_n/_p WebP）、多色原色（tint = Unspecified）、文字标签、角标与
- *   Role.Tab 无障碍语义；暗色用商店官方 _darkmode PNG，分类无暗色资源则复用亮色 WebP。
+ *   自定义实现；图标全部用 [NavIcons] 在代码中自绘的 [ImageVector]（单色、随主题着色、随暗色
+ *   自动反色），不再打包或引用商店任何位图，彻底规避 AndResGuard 资源混淆、零维护。
+ * - 图标 + 文字标签 + 角标 + Role.Tab 无障碍语义；标签仍来自原生 Tab（NativeTabBar）。
  * - 毛玻璃沿用既有 ViewBackdropSampler + LayerBackdrop 实时采样方案（Miuix 内置模糊），
  *   采样缺失时回退半透明色块。
  *
@@ -299,8 +299,8 @@ private data class MarketTabState(
     val tag: String,
     val badge: Boolean,
 ) {
-    /** 按标题/标签把原生 Tab 映射到官方图标键；匹配不到返回 null（该项仅显示文字）。 */
-    fun iconKey(): String? = resolveIconKey(label, tag)
+    /** 按标题/标签把原生 Tab 映射到自绘图标；匹配不到返回 null（该项仅显示文字）。 */
+    fun icon(): ImageVector? = resolveIcon(label, tag)
 }
 
 private data class MarketNavigationState(
@@ -310,46 +310,22 @@ private data class MarketNavigationState(
 )
 
 /**
- * 官方 Tab 图标（已拷贝进本模块 res/drawable-nodpi，规避商店 AndResGuard 资源混淆）。
- * 亮色用 WebP（index/game/rank/soft/mine/category 的 _n/_p），暗色用官方 _darkmode PNG。
+ * 把原生 Tab 的标题/标签映射到自绘图标（[NavIcons]）。
+ * 匹配不到返回 null（该项仅显示文字）。图标随主题着色、随暗色自动反色，无需区分 n/p 双态或
+ * 亮/暗资源——这正是改用矢量自绘后相比「打包栅格 WebP」最大的简化。
  */
-private val ICON_PAIRS_LIGHT = mapOf(
-    "index" to (R.drawable.tab_index_n to R.drawable.tab_index_p),
-    "game" to (R.drawable.tab_game_n to R.drawable.tab_game_p),
-    "rank" to (R.drawable.tab_rank_n to R.drawable.tab_rank_p),
-    "soft" to (R.drawable.tab_soft_n to R.drawable.tab_soft_p),
-    "mine" to (R.drawable.tab_mine_n to R.drawable.tab_mine_p),
-    "category" to (R.drawable.tab_category_n to R.drawable.tab_category_p),
-)
-
-private val ICON_PAIRS_DARK = mapOf(
-    "index" to (R.drawable.tab_index_n_dark to R.drawable.tab_index_p_dark),
-    "game" to (R.drawable.tab_game_n_dark to R.drawable.tab_game_p_dark),
-    "rank" to (R.drawable.tab_rank_n_dark to R.drawable.tab_rank_p_dark),
-    "soft" to (R.drawable.tab_soft_n_dark to R.drawable.tab_soft_p_dark),
-    "mine" to (R.drawable.tab_mine_n_dark to R.drawable.tab_mine_p_dark),
-    // 分类无暗色资源，复用亮色 WebP
-)
-
-private fun resolveIconKey(label: String, tag: String): String? {
+private fun resolveIcon(label: String, tag: String): ImageVector? {
     val l = label.trim()
     val t = tag.trim().lowercase()
     return when {
-        l.contains("首页") || t.contains("home") || t.contains("index") -> "index"
-        l.contains("游戏") || t.contains("game") -> "game"
-        l.contains("排行") || l.contains("榜单") || t.contains("rank") -> "rank"
-        l.contains("软件") || t.contains("soft") -> "soft"
-        l.contains("我的") || t.contains("mine") || t.contains("账户") -> "mine"
-        l.contains("分类") || t.contains("category") -> "category"
+        l.contains("首页") || t.contains("home") || t.contains("index") -> NavIcons.Home
+        l.contains("游戏") || t.contains("game") -> NavIcons.Game
+        l.contains("排行") || l.contains("榜单") || t.contains("rank") -> NavIcons.Rank
+        l.contains("软件") || t.contains("soft") -> NavIcons.Apps
+        l.contains("我的") || t.contains("mine") || t.contains("账户") -> NavIcons.Person
+        l.contains("分类") || t.contains("category") -> NavIcons.List
         else -> null
     }
-}
-
-/** 解析出官方 Tab 图标的 drawable 资源 id（0 表示无对应图标，仅显示文字）。 */
-private fun iconRes(key: String?, selected: Boolean, dark: Boolean): Int {
-    if (key == null) return 0
-    val pair = (if (dark) ICON_PAIRS_DARK[key] else null) ?: ICON_PAIRS_LIGHT[key] ?: return 0
-    return if (selected) pair.second else pair.first
 }
 
 @Composable
@@ -406,7 +382,7 @@ private fun MarketNavigationContent(
                         MarketFloatingTabItem(
                             selected = selected,
                             onClick = { onDestinationSelected(tab.nativeIndex) },
-                            iconRes = iconRes(tab.iconKey(), selected, dark),
+                            icon = tab.icon(),
                             label = if (showLabel) tab.label else "",
                             badge = tab.badge,
                             modifier = Modifier.weight(1f),
@@ -419,14 +395,14 @@ private fun MarketNavigationContent(
 }
 
 /**
- * 悬浮底栏的单个入口：官方多色 Tab 图标（_n/_p 双态）+ 可选文字标签 + 可选角标 + Role.Tab 语义。
- * 选中态用中性半透明胶囊背景，避免拍平官方图标原有的多色。
+ * 悬浮底栏的单个入口：自绘矢量图标（随主题着色）+ 可选文字标签 + 可选角标 + Role.Tab 语义。
+ * 选中态用中性半透明胶囊背景。
  */
 @Composable
 private fun MarketFloatingTabItem(
     selected: Boolean,
     onClick: () -> Unit,
-    iconRes: Int,
+    icon: ImageVector?,
     label: String,
     badge: Boolean,
     modifier: Modifier = Modifier,
@@ -449,11 +425,11 @@ private fun MarketFloatingTabItem(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(contentAlignment = Alignment.TopEnd) {
-                if (iconRes != 0) {
+                if (icon != null) {
                     Image(
-                        painter = painterResource(iconRes),
+                        imageVector = icon,
                         contentDescription = null,
-                        tint = Color.Unspecified,
+                        colorFilter = ColorFilter.tint(contentColor),
                         modifier = Modifier.size(26.dp),
                     )
                 }

@@ -7,10 +7,13 @@ plugins {
 
 // 条件式 release 签名：仅在 CI 注入了密钥 secret 时才签名（对齐 HyperModifier 的方案）。
 // - SIGNING_KEY（base64 编码的 jks）在 CI 步骤里解码为文件，路径通过 -PmimarketSigningStoreFile 传入；
-// - SIGNING_KEY_ALIAS / SIGNING_KEY_PASSWORD（密钥库密码）/ SIGNING_PASSWORD（别名密码）由环境变量读取。
+// - SIGNING_KEY_PASSWORD（密钥库密码）/ SIGNING_PASSWORD（别名密码）由环境变量读取。
+// - 别名（MiMarketPurify）为非敏感项，默认硬编码于此（与 keystore 中真实别名一致），不再作为 secret 注入，
+//   以免 GitHub 把「等于该别名」的字符串在日志 / 产物名 / 下载链接中统一遮罩为 ***。需要时仍可用
+//   环境变量 SIGNING_KEY_ALIAS 覆盖。
 // 未注入密钥时打出的 release 包仍是已混淆裁剪的小体积包，只是未签名（无法安装）。
 val signingStoreFile = providers.gradleProperty("mimarketSigningStoreFile").orNull
-val signingKeyAlias = providers.environmentVariable("SIGNING_KEY_ALIAS").orNull
+val signingKeyAlias = providers.environmentVariable("SIGNING_KEY_ALIAS").orNull ?: "MiMarketPurify"
 val signingStorePassword = providers.environmentVariable("SIGNING_KEY_PASSWORD").orNull
 val signingKeyPassword = providers.environmentVariable("SIGNING_PASSWORD").orNull
 val hasReleaseSigning = !signingStoreFile.isNullOrBlank() &&

@@ -13,14 +13,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Painter
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.ui.MainScreen
 import com.mars.mimarketpurify.ui.components.AboutContent
+import com.mars.mimarketpurify.util.NavIcons
 import com.mars.mimarketpurify.util.UpdateCheckResult
 import com.mars.mimarketpurify.util.UpdateChecker
 import top.yukonga.miuix.kmp.basic.NavigationBar
@@ -188,10 +189,9 @@ class MainActivity : SettingsBaseActivity() {
 }
 
 // ==================== 底部标签栏（官方 Miuix NavigationBar 容器）====================
-// 说明：Miuix 官方 NavigationBarItem.icon 仅接受 ImageVector，而本次打包进模块的官方商店
-// Tab 图标为栅格 WebP（tab_index_* / tab_mine_*），因此「主页」「关于」项均直接复用打包的
-// 官方图标（多色原色、n/p 双态），共用 Painter 式 item，容器仍采用官方 NavigationBar
-// （圆角 / 分隔线 / 窗口边距 / 配色均为 MiuiX 方案）。
+// 说明：容器采用官方 NavigationBar（圆角 / 分隔线 / 窗口边距 / 配色均为 MiuiX 方案），
+// 内部 item 为自定义实现；图标全部用 [NavIcons] 在代码中自绘的 ImageVector（单色、随主题
+// 着色），不再打包任何商店栅格 WebP，规避 AndResGuard 资源混淆、零维护。
 
 @Composable
 private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
@@ -199,17 +199,13 @@ private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
         ProgramNavItem(
             selected = selected == 0,
             onClick = { onSelect(0) },
-            painter = painterResource(
-                if (selected == 0) R.drawable.tab_index_n else R.drawable.tab_index_p,
-            ),
+            icon = NavIcons.Home,
             label = "主页",
         )
         ProgramNavItem(
             selected = selected == 1,
             onClick = { onSelect(1) },
-            painter = painterResource(
-                if (selected == 1) R.drawable.tab_mine_n else R.drawable.tab_mine_p,
-            ),
+            icon = NavIcons.Person,
             label = "关于",
         )
     }
@@ -219,7 +215,7 @@ private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
 private fun RowScope.ProgramNavItem(
     selected: Boolean,
     onClick: () -> Unit,
-    painter: Painter,
+    icon: ImageVector,
     label: String,
 ) {
     val colors = MiuixTheme.colorScheme
@@ -232,8 +228,9 @@ private fun RowScope.ProgramNavItem(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
-            painter = painter,
+            imageVector = icon,
             contentDescription = null,
+            colorFilter = ColorFilter.tint(color),
             modifier = Modifier.size(26.dp),
         )
         Spacer(Modifier.height(4.dp))

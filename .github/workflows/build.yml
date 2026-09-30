@@ -33,8 +33,9 @@ jobs:
         run: chmod +x gradlew
 
       # 还原签名密钥：仅当配置了 SIGNING_KEY secret 时执行（base64 解码为 jks 文件）。
-      # 密钥库密码 / 别名密码 / 别名分别由 SIGNING_KEY_PASSWORD / SIGNING_PASSWORD /
-      # SIGNING_KEY_ALIAS 环境变量传入，Gradle 在 build.gradle.kts 中读取。
+      # 密钥库密码 / 别名密码分别由 SIGNING_KEY_PASSWORD / SIGNING_PASSWORD 环境变量传入，
+      # Gradle 在 build.gradle.kts 中读取。别名（MiMarketPurify）已硬编码进 build.gradle.kts 默认值，
+      # 不再作为 secret 注入——否则 GitHub 会自动把「等于该别名」的字符串在日志 / 产物名 / 链接中遮罩为 ***。
       - name: Restore signing key
         if: ${{ env.HAS_SIGNING_KEY == 'true' }}
         env:
@@ -53,7 +54,6 @@ jobs:
         id: build
         continue-on-error: true
         env:
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: |
