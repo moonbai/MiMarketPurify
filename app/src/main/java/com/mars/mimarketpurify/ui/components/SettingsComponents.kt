@@ -1,6 +1,6 @@
 package com.mars.mimarketpurify.ui.components
 
-import android.content.ComponentActivity
+import androidx.activity.ComponentActivity
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
