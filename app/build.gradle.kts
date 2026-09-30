@@ -10,7 +10,7 @@ plugins {
 // - SIGNING_KEY_PASSWORD（密钥库密码）/ SIGNING_PASSWORD（别名密码）由环境变量读取。
 // - 别名（MiMarketPurify）为非敏感项，默认硬编码于此（与 keystore 中真实别名一致），不再作为 secret 注入，
 //   以免 GitHub 把「等于该别名」的字符串在日志 / 产物名 / 下载链接中统一遮罩为 ***。需要时仍可用
-//   环境变量 SIGNING_KEY_ALIAS 覆盖。
+// 环境变量 SIGNING_KEY_ALIAS 覆盖。
 // 未注入密钥时打出的 release 包仍是已混淆裁剪的小体积包，只是未签名（无法安装）。
 val signingStoreFile = providers.gradleProperty("mimarketSigningStoreFile").orNull
 val signingKeyAlias = providers.environmentVariable("SIGNING_KEY_ALIAS").orNull ?: "MiMarketPurify"
@@ -111,6 +111,9 @@ dependencies {
     // ── Miuix KMP：悬浮底栏主题（MiuixTheme/Colors）与毛玻璃（rememberLayerBackdrop/layerBackdrop）──
     implementation(libs.miuix.ui.android)
     implementation(libs.miuix.blur.android)
+
+    // ── HyperModifier 悬浮底栏实际依赖：io.github.kyant0:shapes（提供 Capsule 胶囊形状）──
+    implementation(libs.kyant.shapes)
 
     // ── Compose 浮层所需的 AndroidX lifecycle ViewTree owner 扩展 ──
     implementation(libs.androidx.lifecycle.runtime.ktx)

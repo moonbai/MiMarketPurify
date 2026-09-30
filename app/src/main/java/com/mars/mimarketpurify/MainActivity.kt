@@ -13,12 +13,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.ui.MainScreen
 import com.mars.mimarketpurify.ui.components.AboutContent
+import com.mars.mimarketpurify.util.FloatingTabBar
+import com.mars.mimarketpurify.util.FloatingTabItem
+import com.mars.mimarketpurify.util.FloatingTabLayout
 import com.mars.mimarketpurify.util.NavIcons
 import com.mars.mimarketpurify.util.UpdateCheckResult
 import com.mars.mimarketpurify.util.UpdateChecker
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
-import top.yukonga.miuix.kmp.basic.NavigationBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -182,39 +182,30 @@ class MainActivity : SettingsBaseActivity() {
     }
 }
 
-// ==================== 底部标签栏（MiuiX 悬浮底栏 FloatingNavigationBar）====================
-// 直接采用 MiuiX 官方 FloatingNavigationBar 容器 + FloatingNavigationBarItem：
-// 悬浮圆角胶囊 + 阴影 + 窗口边距 + 配色全部由 MiuiX 方案接管；选中态主色、未选中次级文本色，
-// 与模块其余界面同源。图标沿用 [NavIcons] 自绘矢量（单色、随主题着色、随暗色自动反色）。
-// 需要 miuix-kmp ≥ 0.9.4（rc01 之前的版本无 FloatingNavigationBarItem.colors / navigationBarItemColors）。
+// ==================== 底部标签栏（MiuiX 悬浮底栏 FloatingTabBar）====================
+// 采用本仓库 util.FloatingTabBar：胶囊容器 + 滑动胶囊指示器 + 图标文字竖排（Stacked），
+// 形态与 AritxOnly/HyperModifier 的 MiuixFloatingTabBar 一致；容器胶囊形状引用 HyperModifier
+// 的实际依赖 io.github.kyant0:shapes 的 Capsule。选中态以中性半透明胶囊（暗色白 / 亮色黑）表达，
+// 图标与文字随暗色背景自动取白 / 黑，不随主色变化。内容色、指示器、背景色均可在
+// 「悬浮底栏配置」页覆盖（主页此处沿用主题默认视觉）。
 
 @Composable
 private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
-    val colors = MiuixTheme.colorScheme
-    val itemColors = NavigationBarDefaults.navigationBarItemColors(
-        unselectedContentColor = colors.onSurfaceSecondary,
-        selectedContentColor = colors.primary,
+    val items = listOf(
+        FloatingTabItem(key = "home", label = "主页", icon = NavIcons.Home),
+        FloatingTabItem(key = "about", label = "关于", icon = NavIcons.Person),
     )
-    FloatingNavigationBar(
-        color = colors.surfaceContainer,
-        cornerRadius = 28.dp,
-        shadowElevation = 2.dp,
-        showDivider = false,
-        defaultWindowInsetsPadding = true,
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, bottom = 10.dp),
     ) {
-        FloatingNavigationBarItem(
-            selected = selected == 0,
-            onClick = { onSelect(0) },
-            icon = NavIcons.Home,
-            label = "主页",
-            colors = itemColors,
-        )
-        FloatingNavigationBarItem(
-            selected = selected == 1,
-            onClick = { onSelect(1) },
-            icon = NavIcons.Person,
-            label = "关于",
-            colors = itemColors,
+        FloatingTabBar(
+            items = items,
+            selectedIndex = selected,
+            onSelect = onSelect,
+            layout = FloatingTabLayout.Stacked,
+            modifier = Modifier.navigationBarsPadding(),
         )
     }
 }

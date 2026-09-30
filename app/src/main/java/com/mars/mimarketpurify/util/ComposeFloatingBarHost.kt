@@ -9,40 +9,23 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -54,7 +37,6 @@ import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.util.NavIcons
 import kotlin.math.roundToInt
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
@@ -62,15 +44,15 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
 import java.util.WeakHashMap
 
 /**
- * 用 Compose + Miuix 官方 [FloatingNavigationBar] 重写悬浮底栏的宿主（「MiuiX 方案」）。
+ * 用 Compose + 本仓库 util.FloatingTabBar（MiuiX 悬浮底栏，对标 HyperModifier 的 MiuixFloatingTabBar）
+ * 重写悬浮底栏的宿主（「MiuiX 方案」）。
  *
  * 关键点：
- * - 容器采用官方 [FloatingNavigationBar]（悬浮圆角 + 阴影 + 窗口边距 + 分隔线），内部 item 为
- *   自定义实现；图标全部用 [NavIcons] 在代码中自绘的 [ImageVector]（单色、随主题着色、随暗色
- *   自动反色），不再打包或引用商店任何位图，彻底规避 AndResGuard 资源混淆、零维护。
- * - 图标 + 文字标签 + 角标 + Role.Tab 无障碍语义；标签仍来自原生 Tab（NativeTabBar）。
+ * - 容器采用自建的 [FloatingTabBar]（胶囊容器 + 滑动胶囊指示器 + 图标文字竖排），图标全部用
+ *   [NavIcons] 在代码中自绘的 [ImageVector]（单色、随主题着色、随暗色自动反色），不再打包或引用
+ *   商店任何位图，彻底规避 AndResGuard 资源混淆、零维护。
  * - 毛玻璃沿用既有 ViewBackdropSampler + LayerBackdrop 实时采样方案（Miuix 内置模糊），
- *   采样缺失时回退半透明色块。
+ *   采样缺失时由胶囊半透明色兜底。
  *
  * 原生 TabView 仍负责导航、埋点与页面切换（点击转发给原生 tab 的 [View.performClick]），
  * 本类只接管呈现层，复用 NativeTabBar 反射读取与 FloatingBottomBar 生命周期骨架。
@@ -341,134 +323,60 @@ private fun MarketNavigationContent(
     val backdrop = rememberLayerBackdrop()
     val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
     val bottomMargin = Settings.floatingBarBottomMarginDp()
-    val selectedKey = state.tabs.firstOrNull { it.nativeIndex == state.selectedIndex }?.nativeIndex
-        ?: state.tabs.first().nativeIndex
 
     MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
         val colors = MiuixTheme.colorScheme
-        // 悬浮底栏外观：优先读用户自定义设置，未设置（-1 = 「恢复默认」）则沿用 MiuiX 主题视觉，
-        // 以「不改动已确认外观」为原则；这些键与 SubSettingsActivity 悬浮底栏配置页一一对应。
+        // 悬浮底栏外观：优先读用户自定义设置，未设置（-1 = 「恢复默认」）则沿用 MiuiX / HyperModifier
+        // 中性视觉（暗色白 / 亮色黑），以「不改动已确认外观」为原则；这些键与 SubSettingsActivity
+        // 悬浮底栏配置页一一对应。
         val radius = Settings.floatingBarRadiusDp().dp
-        val neutralIndicator = if (dark) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.08f)
         val selBgRaw = Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, -1)
-        val indicatorColor = if (selBgRaw == -1) neutralIndicator else Color(selBgRaw)
+        val indicatorColor = if (selBgRaw == -1) null else Color(selBgRaw)
         val textSelRaw = Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, -1)
-        val textSelected = if (textSelRaw == -1) colors.primary else Color(textSelRaw)
+        val textSelected = if (textSelRaw == -1) null else Color(textSelRaw)
         val textNormRaw = Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, -1)
-        val textNormal = if (textNormRaw == -1) colors.onSurfaceSecondary else Color(textNormRaw)
+        val textNormal = if (textNormRaw == -1) null else Color(textNormRaw)
         val bgRaw = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, -1)
-        val barColor = if (bgRaw == -1) colors.surfaceContainer.copy(alpha = 0.86f) else Color(bgRaw)
+        val barColor = if (bgRaw == -1) null else Color(bgRaw)
+        val items = state.tabs.map { tab ->
+            FloatingTabItem(
+                key = tab.nativeIndex.toString(),
+                label = if (showLabel) tab.label else "",
+                icon = tab.icon(),
+                badge = tab.badge,
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = bottomMargin.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = bottomMargin.dp)
+                .onGloballyPositioned { coords ->
+                    val pos = coords.positionInWindow()
+                    onBackdropBoundsChanged(
+                        ViewBackdropBounds(
+                            left = pos.x.roundToInt(),
+                            top = pos.y.roundToInt(),
+                            width = coords.size.width,
+                            height = coords.size.height,
+                        ),
+                    )
+                },
         ) {
-            // 毛玻璃：复用 Miuix 内置模糊，采样缺失时由 FloatingNavigationBar 半透明色块兜底。
+            // 毛玻璃：复用 Miuix 内置模糊，采样缺失时由胶囊半透明色兜底。
             ViewBackdropLayer(backdropSnapshot, backdrop)
-            FloatingNavigationBar(
-                color = barColor,
-                cornerRadius = radius,
-                horizontalOutSidePadding = 0.dp,
-                shadowElevation = 1.dp,
-                showDivider = false,
-                defaultWindowInsetsPadding = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onGloballyPositioned { coords ->
-                        val pos = coords.positionInWindow()
-                        onBackdropBoundsChanged(
-                            ViewBackdropBounds(
-                                left = pos.x.roundToInt(),
-                                top = pos.y.roundToInt(),
-                                width = coords.size.width,
-                                height = coords.size.height,
-                            ),
-                        )
-                    },
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    state.tabs.forEach { tab ->
-                        val selected = tab.nativeIndex == selectedKey
-                        MarketFloatingTabItem(
-                            selected = selected,
-                            onClick = { onDestinationSelected(tab.nativeIndex) },
-                            icon = tab.icon(),
-                            label = if (showLabel) tab.label else "",
-                            badge = tab.badge,
-                            selectedColor = textSelected,
-                            unselectedColor = textNormal,
-                            indicatorColor = indicatorColor,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * 悬浮底栏的单个入口：自绘矢量图标（随主题着色）+ 可选文字标签 + 可选角标 + Role.Tab 语义。
- * 风格对齐 AritxOnly/HyperModifier 的 MiuiX 悬浮底栏：图标在上、文字在下的 Stacked 布局，
- * 选中态用中性半透明胶囊指示器（暗色白 / 亮色黑），图标与文字随选中态在主色↔次级文本色间平滑过渡。
- */
-@Composable
-private fun MarketFloatingTabItem(
-    selected: Boolean,
-    onClick: () -> Unit,
-    icon: ImageVector?,
-    label: String,
-    badge: Boolean,
-    selectedColor: Color = MiuixTheme.colorScheme.primary,
-    unselectedColor: Color = MiuixTheme.colorScheme.onSurfaceSecondary,
-    indicatorColor: Color = Color.Transparent,
-    modifier: Modifier = Modifier,
-) {
-    val targetColor = if (selected) selectedColor else unselectedColor
-    val contentColor by animateColorAsState(targetValue = targetColor, label = "floatingTabContent")
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(if (selected) indicatorColor else Color.Transparent)
-            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Box(contentAlignment = Alignment.TopEnd) {
-                if (icon != null) {
-                    Image(
-                        imageVector = icon,
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(contentColor),
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
-                if (badge) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(MiuixTheme.colorScheme.error),
-                    )
-                }
-            }
-            if (label.isNotEmpty()) {
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                    color = contentColor,
-                    maxLines = 1,
-                )
-            }
+            FloatingTabBar(
+                items = items,
+                selectedIndex = state.selectedIndex,
+                onSelect = onDestinationSelected,
+                layout = FloatingTabLayout.Stacked,
+                showLabel = showLabel,
+                radius = radius,
+                barColor = barColor,
+                indicatorColor = indicatorColor,
+                contentSelectedColor = textSelected,
+                contentNormalColor = textNormal,
+                modifier = Modifier.navigationBarsPadding(),
+            )
         }
     }
 }

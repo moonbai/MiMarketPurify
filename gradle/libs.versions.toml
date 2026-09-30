@@ -15,6 +15,8 @@ miuixKmp       = "0.9.4"
 # lifecycle-runtime-ktx：提供 find/setViewTreeLifecycleOwner、find/setViewTreeSavedStateRegistryOwner 等
 # ViewTree owner 扩展（ComposeFloatingBarHost / InjectedViewTreeOwner 依赖）。
 lifecycleRuntimeKtx = "2.8.7"
+# ── 新增：HyperModifier 悬浮底栏实际依赖 io.github.kyant0:shapes（提供 Capsule 胶囊形状）──
+kyantShapes    = "1.2.0"
 
 [libraries]
 androidx-core-ktx        = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -38,6 +40,8 @@ androidx-lifecycle-runtime-ktx   = { group = "androidx.lifecycle", name = "lifec
 # miuix-blur-android 提供 rememberLayerBackdrop / layerBackdrop（毛玻璃）
 miuix-ui-android               = { group = "top.yukonga.miuix.kmp", name = "miuix-ui-android", version.ref = "miuixKmp" }
 miuix-blur-android             = { group = "top.yukonga.miuix.kmp", name = "miuix-blur-android", version.ref = "miuixKmp" }
+# ── 新增：HyperModifier 实际依赖 io.github.kyant0:shapes（提供 Capsule 胶囊形状，用于悬浮底栏容器与指示器）──
+kyant-shapes                   = { group = "io.github.kyant0", name = "shapes", version.ref = "kyantShapes" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
