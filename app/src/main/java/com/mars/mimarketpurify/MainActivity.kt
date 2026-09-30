@@ -186,6 +186,7 @@ class MainActivity : SettingsBaseActivity() {
 // 直接采用 MiuiX 官方 FloatingNavigationBar 容器 + FloatingNavigationBarItem：
 // 悬浮圆角胶囊 + 阴影 + 窗口边距 + 配色全部由 MiuiX 方案接管；选中态主色、未选中次级文本色，
 // 与模块其余界面同源。图标沿用 [NavIcons] 自绘矢量（单色、随主题着色、随暗色自动反色）。
+// 需要 miuix-kmp ≥ 0.9.4（rc01 之前的版本无 FloatingNavigationBarItem.colors / navigationBarItemColors）。
 
 @Composable
 private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {

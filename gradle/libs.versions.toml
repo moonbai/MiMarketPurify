@@ -11,7 +11,7 @@ libxposedService = "101.0.0"
 # ── 新增：Compose + Miuix KMP（参考 HyperModifier 悬浮底栏重写）──
 composeBom     = "2025.01.00"
 activityCompose = "1.10.1"
-miuixKmp       = "0.9.4-rc01"
+miuixKmp       = "0.9.4"
 # lifecycle-runtime-ktx：提供 find/setViewTreeLifecycleOwner、find/setViewTreeSavedStateRegistryOwner 等
 # ViewTree owner 扩展（ComposeFloatingBarHost / InjectedViewTreeOwner 依赖）。
 lifecycleRuntimeKtx = "2.8.7"

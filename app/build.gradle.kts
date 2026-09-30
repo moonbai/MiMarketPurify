@@ -23,7 +23,7 @@ val hasReleaseSigning = !signingStoreFile.isNullOrBlank() &&
 
 android {
     namespace = "com.mars.mimarketpurify"
-    // miuix 0.9.4-rc01 及其传递依赖（compose runtime-saveable 1.12.0-rc01、material3-window-size-class
+    // miuix 0.9.4 及其传递依赖（compose runtime-saveable 1.12.0-rc01、material3-window-size-class
     // 1.5.0-alpha22、materialkolor 5.0.0）均要求 compileSdk 37。
     compileSdk = 37
 
@@ -34,7 +34,7 @@ android {
 
     defaultConfig {
         applicationId = "com.mars.mimarketpurify"
-        // miuix-blur-android:0.9.4-rc01 在 Manifest 中声明 minSdk 33，模块必须不低于该值
+        // miuix-blur-android:0.9.4 在 Manifest 中声明 minSdk 33，模块必须不低于该值
         // （Mi Market 实际运行于 HyperOS / Android 14+，即 API 34+，无功能影响）。
         minSdk = 33
         targetSdk = 36
