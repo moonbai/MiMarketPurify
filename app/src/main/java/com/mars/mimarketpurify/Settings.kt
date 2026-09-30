@@ -2,7 +2,6 @@ package com.mars.mimarketpurify
 
 import android.util.Log
 import com.mars.mimarketpurify.TAG
-import io.github.libxposed.api.XposedModule
 import org.xmlpull.v1.XmlPullParser
 import java.io.File
 
@@ -142,6 +141,15 @@ object Settings {
     @Volatile private var remotePrefsCache: android.content.SharedPreferences? = null
     @Volatile private var remotePrefsCachedAt: Long = 0L
 
+    /**
+     * hook 侧注入的远程偏好获取器（由 [HookEnv.setBase] 设置）。
+     * 仅在被 LSPosed 注入的进程内非空；模块自身 App 侧恒为 null，
+     * 因此 App 侧完全不触碰 XposedModule，避免 standalone 模式下类解析失败崩溃。
+     * 类型用函数而非 XposedModule，是为剥离对 io.github.libxposed.api 的硬依赖
+     * （该依赖为 compileOnly，不进 APK）。
+     */
+    internal var remotePrefsProvider: ((String) -> android.content.SharedPreferences?)? = null
+
     private class SpFileCache(
         val mtime: Long,
         val values: Map<String, String>?
@@ -167,7 +175,7 @@ object Settings {
             }
             spFileCache?.values?.get(key)
         }.onFailure {
-            HookEnv.base.log(Log.WARN, TAG, "读取目标 app SP 失败: ${it.message}", null)
+            Log.w(TAG, "读取目标 app SP 失败: ${it.message}")
         }.getOrNull()
     }
 
@@ -200,9 +208,13 @@ object Settings {
             return cached
         }
         val fresh = runCatching {
-            (HookEnv.base as XposedModule).getRemotePreferences(PREFS_GROUP)
+            // 模块自身 App：走 XposedService（随 libxposed.service 打包，始终可用）
+            App.mService?.getRemotePreferences(PREFS_GROUP)
+                // 被 LSPosed 注入的目标 App：走 hook 侧注入的 provider（内部访问 XposedModule，
+                // 仅注入进程可用；App 侧此 provider 为 null，不会触发 XposedModule 加载）
+                ?: remotePrefsProvider?.invoke(PREFS_GROUP)
         }.onFailure { e ->
-            HookEnv.base.log(Log.WARN, TAG, "远程偏好不可用: ${e.message}", null)
+            Log.w(TAG, "远程偏好不可用: ${e.message}")
         }.getOrNull()
         if (fresh != null) {
             remotePrefsCache = fresh

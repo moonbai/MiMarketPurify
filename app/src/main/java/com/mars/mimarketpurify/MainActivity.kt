@@ -86,6 +86,9 @@ class MainActivity : SettingsBaseActivity() {
 
         setContent {
             MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
+                // 观察 service 连接状态：连接后刷新底栏配置（悬浮底栏配色/标签开关等实时生效）
+                @Suppress("UNUSED_VARIABLE")
+                val refresh = refreshSignal.value
                 var tab by remember { mutableStateOf(0) } // 0 = 主页，1 = 关于
                 Column(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
                     Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
