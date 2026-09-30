@@ -162,13 +162,6 @@ fun MainScreen(activity: MainActivity) {
                     checked = activity.readLocal(Settings.KEY_RANK_DEBUG, false),
                     enabled = true,
                 ) { activity.writeRemote(Settings.KEY_RANK_DEBUG, it) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(
-                    title = "检查更新",
-                    summary = "对比 GitHub 最新 Release 版本",
-                    value = "",
-                    enabled = true,
-                ) { activity.checkForUpdates() }
             }
 
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))

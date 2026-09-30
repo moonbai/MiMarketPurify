@@ -184,6 +184,17 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             }
         }
     }
+    SectionHeader("底栏自定义", "注入与个性化底栏入口")
+    GroupCard {
+        PrefSwitch(
+            activity,
+            Settings.KEY_UPDATE_TAB,
+            "底栏更新入口（移花接木）",
+            "在商店底栏注入「更新」入口并直达更新页；悬浮底栏开启时以胶囊内图标呈现，关闭即移除该注入",
+            default = true,
+            enabled = masterOn,
+        )
+    }
     Footer("Tips：隐藏标签后需重启一次应用商店才会生效；悬浮底栏及其参数为实时生效。")
 }
 
@@ -235,8 +246,6 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标，栏体更矮更清爽", enabled = masterOn)
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_BADGE, "显示角标", "悬浮栏同步原生红点/数字角标，受底栏角标净化开关控制", enabled = masterOn)
-            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-            PrefSwitch(activity, Settings.KEY_UPDATE_TAB, "底栏更新入口（移花接木）", "在商店底栏注入「更新」入口；悬浮态下以右侧独立玻璃按钮呈现，点击直达更新页。关闭即移除该注入", default = true, enabled = masterOn)
         }
         GroupCard {
             PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xE6FFFFFF.toInt())

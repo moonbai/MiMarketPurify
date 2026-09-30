@@ -1,8 +1,12 @@
 package com.mars.mimarketpurify.ui.components
 
-import androidx.activity.ComponentActivity
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import com.mars.mimarketpurify.util.UpdateChecker
+import com.mars.mimarketpurify.util.UpdateCheckResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -608,9 +612,46 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 }
             }
 
+            SectionHeader("其他", "")
+            GroupCard {
+                NavRow(
+                    title = "检查更新",
+                    summary = "对比 GitHub 最新 Release 版本",
+                    value = "",
+                    enabled = true,
+                ) { checkForUpdatesManual(activity) }
+            }
+
             Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
         }
     }
+}
+
+/**
+ * 手动检查更新：子线程请求 GitHub Releases，结果回主线程以 Toast 提示；
+ * 发现新版本则直接打开发布页。插件主页与关于页共用（原在 [MainActivity]，现统一收口于此）。
+ */
+private fun checkForUpdatesManual(context: Context) {
+    val activity = context as? ComponentActivity ?: return
+    Thread {
+        val result = UpdateChecker.check()
+        activity.runOnUiThread {
+            when (result) {
+                is UpdateCheckResult.Available -> {
+                    Toast.makeText(context, "发现新版本 v${result.versionName}", Toast.LENGTH_LONG).show()
+                    runCatching {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(result.releaseUrl)))
+                    }
+                }
+
+                is UpdateCheckResult.Latest ->
+                    Toast.makeText(context, "已是最新版本", Toast.LENGTH_SHORT).show()
+
+                is UpdateCheckResult.Unavailable ->
+                    Toast.makeText(context, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }.start()
 }
 
 private data class GroupCardState(val title: String, val subtitle: String)

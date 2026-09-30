@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -106,37 +107,6 @@ class MainActivity : SettingsBaseActivity() {
         maybeCheckUpdateOnFirstLaunch()
     }
 
-    /** 手动检查更新：在子线程请求 GitHub Releases，结果回主线程提示并（若可用）打开发布页。 */
-    internal fun checkForUpdates() {
-        Thread {
-            val result = UpdateChecker.check()
-            runOnUiThread {
-                when (result) {
-                    is UpdateCheckResult.Available -> {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "发现新版本 v${result.versionName}",
-                            Toast.LENGTH_LONG,
-                        ).show()
-                        openRelease(result.releaseUrl)
-                    }
-
-                    is UpdateCheckResult.Latest ->
-                        Toast.makeText(this@MainActivity, "已是最新版本", Toast.LENGTH_SHORT).show()
-
-                    is UpdateCheckResult.Unavailable ->
-                        Toast.makeText(this@MainActivity, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }.start()
-    }
-
-    private fun openRelease(url: String) {
-        runCatching {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-        }
-    }
-
     /** 仅首次启动静默检查一次；在本地 SharedPreferences 记录标记，不依赖远程偏好（service 可能未连）。 */
     private fun maybeCheckUpdateOnFirstLaunch() {
         val prefs = getPreferences(MODE_PRIVATE)
@@ -210,6 +180,7 @@ private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
+        contentAlignment = Alignment.Center,
     ) {
         FloatingTabBar(
             items = items,
@@ -222,6 +193,7 @@ private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
             indicatorColor = indicatorColor,
             contentSelectedColor = textSelected,
             contentNormalColor = textNormal,
+            expandWidth = false,
             modifier = Modifier.navigationBarsPadding(),
         )
     }

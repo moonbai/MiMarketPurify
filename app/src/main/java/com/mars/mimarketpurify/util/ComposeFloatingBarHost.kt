@@ -9,25 +9,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -37,8 +31,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.Icon
-import com.kyant.shapes.Capsule
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -390,11 +382,9 @@ private fun MarketNavigationContent(
         val textNormal = if (state.textNormalArgb == -1) null else Color(state.textNormalArgb)
         val barColor = if (state.barColorArgb == -1) null else Color(state.barColorArgb)
 
-        // 移花接木：TabFilter 注入的原生更新 tab 不再塞进胶囊底栏，改由底栏**右侧独立的
-        // 更新按钮**呈现（对应 HyperModifier 悬浮底栏旁的独立软玻璃动作按钮）。
-        val updateTab = state.tabs.firstOrNull { it.isUpdate }
-        val barTabs = state.tabs.filterNot { it.isUpdate }
-        val items = barTabs.map { tab ->
+        // 全部原生 tab（含「移花接木」注入的更新入口）统一以胶囊内 tab 呈现，
+        // 点击走原生 performClick；不再把更新 tab 剥离成独立按钮（此前会导致移花接木无效）。
+        val items = state.tabs.map { tab ->
             FloatingTabItem(
                 key = tab.nativeIndex.toString(),
                 label = if (showLabel) tab.label else "",
@@ -402,8 +392,6 @@ private fun MarketNavigationContent(
                 badge = tab.badge,
             )
         }
-        // 过滤更新 tab 后下标会错位，这里一律用「原生下标」做映射再回传。
-        val selectedIndexInBar = barTabs.indexOfFirst { it.nativeIndex == state.selectedIndex }
 
         Box(
             modifier = Modifier
@@ -438,8 +426,8 @@ private fun MarketNavigationContent(
             ) {
                 FloatingTabBar(
                     items = items,
-                    selectedIndex = selectedIndexInBar,
-                    onSelect = { index -> barTabs.getOrNull(index)?.let { onDestinationSelected(it.nativeIndex) } },
+                    selectedIndex = state.selectedIndex,
+                    onSelect = { index -> state.tabs.getOrNull(index)?.let { onDestinationSelected(it.nativeIndex) } },
                     layout = FloatingTabLayout.Stacked,
                     showLabel = showLabel,
                     radius = radius,
@@ -450,61 +438,7 @@ private fun MarketNavigationContent(
                     backdrop = backdrop,
                     expandWidth = false,
                 )
-                if (updateTab != null) {
-                    Spacer(Modifier.width(8.dp))
-                    UpdateActionButton(
-                        backdrop = backdrop,
-                        barColor = barColor,
-                        selected = selectedIndexInBar < 0,
-                        contentColor = textSelected ?: (if (dark) Color.White else Color.Black),
-                        onClick = { onDestinationSelected(updateTab.nativeIndex) },
-                    )
-                }
             }
         }
-    }
-}
-
-/**
- * 「移花接木」的独立更新按钮：悬浮底栏开启时，替代原生注入的更新 tab，位于底栏右侧。
- * 参考 HyperModifier 悬浮底栏旁的 RestartScopeGlassButton——同材质、同高度的胶囊动作按钮。
- */
-@Composable
-private fun UpdateActionButton(
-    backdrop: LayerBackdrop?,
-    barColor: Color?,
-    selected: Boolean,
-    contentColor: Color,
-    onClick: () -> Unit,
-) {
-    val scheme = MiuixTheme.colorScheme
-    val isDark = scheme.onSurfaceContainer.luminance() > 0.5f
-    val tint = barColor ?: scheme.surfaceContainer.copy(
-        alpha = if (backdrop != null) {
-            FloatingTabBarDefaults.GlassTintAlpha
-        } else {
-            FloatingTabBarDefaults.BarAlpha
-        },
-    )
-    val highlight = if (selected) {
-        if (isDark) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.08f)
-    } else {
-        Color.Transparent
-    }
-    Box(
-        modifier = Modifier
-            .size(FloatingTabBarDefaults.Height)
-            .floatingGlassSurface(backdrop = backdrop, shape = Capsule(), tint = tint)
-            .clip(Capsule())
-            .background(highlight)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = NavIcons.Update,
-            contentDescription = "更新",
-            tint = contentColor,
-            modifier = Modifier.size(FloatingTabBarDefaults.TabIconSize),
-        )
     }
 }
