@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
@@ -41,6 +40,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.findViewTreeLifecycleOwner
@@ -345,6 +345,19 @@ private fun MarketNavigationContent(
         ?: state.tabs.first().nativeIndex
 
     MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
+        val colors = MiuixTheme.colorScheme
+        // 悬浮底栏外观：优先读用户自定义设置，未设置（-1 = 「恢复默认」）则沿用 MiuiX 主题视觉，
+        // 以「不改动已确认外观」为原则；这些键与 SubSettingsActivity 悬浮底栏配置页一一对应。
+        val radius = Settings.floatingBarRadiusDp().dp
+        val neutralIndicator = if (dark) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.08f)
+        val selBgRaw = Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, -1)
+        val indicatorColor = if (selBgRaw == -1) neutralIndicator else Color(selBgRaw)
+        val textSelRaw = Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, -1)
+        val textSelected = if (textSelRaw == -1) colors.primary else Color(textSelRaw)
+        val textNormRaw = Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, -1)
+        val textNormal = if (textNormRaw == -1) colors.onSurfaceSecondary else Color(textNormRaw)
+        val bgRaw = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, -1)
+        val barColor = if (bgRaw == -1) colors.surfaceContainer.copy(alpha = 0.86f) else Color(bgRaw)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -353,8 +366,8 @@ private fun MarketNavigationContent(
             // 毛玻璃：复用 Miuix 内置模糊，采样缺失时由 FloatingNavigationBar 半透明色块兜底。
             ViewBackdropLayer(backdropSnapshot, backdrop)
             FloatingNavigationBar(
-                color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.86f),
-                cornerRadius = 28.dp,
+                color = barColor,
+                cornerRadius = radius,
                 horizontalOutSidePadding = 0.dp,
                 shadowElevation = 1.dp,
                 showDivider = false,
@@ -386,6 +399,9 @@ private fun MarketNavigationContent(
                             icon = tab.icon(),
                             label = if (showLabel) tab.label else "",
                             badge = tab.badge,
+                            selectedColor = textSelected,
+                            unselectedColor = textNormal,
+                            indicatorColor = indicatorColor,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -397,7 +413,8 @@ private fun MarketNavigationContent(
 
 /**
  * 悬浮底栏的单个入口：自绘矢量图标（随主题着色）+ 可选文字标签 + 可选角标 + Role.Tab 语义。
- * 选中态用中性半透明胶囊背景。
+ * 风格对齐 AritxOnly/HyperModifier 的 MiuiX 悬浮底栏：图标在上、文字在下的 Stacked 布局，
+ * 选中态用中性半透明胶囊指示器（暗色白 / 亮色黑），图标与文字随选中态在主色↔次级文本色间平滑过渡。
  */
 @Composable
 private fun MarketFloatingTabItem(
@@ -406,25 +423,25 @@ private fun MarketFloatingTabItem(
     icon: ImageVector?,
     label: String,
     badge: Boolean,
+    selectedColor: Color = MiuixTheme.colorScheme.primary,
+    unselectedColor: Color = MiuixTheme.colorScheme.onSurfaceSecondary,
+    indicatorColor: Color = Color.Transparent,
     modifier: Modifier = Modifier,
 ) {
-    val colors = MiuixTheme.colorScheme
-    val isDark = colors.onSurface.luminance() > 0.5f
-    val contentColor = if (selected) colors.primary else colors.onSurfaceSecondary
-    val indicatorColor = if (isDark) {
-        Color.White.copy(alpha = 0.14f)
-    } else {
-        Color.Black.copy(alpha = 0.08f)
-    }
+    val targetColor = if (selected) selectedColor else unselectedColor
+    val contentColor by animateColorAsState(targetValue = targetColor, label = "floatingTabContent")
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(CircleShape)
             .background(if (selected) indicatorColor else Color.Transparent)
             .selectable(selected = selected, role = Role.Tab, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
             Box(contentAlignment = Alignment.TopEnd) {
                 if (icon != null) {
                     Image(
@@ -439,7 +456,7 @@ private fun MarketFloatingTabItem(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(colors.error),
+                            .background(MiuixTheme.colorScheme.error),
                     )
                 }
             }
@@ -447,6 +464,7 @@ private fun MarketFloatingTabItem(
                 Text(
                     text = label,
                     fontSize = 10.sp,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                     color = contentColor,
                     maxLines = 1,
                 )
