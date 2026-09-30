@@ -36,8 +36,10 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.mars.mimarketpurify.Settings
 import kotlin.math.roundToInt
 import com.mars.mimarketpurify.TAG
-import com.mars.mimarketpurify.ui.floatingbar.FloatingTabBar
-import com.mars.mimarketpurify.ui.floatingbar.FloatingTabItemData
+import com.mars.mimarketpurify.ui.deadliner.MiuixFloatingTabBar
+import com.mars.mimarketpurify.ui.deadliner.MiuixFloatingTabItem
+import com.mars.mimarketpurify.ui.deadliner.MiuixFloatingTabLayout
+import androidx.compose.ui.graphics.ImageBitmap
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
@@ -301,15 +303,18 @@ private fun MarketNavigationContent(
         state.tabs.firstOrNull { it.nativeIndex == state.selectedIndex } ?: state.tabs.first()
     val selectedKey = selectedTab.nativeIndex.toString()
 
+    // 图标优先取原生 TabView 的实时快照（含状态着色），保证与原 App 视觉一致；
+    // 仅在极端缺失时回退为 1x1 透明 Painter，由 MiuixFloatingTabBar 渲染为无图标项。
+    val transparentPainter = remember { BitmapPainter(ImageBitmap(1, 1)) }
     val items = state.tabs.map { tab ->
         val nativeIcons = tab.icons
-        // 图标优先取原生 TabView 的实时快照（含状态着色），保证与原 App 视觉一致；
-        // 仅在极端缺失时回退为空 Painter（由 FloatingTabBar 渲染为无图标项）。
-        FloatingTabItemData(
+        MiuixFloatingTabItem(
             key = tab.nativeIndex.toString(),
             label = if (Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)) tab.label else "",
-            selectedPainter = nativeIcons?.let { BitmapPainter(it.selected) },
-            unselectedPainter = nativeIcons?.let { BitmapPainter(it.unselected) },
+            selectedIcon = nativeIcons?.let { BitmapPainter(it.selected) } ?: transparentPainter,
+            unselectedIcon = nativeIcons?.let { BitmapPainter(it.unselected) } ?: transparentPainter,
+            // 沿用原生 TabView 图标自带配色（与 AritxOnly/HyperModifier 的 Market 浮底一致）
+            preserveOriginalIconColors = true,
             badge = if (tab.badge) "" else null,
         )
     }
@@ -321,12 +326,13 @@ private fun MarketNavigationContent(
                 .navigationBarsPadding()
                 .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
         ) {
-            FloatingTabBar(
+            MiuixFloatingTabBar(
                 items = items,
                 selectedKey = selectedKey,
-                onItemSelected = { key -> onDestinationSelected(key.toIntOrNull() ?: 0) },
+                onItemSelected = { onDestinationSelected(it.key.toIntOrNull() ?: 0) },
                 backdrop = backdrop,
                 snapshot = backdropSnapshot,
+                layout = MiuixFloatingTabLayout.Stacked,
                 modifier = Modifier
                     .fillMaxWidth()
                     .onGloballyPositioned { coords ->

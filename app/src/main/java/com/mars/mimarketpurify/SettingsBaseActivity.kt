@@ -1,6 +1,5 @@
 package com.mars.mimarketpurify
 
-import android.app.Activity
 import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -16,6 +15,7 @@ import android.widget.Switch
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -23,7 +23,7 @@ import com.mars.mimarketpurify.App.ServiceStateListener
 import com.mars.mimarketpurify.Settings.PREFS_GROUP
 import io.github.libxposed.service.XposedService
 
-abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
+abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener {
 
     protected var service: XposedService? = null
 
@@ -498,7 +498,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
 
     // ==================== 远程偏好 ====================
 
-    protected fun readLocal(key: String, def: Boolean): Boolean {
+    internal fun readLocal(key: String, def: Boolean): Boolean {
         return service?.getRemotePreferences(PREFS_GROUP)?.getBoolean(key, def) ?: def
     }
 
@@ -507,7 +507,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
      * service 为 null 时暂存到 [pendingWrites]，
      * 等 onServiceStateChanged 连接后自动补写。
      */
-    protected fun writeRemote(key: String, value: Boolean) {
+    internal fun writeRemote(key: String, value: Boolean) {
         val prefs = service?.getRemotePreferences(PREFS_GROUP)
         if (prefs == null) {
             // service 未连接：暂存，等连接后补写
@@ -521,18 +521,18 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         }
     }
 
-    protected fun readLocalTabs(): Set<String> {
+    internal fun readLocalTabs(): Set<String> {
         val raw = service?.getRemotePreferences(PREFS_GROUP)
             ?.getString(Settings.KEY_TAB_KEEP, Settings.DEFAULT_TAB_KEEP)
             ?: Settings.DEFAULT_TAB_KEEP
         return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
     }
 
-    protected fun readLocalInt(key: String, def: Int): Int =
+    internal fun readLocalInt(key: String, def: Int): Int =
         service?.getRemotePreferences(PREFS_GROUP)?.getInt(key, def) ?: def
 
     /** 写整型远程偏好；service 未连接时暂存，连接后补写。 */
-    protected fun writeRemoteInt(key: String, value: Int) {
+    internal fun writeRemoteInt(key: String, value: Int) {
         val prefs = service?.getRemotePreferences(PREFS_GROUP)
         if (prefs == null) {
             pendingIntWrites[key] = value
@@ -545,7 +545,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         }
     }
 
-    protected fun writeRemoteString(key: String, value: String) {
+    internal fun writeRemoteString(key: String, value: String) {
         val prefs = service?.getRemotePreferences(PREFS_GROUP)
         if (prefs == null) {
             return
@@ -559,14 +559,14 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
 
     // ==================== 模块自身 ====================
 
-    protected fun isLauncherIconHidden(): Boolean {
+    internal fun isLauncherIconHidden(): Boolean {
         return runCatching {
             packageManager.getComponentEnabledSetting(launcherAlias) ==
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED
         }.getOrDefault(false)
     }
 
-    protected fun applyHideIcon(hide: Boolean) {
+    internal fun applyHideIcon(hide: Boolean) {
         runCatching {
             EntryGuardReceiver.ensureEntryEnabled(this)
             val state = if (hide) {
@@ -647,7 +647,7 @@ abstract class SettingsBaseActivity : Activity(), ServiceStateListener {
         }
     }
 
-    private fun View.tappable(ctx: Activity, rippleRes: Int) {
+    private fun View.tappable(ctx: ComponentActivity, rippleRes: Int) {
         background = ctx.getDrawable(rippleRes)
         isClickable = true
         isFocusable = true

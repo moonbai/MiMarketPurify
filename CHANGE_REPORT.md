@@ -1,158 +1,178 @@
 # Mi Market Purify 优化改动说明
 
-> 针对三个问题：① 主页未做 MiuiX 风格 ② 打包体积过大 ③ 悬浮底栏未用 MiuiX 样式。
-> 全部改动遵循约束：**复用原有架构、不重构整体代码、优先原生 View、新增代码风格与仓库一致、改动最小化**。
+> 针对用户的四个问题：
+> ① 主页看不见内容，需完全重构主页主题；
+> ② 悬浮底栏仍是自建的，未按 AritxOnly/HyperModifier 引入第三方组件；
+> ③ 构建后 APP 体积过大（33M）；
+> ④ 同步参考仓库逻辑，添加检查更新功能。
+>
+> 约束（来自项目说明）：复用原有架构、不重构整体代码、新增代码风格与仓库一致、改动最小化。
+> 其中 ① 与 ② 经与你确认后采用 **"整页改用 Compose"** 与 **"移植 HyperModifier 的 deadliner 浮底组件"** 方案。
 
 ---
 
-## 一、问题 1：主页 MiuiX 风格（含暗色自适应）
+## 一、问题 ③：构建体积过大（33M）
 
-### 根因
-原 `Ui.kt` 维护一套**硬编码浅色配色**（iOS 风卡片圆角、橙色品牌色 `ACCENT = 0xFF0A84FF`、固定文本层级），
-既不跟随系统日/夜主题，也与 MiuiX 的 `lightColorScheme/darkColorScheme` 观感不一致。
-
-### 方案（按你的确认：移除 `Ui.kt`，直接引用 MiuiX 配色）
-1. **删除 `Ui.kt`**，新建 **`MiuiX.kt`**：颜色全部取自 MiuiX 主题，按日/夜动态解析：
-   - 配色函数：`bg / card / onSurface / onSurfaceVariant / outline / outlineVariant / primary / error / onError`
-   - 语义色：`STATE_ACTIVE`、`STATE_ACTIVE_SOFT`、`neutralSoft()`、`primarySoft()`、`SWITCH_TRACK_OFF`、`CHECK_OFF`
-   - 框架无关常量保留：`HOME_TITLE / PAGE_TITLE / SECTION / ROW_TITLE / ROW_SUMMARY / CAPTION / MICRO`、间距与尺寸、`REPO_URL`
-   - 辅助：`isNight()`、`Int.withAlpha()`、`Context.dp/dpf`、`Drawable.tinted(on,off)`（原 `Ui` 的扩展迁移至此，避免删除 `Ui.kt` 后勾选框着色编译失败）
-2. `MainActivity / AboutActivity / SubSettingsActivity / SettingsBaseActivity` 中 `Ui.X` 全部改为 `MiuiX.X`，
-   颜色按 `MiuiX.onSurface(isNight())` 等**运行时按系统主题解析**（原 `Ui.TEXT_PRIMARY`→`onSurface`、`TEXT_SECONDARY`→`onSurfaceVariant`、`TEXT_TERTIARY`→`outline`、`DIVIDER`→`outlineVariant`、`BG`→`bg`、`CARD`→`card`、`ACCENT`→`primary`）。
-3. **暗色自适应**：`AboutActivity` 背景改用 `MiuiX.bg(isNight())` 并补上状态栏图标反色
-   （`WindowCompat...isAppearanceLightStatusBars = !isNight()`），与 `SettingsBaseActivity` 行为对齐。
-4. **品牌橙弃用**：强调色统一改为 MiuiX 的 `primary`（蓝/紫），不再用 `0xFF0A84FF` 硬编码。
-
-### 关键片段（MiuiX.kt 取色）
-```kotlin
-fun onSurface(isNight: Boolean): Int =
-    (if (isNight) darkColorScheme() else lightColorScheme()).onSurface.value.toInt()
-fun primary(isNight: Boolean): Int =
-    (if (isNight) darkColorScheme() else lightColorScheme()).primary.value.toInt()
-```
-### 关键片段（Activity 取色，随暗色切换）
-```kotlin
-// 旧
-setBackgroundColor(Ui.BG); setTextColor(Ui.TEXT_PRIMARY)
-// 新
-setBackgroundColor(MiuiX.bg(isNight())); setTextColor(MiuiX.onSurface(isNight()))
-```
-
----
-
-## 二、问题 2：打包体积过大
-
-### 根因（核心）
-此前 `proguard-rules.pro` 对 Compose / Miuix / 模块自身做了**全量保留**：
-```
--keep class androidx.compose.** { *; }
--keep class top.yukonga.miuix.kmp.** { *; }
--keep class com.mars.mimarketpurify.** { *; }
-```
-R8 因此**完全无法 tree-shake**，再叠加 `-dontobfuscate` / 巨量 keep 规则，才是体积膨胀的真正原因
-（而非 Compose/Miuix 本身——参考项目 HyperModifier 同样用 Compose 也能压住体积）。
+### 根因（本次定位）
+33M 的真因是 **CI 长期只打 `assembleDebug`**——debug 构建不做 R8 混淆 / 不裁剪资源，自然巨大。
+与 Compose / Miuix 本身无关：参考项目 HyperModifier 同样用 Compose + Miuix，但只打 release，
+体积仅几 MB。上一轮"移除 material3 + R8 full mode"的方向被本次推翻——material3 必须重新引入
+（悬浮底栏忠实移植 HyperModifier 组件要直接用 `MaterialTheme`/`Icon`/`Text`），体积改由
+**release 构建的 R8 + shrinkResources** 兜底。
 
 ### 改动
-1. **`app/proguard-rules.pro`**：改为**极简 keep**（与 HyperModifier 一致）——只保留 Xposed 入口子类、
-   libxposed service 公共 API、manifest 声明的 4 个 Activity + App + EntryGuardReceiver；
-   删除全部 `keep class X.** { *; }`。新增 Kotlin/JDK/Log 死代码消除（`assumenosideeffects`）。
-2. **`gradle.properties`**：开启 **R8 full mode**（`android.enableR8.fullMode=true`）——比默认模式更激进地裁剪未引用类/成员。
+1. **`.github/workflows/build.yml`**：`assembleDebug` → **`assembleRelease`**；上传产物改为 `release/*.apk`；
+   产物名 `MiMarketPurify-release`；新增"还原签名密钥"步骤（仅当配置了 `SIGNING_KEY` secret 时执行）。
+2. **`app/proguard-rules.pro`**：对齐 HyperModifier 的极简规则——仅 `-keep` Xposed 入口子类、
+   `io.github.libxposed.service.**`、manifest 声明的 4 个组件 + App + EntryGuardReceiver；
+   仅 `-dontwarn`；**删除** `-repackageclasses` / `-overloadaggressively` / `obf-dictionary` /
+   `-keepattributes` 等激进项；保留 Kotlin/JDK/Log 死代码消除。并删除遗留的 `obf-dict.txt`。
 3. **`app/build.gradle.kts`**：
-   - **移除 `material3`**（全工程仅悬浮底栏用过一处 `Text`），改依赖 `androidx.compose.foundation` 用 `BasicText` 替代，**省下约 1MB+**；
-   - 新增 `resourceConfigurations += listOf("zh-rCN", "en")`，丢弃 Compose/Miuix 等库自带的其余 locale。
-4. **`gradle/libs.versions.toml`**：删除 `material3` 条目，新增 `androidx-compose-foundation`。
+   - **重新引入 `material3`**（BOM 管理版本），用于悬浮底栏与主页 Compose；
+   - release 构建 `isMinifyEnabled = true` + `isShrinkResources = true` 保持不变；
+   - **条件式 release 签名**：仅在 CI 注入 `SIGNING_KEY` / `SIGNING_KEY_ALIAS` /
+     `SIGNING_KEY_PASSWORD` / `SIGNING_PASSWORD` 时才签名（对齐 HyperModifier 方案）。
+     密钥库（base64）在 CI 步骤里解码为 jks，路径经 `-PmimarketSigningStoreFile` 传入；
+     未配置密钥时仍产出已裁剪的**未签名**小体积包（仅无法安装）。
 
 ### 关键片段
-```properties
-# gradle.properties
-android.enableR8.fullMode=true
+```yaml
+# .github/workflows/build.yml
+env:
+  HAS_SIGNING_KEY: ${{ secrets.SIGNING_KEY != '' }}
+# ...
+- name: Restore signing key
+  if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+  run: echo "$SIGNING_KEY" | base64 -d > "$RUNNER_TEMP/mimarket.jks"
+- name: Build Release APK
+  run: |
+    set -o pipefail
+    if [ "$HAS_SIGNING_KEY" = "true" ]; then
+      ./gradlew assembleRelease -PmimarketSigningStoreFile="$RUNNER_TEMP/mimarket.jks" 2>&1 | tee gradle-build.log
+    else
+      ./gradlew assembleRelease 2>&1 | tee gradle-build.log
+    fi
 ```
 ```kotlin
-// app/build.gradle.kts
-resourceConfigurations += listOf("zh-rCN", "en")
-// 依赖：移除 material3，保留
-implementation(libs.androidx.compose.foundation)
+// app/build.gradle.kts（条件式签名）
+val signingStoreFile = providers.gradleProperty("mimarketSigningStoreFile").orNull
+val hasReleaseSigning = !signingStoreFile.isNullOrBlank() && /* alias/密码均非空 */
+// signingConfigs.create("release") { if (hasReleaseSigning) { storeFile=...; ... } }
+// buildTypes.release { if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release") }
 ```
 
 ---
 
-## 三、问题 3：悬浮底栏 MiuiX 样式
+## 二、问题 ②：悬浮底栏改用 HyperModifier 组件
 
-### 结论（同步确认）
-悬浮底栏**本身已在用 MiuiX 样式**，且**已暗色自适应**，并非"没用 miuix 样式"：
-- `ComposeFloatingBarHost.kt` 用 `MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme())`
-  包裹内容，`dark` 由 `LocalConfiguration.uiMode` 读取系统日/夜；
-- `FloatingTabBar.kt` 取色全部走 `MiuixTheme.colorScheme.primary / onSurface / onSurfaceVariant`，
-  毛玻璃优先用 `LayerBackdrop` 快照、否则回退半透明色块。
+### 方案（按你的确认：移植 HyperModifier 的 deadliner 组件）
+参考 HyperModifier `deadliner` 包，移植其 **`MiuixFloatingTabBar`** 到本工程的 `ui/deadliner` 包：
+- `MiuixFloatingTabBar.kt`（组件本体）、`FloatingTabMotion.kt`（动画/数学，逐字移植）、
+  `FloatingNavigationShadow.kt`（投影，用 `Modifier.shadow` 平替其自研 `softGlassShadow`）。
+- **依赖平替**（规避 HyperModifier 的私有/内部依赖，保持改动最小化）：
+  - 玻璃材质：`SoftGlassSurface` / `GlassMaterialRecipe` / `GlassMaterialInteraction`
+    → 改用本工程已有的 **`ViewBackdropLayer` + `LayerBackdrop`** 实时毛玻璃（无快照时回退半透明色块）；
+  - 形状：`com.kyant0:shapes` 的 `Capsule()` → **`RoundedCornerShape(percent = 50)`**（不引入 shapes 库）；
+  - 主题：`AdvancedMaterial` / `MhmPresetColors` 不需要——内容色取自 `MiuixTheme.colorScheme.onSurfaceContainer`，
+    深浅由亮度判定，与宿主 `MiuixTheme(colors=…)` 同源。
+- Market 浮底对齐 HyperModifier 的 `MarketFloatingNavigation`：**`Stacked` 布局（图标在上、文字在下）**，
+  原生图标设 `preserveOriginalIconColors = true`（沿用应用商店自带配色）。
 
-### 打磨（轻量、一致性增强）
-- 未选中项颜色由 `onSurface`（满对比度）改为 **`onSurfaceVariant`**（MiuiX 的静默灰），更贴近 MiuiX 标签栏观感；
-- 角标硬编码 iOS 红 `0xFFFF3B30` 改为 **`theme.error`**（MiuiX 角色色）。
+### 改动文件
+- 删除旧 **`ui/floatingbar/FloatingTabBar.kt`**（原自写标签条）；
+- 新增 `ui/deadliner/{MiuixFloatingTabBar,FloatingTabMotion,FloatingNavigationShadow}.kt`；
+- 改 **`util/ComposeFloatingBarHost.kt`**：`MarketNavigationContent` 改用 `MiuixFloatingTabBar` /
+  `MiuixFloatingTabItem`，图标缺失时回退 1×1 透明 `Painter`，`layout = Stacked`。
 
 ```kotlin
-// ui/floatingbar/FloatingTabBar.kt
-val contentColor = if (selected) theme.primary else theme.onSurfaceVariant
-// ...
-.background(theme.error)   // 原 Color(0xFFFF3B30)
+// util/ComposeFloatingBarHost.kt（节选）
+MiuixFloatingTabBar(
+    items = items, selectedKey = selectedKey,
+    onItemSelected = { onDestinationSelected(it.key.toIntOrNull() ?: 0) },
+    backdrop = backdrop, snapshot = backdropSnapshot,
+    layout = MiuixFloatingTabLayout.Stacked,
+    modifier = Modifier.fillMaxWidth().onGloballyPositioned { /* 毛玻璃取景框 */ },
+)
 ```
 
 ---
 
-## 四、风险点
-1. **MiuiX 字段名（已修复）**：初版 `MiuiX.kt` 按 Material3 命名映射了 `onSurfaceVariant` / `outlineVariant`，
-   但 miuix-kmp `0.9.4-rc01` 的 `Colors` **不含这两个字段**（编译期 `Unresolved reference` 已暴露）。
-   已据 miuix 源码修正为对应真实字段：
-   - `onSurfaceVariant`（次级文本/摘要）→ **`onSurfaceSecondary`**
-   - `outlineVariant`（分割线/未激活底色）→ **`dividerLine`**
-   `MiuiX.kt` 的方法名 `onSurfaceVariant()` / `outlineVariant()` 保留（调用方无需改动），仅内部字段访问改为上述真实字段。
-   `FloatingTabBar.kt` 未选中项取色同步改为 `theme.onSurfaceSecondary`。
-2. **毛玻璃降级**：若宿主 `LayerBackdrop` 采样失败，`FloatingTabBar` 会回退半透明色块（行为不变，仅无真实模糊）。
-3. **R8 full mode**：更激进裁剪，建议首次打包后**真机验证**所有开关/页面/悬浮底栏功能正常（full mode 下偶有反射类被砍的风险，已用显式 `-keep` 兜底 Xposed 入口与 manifest 组件）。
+## 三、问题 ①：主页整页 Compose（修复"看不见内容"）
 
-## 五、测试注意事项
-- [ ] 本地执行 `gradlew assembleRelease`，对比前后 APK 体积（重点验证问题 2 压缩生效）；
-- [ ] 浅色 / 暗色系统主题下分别打开主页、关于页、各子设置页，确认配色、状态栏图标反色正确（问题 1）；
-- [ ] 开启悬浮底栏，验证选中/未选中态取色、角标颜色、毛玻璃效果（问题 3）；
-- [ ] LSPosed 作用域勾选"应用商店"，确认模块入口、远程偏好读写、各 Hook 开关不受影响（R8 full mode 回归）。
+### 根因
+原主页用原生 View 体系，黑屏主因是主题/取色链路在深色或某些 ROM 下未正确生效。
+按你确认，直接 **整页改用 Compose**，用 `MiuixTheme.colorScheme` 统一取色，与悬浮底栏同源。
 
-> ⚠️ 沙箱内**无 Android SDK**（仅 `gradle`/`java`，缺 `sdkmanager`/`ANDROID_HOME`），无法在此真正打包验证；
-> 上述编译级核查（符号引用、import、ProGuard 规则、依赖目录）均已通过，请在本机完成最终 `assembleRelease` 构建与真机回归。
-
-## 六、若 CI 仍报同一行错误：先确认构建源是否含本修复
-
-三次构建失败（`Unresolved reference 'onSurfaceVariant'/'outlineVariant'`）的根因一致：**CI 实际构建的代码未包含本修复**
-（上传的 `MiMarketPurify.zip` 内 `MiuiX.kt:36/44` 仍是旧字段）。本仓库交付的 `MiMarketPurify_modified.zip`
-（与 `/workspace/MiMarketPurify` 工作区）**已含正确修复**，请确认构建用的是修复版，而非旧快照。
-
-若不便整体替换，可直接套用以下**精确补丁**（3 处，方法名不变，仅改内部字段）：
-
-**`app/src/main/java/com/mars/mimarketpurify/MiuiX.kt`**
+### 方案
+- **`SettingsBaseActivity`** 改继承 **`ComponentActivity`**（以支持 `setContent`），并把需跨包访问的
+  偏好读写/隐藏图标等方法提为 `internal`；
+- **`MainActivity.kt`** 重写 `onCreate`：调用 `setContent { MiuixTheme(colors=…) { MainScreen(…) } }`，
+  并设置状态栏图标反色；逻辑方法（`adKeys`/`mineKeys`/`miscKeys`/`countText`/`tabsText`/`tabbarText`/`openPage`）
+  保留为 `internal` 供 Compose 复用；
+- 新增 **`ui/MainScreen.kt`**：完整 Compose 主页——固定顶栏（标题+副标题+"关于"胶囊）、滚动内容区、
+  状态卡（框架连接状态）、总开关、分类入口（广告净化 / 底栏自定义 / 悬浮底栏配置 / 我的页精简 / 其他界面精简）、
+  高级功能（下载超级岛 / 细节修正 / 升级提醒弹窗）、模块功能（隐藏桌面图标 / 调试模式 / 检查更新）。
+  交互对齐原原生页：分组圆角卡片、标题+摘要+开关整行可点、总开关置灰其余行。
+  远程偏好读写、隐藏桌面图标、入口自愈等逻辑全部复用基类，未新增 Hook 或反射。
 
 ```kotlin
-// 原（错误）：
-    fun onSurfaceVariant(isNight: Boolean): Int =
-        (if (isNight) darkColorScheme() else lightColorScheme()).onSurfaceVariant.value.toInt()
-// 改为（正确，映射 miuix 真实字段）：
-    fun onSurfaceVariant(isNight: Boolean): Int =
-        (if (isNight) darkColorScheme() else lightColorScheme()).onSurfaceSecondary.value.toInt()
-
-// 原（错误）：
-    fun outlineVariant(isNight: Boolean): Int =
-        (if (isNight) darkColorScheme() else lightColorScheme()).outlineVariant.value.toInt()
-// 改为（正确）：
-    fun outlineVariant(isNight: Boolean): Int =
-        (if (isNight) darkColorScheme() else lightColorScheme()).dividerLine.value.toInt()
+// MainActivity.kt
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    EntryGuardReceiver.ensureEntryEnabled(this)
+    WindowCompat.getInsetsController(window, window.decorView)
+        ?.isAppearanceLightStatusBars = !isNight()
+    setContent {
+        MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
+            MainScreen(activity = this@MainActivity)
+        }
+    }
+    maybeCheckUpdateOnFirstLaunch()
+}
 ```
 
-**`app/src/main/java/com/mars/mimarketpurify/ui/floatingbar/FloatingTabBar.kt`**（约 168 行）
+---
+
+## 四、问题 ④：检查更新
+
+### 方案（同步参考仓库 + 对齐 HyperModifier 的 UpdateChecker）
+- 新增 **`util/UpdateChecker.kt`**：`UpdateChecker.check()` 读取
+  `https://api.github.com/repos/moonbai/MiMarketPurify/releases/latest`，
+  语义化版本比对（`compareVersions` / `numericSegments`），超时/异常兜底为 `Unavailable`；
+  `UpdateCheckResult` 密封接口：`Available(versionName, releaseUrl)` / `Latest` / `Unavailable`。
+- **`MainActivity`** 新增：
+  - `checkForUpdates()`：手动检查（子线程请求，主线程 Toast 并在有更新时打开发布页）；
+  - `maybeCheckUpdateOnFirstLaunch()`：首次启动静默检查一次（本地 `SharedPreferences` 标记，不依赖远程偏好）；
+- **`ui/MainScreen.kt`** 模块功能分组新增 **"检查更新"** 入口行；
+- **`AndroidManifest.xml`** 新增 `android.permission.INTERNET`（网络请求所需）。
 
 ```kotlin
-// 原（错误）：
-    val contentColor = if (selected) theme.primary else theme.onSurfaceVariant
-// 改为（正确）：
-    val contentColor = if (selected) theme.primary else theme.onSurfaceSecondary
+// util/UpdateChecker.kt（节选）
+object UpdateChecker {
+    private const val LATEST_RELEASE_URL =
+        "https://api.github.com/repos/moonbai/MiMarketPurify/releases/latest"
+    fun check(): UpdateCheckResult = try { /* …比对 BuildConfig.VERSION_NAME… */ }
+        catch (_: Exception) { UpdateCheckResult.Unavailable }
+}
 ```
 
-> miuix-kmp `0.9.4-rc01` 的 `Colors` 数据类**不含** `onSurfaceVariant`/`outlineVariant`，真实字段为
-> `onSurfaceSecondary`（次级文本）与 `dividerLine`（分割线）。其余 miuix 字段
-> （`background`/`surface`/`onSurface`/`outline`/`primary`/`error`/`onError`/`isNight`）在该版本均存在，无需改动。
+---
+
+## 五、风险点 / 注意事项
+1. **MiuiX 字段名（历史坑，已规避）**：miuix-kmp `0.9.4-rc01` 的 `Colors` **不含** `onSurfaceVariant`/`outlineVariant`，
+   真实字段为 `onSurfaceSecondary`（次级文本）与 `dividerLine`（分割线）。本工程 `MiuiX.kt` 的方法名保留
+   `onSurfaceVariant()`/`outlineVariant()`，仅内部改访问真实字段；Compose 侧直接用 `MiuixTheme.colorScheme.onSurfaceSecondary` 等。
+2. **毛玻璃降级**：宿主 `LayerBackdrop` 采样失败时，`MiuixFloatingTabBar` 回退半透明色块（无真实模糊，行为不变）。
+3. **R8 裁剪回归**：release 构建更激进裁剪，建议真机验证所有开关/页面/悬浮底栏（full mode 下偶有反射类被砍风险，
+   已用显式 `-keep` 兜底 Xposed 入口与 manifest 组件）。
+4. **签名**：未配置 `SIGNING_KEY` 等 secret 时，CI 产出的是**未签名** release 包（体积小但无法安装）；
+   配置后即可产出已签名可安装包（你已在仓库 Secrets 中配置，构建会自动签名）。
+5. **沙箱无 Android SDK**：本环境仅 `java`/`gradle`，缺 `sdkmanager`/`ANDROID_HOME`，无法真机打包验证；
+   上述为编译级核查（符号引用、import、ProGuard、依赖、manifest），请在本机/CI 完成最终 `assembleRelease` 与真机回归。
+
+## 六、测试注意事项
+- [ ] 本机/CI 执行 `assembleRelease`，确认产物为已签名、可安装、且体积仅几 MB（问题 ③）；
+- [ ] 浅色/暗色系统主题下分别打开主页，确认整页 Compose 配色、状态栏图标反色正确，内容可见（问题 ①）；
+- [ ] 开启悬浮底栏，验证选中/未选中态、角标、`Stacked` 布局图标+文字、毛玻璃效果（问题 ②）；
+- [ ] 点"检查更新"与首次启动，确认版本比对、Toast 提示、跳转发布页正常（问题 ④）；
+- [ ] LSPosed 作用域勾选"应用商店"，确认模块入口、远程偏好读写、各 Hook 开关不受影响（R8 回归）。

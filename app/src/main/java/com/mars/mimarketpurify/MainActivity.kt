@@ -1,50 +1,42 @@
 package com.mars.mimarketpurify
 
 import android.content.Intent
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Bundle
-import android.view.Gravity
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.CompoundButton
-import io.github.libxposed.service.XposedService
+import android.widget.Toast
+import androidx.activity.compose.setContent
+import androidx.core.view.WindowCompat
+import com.mars.mimarketpurify.util.UpdateCheckResult
+import com.mars.mimarketpurify.util.UpdateChecker
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.darkColorScheme
+import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 /**
- * 程序主页：**顶栏固定 + 内容区滚动**，整体遵循 MiuiX / HyperOS 风格的分组卡片布局。
+ * 程序主页：**整页 Compose**（参考 AritxOnly/HyperModifier 的方案，主页改用 MiuixTheme 渲染）。
  *
- * 主页只保留**高频开关**：广告移除这一组，以及功能增强两项。其余按「同一个页面」
- * 或「带子选项」为维度收进 [SubSettingsActivity]——主页此前近二十行开关需要反复
- * 滚动才能看全，而其中大半属于「我的」页 / 底部标签栏这类局部设置，平时很少动。
+ * 主页只保留**高频开关**：总开关、下载超级岛 / 细节修正 / 升级提醒三个高级功能；
+ * 其余按「同一个页面」或「带子选项」为维度收进 [SubSettingsActivity]。
  *
- * 布局要点：
- * - 根布局为纵向 [LinearLayout]：固定顶栏（标题 / 副标题）+ 下方 ScrollView，
- * 因此标题始终可见，滚动只发生在内容区；
- * - 功能开关按分组放进 [groupCard] 容器，组内不画分隔线、只用少量留白分行，
- * 而不是每行一张独立卡片——这是 HyperOS 设置的标准形态；
- * - 每行的「标题 + 摘要 + 开关」整体可点击，点击整行即翻转开关；
- * - 所有配色、字号、间距、触摸目标尺寸统一取自 [MiuiX]（直接引用 MiuiX 主题取色，
- * 支持日 / 夜模式自适应）。
+ * 顶栏固定 + 内容区滚动的整体结构，以及分组卡片、标题/摘要/开关整行可点的交互，
+ * 均由 `ui/MainScreen.kt` 用 Compose 重写；所有远程偏好读写、入口自愈、隐藏桌面图标等
+ * 逻辑仍复用 [SettingsBaseActivity] 的现有方法，保持改动最小化。
  *
  * 「隐藏桌面图标」不再禁用本 Activity，而是禁用桌面入口 alias，
  * 保证 LSPosed 等框架始终可以打开主页（详见 manifest 注释）。
  */
 class MainActivity : SettingsBaseActivity() {
 
-    private lateinit var titleView: TextView
-    private lateinit var statusCard: LinearLayout
-    private lateinit var statusTitle: TextView
-    private lateinit var statusBody: TextView
-    private lateinit var hideIconSwitch: CompoundButton
+    private const val KEY_FIRST_LAUNCH_CHECKED = "first_launch_update_checked"
 
-    /** 二级页「广告移除」里的 10 个开关，用于在主页入口行显示启用数量 */
-    private val adKeys = listOf(
-        Settings.KEY_SPLASH, 
-        Settings.KEY_MAIN_TAB, 
-        Settings.KEY_HOME_FEED, 
+    /** 二级页「广告移除」里的开关，用于在主页入口行显示启用数量 */
+    internal val adKeys = listOf(
+        Settings.KEY_SPLASH,
+        Settings.KEY_MAIN_TAB,
+        Settings.KEY_HOME_FEED,
         Settings.KEY_SEARCH,
-        Settings.KEY_UPDATE_DL, 
-        Settings.KEY_DETAIL, 
+        Settings.KEY_UPDATE_DL,
+        Settings.KEY_DETAIL,
         Settings.KEY_RANK,
         Settings.KEY_FRUIT,
         Settings.KEY_ENTRANCE,
@@ -52,8 +44,8 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_FLOATING_AD
     )
 
-    /** 二级页「「我的」页」里的开关，用于在主页入口行显示启用数量 */
-    private val mineKeys = listOf(
+    /** 二级页「「我的」页」里的开关 */
+    internal val mineKeys = listOf(
         Settings.KEY_MINE_RECOMMEND,
         Settings.KEY_MINE_OFFICIAL_TAB,
         Settings.KEY_MINE_CLEANUP,
@@ -65,7 +57,7 @@ class MainActivity : SettingsBaseActivity() {
     )
 
     /** 二级页「其他界面净化」里的开关 */
-    private val miscKeys = listOf(
+    internal val miscKeys = listOf(
         Settings.KEY_DETAIL_FEATURED,
         Settings.KEY_UPDATE_HISTORY,
         Settings.KEY_SEARCH_ALSO_VIEW,
@@ -80,247 +72,77 @@ class MainActivity : SettingsBaseActivity() {
         // 入口自愈：曾被旧版本锁出的设备，覆盖安装后自动恢复
         EntryGuardReceiver.ensureEntryEnabled(this)
 
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(MiuiX.bg(isNight()))
-        }
-        setupRoot(header)
+        // 暗色模式：状态栏图标随背景反色（亮色背景→深色图标，暗色背景→浅色图标）
+        WindowCompat.getInsetsController(window, window.decorView)
+            ?.isAppearanceLightStatusBars = !isNight()
 
-        buildHeader(header)
-        buildStatusCard()
-        buildMasterSwitch()
-        buildCategories()
-        buildModuleRow()
-        buildModule()
-        // 首次进入就按已保存的总开关状态刷新一次置灰
-        refreshAll()
-    }
-
-    // ==================== 顶栏与状态卡 ====================
-
-    /** 固定顶栏：大标题 + 副标题 + 右上角强调色胶囊「关于」入口 */
-    private fun buildHeader(header: LinearLayout) {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        val leftTextBlock = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        titleView = TextView(this).apply {
-            text = "Mi Market Purify"
-            textSize = MiuiX.HOME_TITLE
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(MiuiX.onSurface(isNight()))
-        }
-        val subTitleTv = TextView(this).apply {
-            text = "小米应用商店净化与增强"
-            textSize = MiuiX.CAPTION
-            setTextColor(MiuiX.onSurfaceVariant(isNight()))
-            setPadding(0, dp(2), 0, dp(10))
-        }
-
-        leftTextBlock.addView(titleView)
-        leftTextBlock.addView(subTitleTv)
-
-        row.addView(leftTextBlock)
-        row.addView(TextView(this).apply {
-            text = "关于"
-            textSize = MiuiX.CAPTION
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(MiuiX.primary(isNight()))
-            setBackgroundResource(R.drawable.bg_pill_accent)
-            setPadding(dp(14), dp(7), dp(14), dp(7))
-            minimumHeight = dp(40)
-            setMinWidth(dp(64))
-            gravity = Gravity.CENTER
-            isClickable = true
-            isFocusable = true
-            setOnClickListener {
-                startActivity(Intent(this@MainActivity, AboutActivity::class.java))
+        setContent {
+            MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
+                MainScreen(activity = this@MainActivity)
             }
-        })
-        header.addView(row)
-        header.addView(headerDivider())
+        }
+
+        // 首次启动静默检查更新（不弹窗，仅在发现新版本时轻提示）
+        maybeCheckUpdateOnFirstLaunch()
     }
 
-    /** 内容区顶部的激活状态卡 */
-    private fun buildStatusCard() {
-        statusCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(MiuiX.CARD_PAD_H), dp(MiuiX.CARD_PAD_V), dp(MiuiX.CARD_PAD_H), dp(MiuiX.CARD_PAD_V))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = dp(12) }
-            background = softBackground(MiuiX.neutralSoft(isNight()))
-        }
-        statusTitle = TextView(this).apply {
-            text = "正在连接框架…"
-            textSize = MiuiX.ROW_TITLE
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(MiuiX.onSurfaceVariant(isNight()))
-        }
-        statusBody = TextView(this).apply {
-            textSize = MiuiX.ROW_SUMMARY
-            setTextColor(MiuiX.onSurfaceVariant(isNight()))
-            setLineSpacing(0f, 1.4f)
-            setPadding(0, dp(4), 0, 0)
-        }
-        statusCard.addView(statusTitle)
-        statusCard.addView(statusBody)
-        content.addView(statusCard)
+    /** 手动检查更新：在子线程请求 GitHub Releases，结果回主线程提示并（若可用）打开发布页。 */
+    internal fun checkForUpdates() {
+        Thread {
+            val result = UpdateChecker.check()
+            runOnUiThread {
+                when (result) {
+                    is UpdateCheckResult.Available -> {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "发现新版本 v${result.versionName}",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                        openRelease(result.releaseUrl)
+                    }
+
+                    is UpdateCheckResult.Latest ->
+                        Toast.makeText(this@MainActivity, "已是最新版本", Toast.LENGTH_SHORT).show()
+
+                    is UpdateCheckResult.Unavailable ->
+                        Toast.makeText(this@MainActivity, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }.start()
     }
 
-    private fun applyStatusCard(service: XposedService?) {
-        if (service == null) {
-            statusTitle.text = "模块未激活"
-            statusTitle.setTextColor(MiuiX.onSurfaceVariant(isNight()))
-            statusBody.text =
-                "以下开关暂时改不动远程偏好：请在 LSPosed / 框架中启用本模块，" +
-                "并在作用域里勾选「应用商店」，然后重启应用商店。"
-            statusCard.background = softBackground(MiuiX.neutralSoft(isNight()))
-            return
+    private fun openRelease(url: String) {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         }
-        val remote = service.frameworkProperties and XposedService.PROP_CAP_REMOTE != 0L
-        statusTitle.text = "已激活 · ${service.frameworkName} ${service.frameworkVersion}"
-        statusTitle.setTextColor(MiuiX.STATE_ACTIVE)
-        statusBody.text = if (remote) {
-            "支持远程偏好：开关改动实时生效，一般无需重启应用商店。\n\n插件调试基于应用商店版本：4.126.xx，其余版本不保证适用性"
-        } else {
-            "当前框架不支持远程偏好，开关可能不会立即生效，建议重启一次应用商店。"
-        }
-        statusCard.background = softBackground(MiuiX.STATE_ACTIVE_SOFT)
     }
 
-    private fun softBackground(color: Int): GradientDrawable =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dpf(16f)
-        }
-
-    // ==================== 主页内容 ====================
-
-    private fun buildMasterSwitch() {
-        val group = groupCard()
-        group.layoutParams = (group.layoutParams as LinearLayout.LayoutParams).apply {
-            topMargin = dp(12)
-        }
-        addSwitchRow(
-            group = group,
-            title = "总开关",
-            summary = "关闭后所有功能均不生效",
-            checked = readLocal(Settings.KEY_MASTER, true),
-            tag = Settings.KEY_MASTER,
-            gated = false
-        ) { isChecked ->
-            writeRemote(Settings.KEY_MASTER, isChecked)
-            updateGateState()
-        }
-        content.addView(group)
+    /** 仅首次启动静默检查一次；在本地 SharedPreferences 记录标记，不依赖远程偏好（service 可能未连）。 */
+    private fun maybeCheckUpdateOnFirstLaunch() {
+        val prefs = getPreferences(MODE_PRIVATE)
+        if (prefs.getBoolean(KEY_FIRST_LAUNCH_CHECKED, false)) return
+        prefs.edit().putBoolean(KEY_FIRST_LAUNCH_CHECKED, true).apply()
+        Thread {
+            val result = UpdateChecker.check()
+            runOnUiThread {
+                if (result is UpdateCheckResult.Available) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "发现新版本 v${result.versionName}，可前往「检查更新」查看",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+            }
+        }.start()
     }
 
-    /**
-     * 主页只放**分类入口**，具体开关全部收进二级页。
-     */
-    private fun buildCategories() {
-        addSectionHeader("界面设置", "广告与界面内容清理")
-        val uiGroup = groupCard()
-        addNavRow(
-            group = uiGroup,
-            title = "广告净化",
-            summary = "开屏、首页信息流、搜索、下载升级、应用详情等一系列广告",
-            value = { countText(adKeys) }
-        ) { openPage(SubSettingsActivity.PAGE_ADS) }
-    
-        addNavRow(
-            group = uiGroup,
-            title = "底栏自定义",
-            summary = "底部标签筛选",
-            value = { tabsText() }
-        ) { openPage(SubSettingsActivity.PAGE_TABS) }
-    
-        // ====== 悬浮底栏高级配置入口 ======
-        addNavRow(
-            group = uiGroup,
-            title = "悬浮底栏配置",
-            summary = "底栏颜色、透明度、显示效果参数",
-            value = { tabbarText()  }
-        ) { openPage(SubSettingsActivity.PAGE_TAB_BAR) }
-
-        addNavRow(
-            group = uiGroup,
-            title = "「我的」页精简",
-            summary = "我的页应用推荐、官方入口、清理板块",
-            value = { countText(mineKeys) }
-        ) { openPage(SubSettingsActivity.PAGE_MINE) }
-    
-        addNavRow(
-            group = uiGroup,
-            title = "其他界面精简",
-            summary = "升级记录、搜索相关推荐等零散页面",
-            value = { countText(miscKeys) }
-        ) { openPage(SubSettingsActivity.PAGE_MISC) }
-        content.addView(uiGroup)
-    }
-    
-    private fun buildModuleRow() {
-        addSectionHeader("高级功能", "深度净化与功能增强")
-        val advancedGroup = groupCard()
-        addSwitchRow(
-            group = advancedGroup,
-            title = "下载超级岛",
-            summary = "强制让下载进度进入小米超级岛（无视灰度）",
-            checked = readLocal(Settings.KEY_ISLAND, true),
-            tag = Settings.KEY_ISLAND
-        ) { on -> writeRemote(Settings.KEY_ISLAND, on) }
-        addSwitchRow(
-            group = advancedGroup,
-            title = "细节修正",
-            summary = "显示非正版 APP、被隐藏更新等细节处理",
-            checked = readLocal(Settings.KEY_MISC, true),
-            tag = Settings.KEY_MISC
-        ) { on -> writeRemote(Settings.KEY_MISC, on) }
-        addSwitchRow(
-            group = advancedGroup,
-            title = "升级提醒弹窗",
-            summary = "不再弹出应用商店的升级提醒对话框",
-            checked = readLocal(Settings.KEY_UPDATE_DIALOG, true),
-            tag = Settings.KEY_UPDATE_DIALOG
-        ) { on -> writeRemote(Settings.KEY_UPDATE_DIALOG, on) }
-        content.addView(advancedGroup)
-    }
-    private fun buildModule() {
-        addSectionHeader("模块功能", "仅影响本模块的显示方式与调试选项")
-        val moduleGroup = groupCard()
-        hideIconSwitch = addSwitchRow(group = moduleGroup, title = "隐藏桌面图标",
-            summary = "仅移除桌面抽屉中的图标，仍可从 LSPosed 模块列表进入主页",
-            checked = isLauncherIconHidden(), tag = "hide_launcher_icon", gated = false, remote = false
-        ) { hide -> applyHideIcon(hide) }
-        addSwitchRow(group = moduleGroup, title = "调试模式",
-            summary = "用于控制调试模式开启，开启后将统一日志输出且进入榜单会主动提示相关信息，日常使用关闭即可",
-            checked = readLocal(Settings.KEY_RANK_DEBUG, false), tag = Settings.KEY_RANK_DEBUG,
-            gated = false
-        ) { on -> writeRemote(Settings.KEY_RANK_DEBUG, on) }
-        content.addView(moduleGroup)
-        content.addView(TextView(this).apply {
-            text = "Tips：开关实时生效，但还是建议重启应用商店"
-            textSize = MiuiX.MICRO
-            setTextColor(MiuiX.outline(isNight()))
-            setPadding(dp(4), dp(2), dp(4), dp(16))
-        })
-    }
-
-    // ==================== 入口行摘要 ====================
+    // ==================== 入口行摘要（供 MainScreen 复用） ====================
 
     /** 「已启用 2/3」：一眼看出二级页里开了几项 */
-    private fun countText(keys: List<String>): String =
+    internal fun countText(keys: List<String>): String =
         "已启用 ${keys.count { readLocal(it, true) }}/${keys.size}"
 
-    private fun tabsText(): String {
+    internal fun tabsText(): String {
         val parts = mutableListOf<String>()
         if (!readLocal(Settings.KEY_TAB_FILTER, true)) {
             parts += "筛选已关闭"
@@ -328,16 +150,10 @@ class MainActivity : SettingsBaseActivity() {
             val hidden = Settings.TAB_ITEMS.size - readLocalTabs().size
             parts += if (hidden <= 0) "未隐藏" else "已隐藏 $hidden 个"
         }
-        // 悬浮底栏迁移到其他页面，移除悬浮状态展示
         return parts.joinToString(" · ")
     }
-    
-    
-    /**
-     * TabBar状态文本
-     * 悬浮底栏迁移至其他页面，展示当前底栏状态
-     */
-    private fun tabbarText(): String {
+
+    internal fun tabbarText(): String {
         return if (readLocal(Settings.KEY_FLOATING_BAR, true)) {
             "悬浮已开启"
         } else {
@@ -345,20 +161,7 @@ class MainActivity : SettingsBaseActivity() {
         }
     }
 
-    
-    private fun moduleText(): String {
-        val debug = readLocal(Settings.KEY_RANK_DEBUG, false)
-        return if (debug) "调试已开" else "2 项"
-    }
-
-    private fun openPage(page: String) {
+    internal fun openPage(page: String) {
         startActivity(SubSettingsActivity.intent(this, page))
-    }
-
-    // ==================== 刷新 ====================
-
-    override fun onRefresh() {
-        titleView.setTextColor(if (service == null) MiuiX.onSurfaceVariant(isNight()) else MiuiX.onSurface(isNight()))
-        applyStatusCard(service)
     }
 }

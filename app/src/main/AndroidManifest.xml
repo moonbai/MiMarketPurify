@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- 检查更新需要联网读取 GitHub Releases -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!--
         关于「隐藏桌面图标」的实现要点（重要）：
 

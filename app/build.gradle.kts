@@ -5,6 +5,19 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// 条件式 release 签名：仅在 CI 注入了密钥 secret 时才签名（对齐 HyperModifier 的方案）。
+// - SIGNING_KEY（base64 编码的 jks）在 CI 步骤里解码为文件，路径通过 -PmimarketSigningStoreFile 传入；
+// - SIGNING_KEY_ALIAS / SIGNING_KEY_PASSWORD（密钥库密码）/ SIGNING_PASSWORD（别名密码）由环境变量读取。
+// 未注入密钥时打出的 release 包仍是已混淆裁剪的小体积包，只是未签名（无法安装）。
+val signingStoreFile = providers.gradleProperty("mimarketSigningStoreFile").orNull
+val signingKeyAlias = providers.environmentVariable("SIGNING_KEY_ALIAS").orNull
+val signingStorePassword = providers.environmentVariable("SIGNING_KEY_PASSWORD").orNull
+val signingKeyPassword = providers.environmentVariable("SIGNING_PASSWORD").orNull
+val hasReleaseSigning = !signingStoreFile.isNullOrBlank() &&
+    !signingKeyAlias.isNullOrBlank() &&
+    !signingStorePassword.isNullOrBlank() &&
+    !signingKeyPassword.isNullOrBlank()
+
 android {
     namespace = "com.mars.mimarketpurify"
     // miuix 0.9.4-rc01 及其传递依赖（compose runtime-saveable 1.12.0-rc01、material3-window-size-class
@@ -29,10 +42,24 @@ android {
         resourceConfigurations += listOf("zh-rCN", "en")
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasReleaseSigning) {
+                storeFile = File(signingStoreFile!!)
+                storePassword = signingStorePassword!!
+                keyAlias = signingKeyAlias!!
+                keyPassword = signingKeyPassword!!
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -58,13 +85,16 @@ dependencies {
     implementation(libs.ezxhelper.core)
 
     // ── Compose（BOM 统一版本，避免散落版本冲突）──
-    // 注意：不再依赖 material3（全工程仅悬浮底栏用过一处 Text），改用 foundation 的 BasicText，
-    // 可省下 material3 这一大块体积（约 1MB+）。
+    // 复用 HyperModifier 的方案：悬浮底栏 MiuixFloatingTabBar 与主页 Compose 直接依赖
+    // material3 的 MaterialTheme / Icon / Text，故重新引入 material3（BOM 管理版本）。
+    // 体积由 release 构建的 R8 full mode + shrinkResources 兜底（33M 的真因是 CI 打了未混淆的
+    // debug 包，而非 Compose/miuix 本身）。
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.activity.compose)
     debugImplementation("androidx.compose.ui:ui-tooling")
 
