@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -466,13 +465,11 @@ private fun FloatingTabItemContent(
         Text(
             text = item.label,
             color = animatedContentColor,
-            style = when (layout) {
-                MiuixFloatingTabLayout.Horizontal -> MaterialTheme.typography.labelMedium
-                MiuixFloatingTabLayout.Stacked -> MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 10.sp,
-                    lineHeight = 11.sp,
-                )
+            fontSize = when (layout) {
+                MiuixFloatingTabLayout.Horizontal -> 12.sp
+                MiuixFloatingTabLayout.Stacked -> 10.sp
             },
+            lineHeight = if (layout == MiuixFloatingTabLayout.Stacked) 11.sp else 14.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -507,7 +504,7 @@ private fun FloatingTabBadge(
     modifier: Modifier = Modifier,
 ) {
     val shape = MiuixFloatingTabBarDefaults.IndicatorShape
-    val colors = MaterialTheme.colorScheme
+    val colors = MiuixTheme.colorScheme
     if (label.isEmpty()) {
         Box(
             modifier = modifier

@@ -19,8 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -39,9 +37,12 @@ import com.mars.mimarketpurify.App
 import com.mars.mimarketpurify.MainActivity
 import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.Settings
-import com.mars.mimarketpurify.AboutActivity
 import com.mars.mimarketpurify.SubSettingsActivity
 import com.mars.mimarketpurify.isNight
+import com.mars.mimarketpurify.ui.components.GroupCard
+import com.mars.mimarketpurify.ui.components.NavRow
+import com.mars.mimarketpurify.ui.components.SectionHeader
+import com.mars.mimarketpurify.ui.components.SwitchRow
 import io.github.libxposed.service.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -49,15 +50,18 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 主页内容（整页 Compose）。视觉与交互对齐原原生布局：固定顶栏 + 滚动内容区、
  * 分组卡片、标题/摘要/开关整行可点；配色全部取自 [MiuixTheme.colorScheme]，与悬浮底栏同源。
  * 远程偏好读写、隐藏桌面图标等逻辑复用 [MainActivity] / [SettingsBaseActivity] 的方法。
+ *
+ * 卡片 / 开关行 / 导航行 / 区块标题等构件与二级设置页、关于页共用
+ * [com.mars.mimarketpurify.ui.components] 里的同一套实现，避免重复。
  */
 @Composable
-fun MainScreen(activity: MainActivity) {
+fun MainScreen(activity: MainActivity, onOpenAbout: () -> Unit) {
     val colors = MiuixTheme.colorScheme
     val service = rememberServiceState()
     val masterOn = remember { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
 
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        MainHeader(activity = activity, modifier = Modifier.statusBarsPadding())
+        MainHeader(activity = activity, onOpenAbout = onOpenAbout, modifier = Modifier.statusBarsPadding())
 
         HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
 
@@ -200,7 +204,7 @@ private fun rememberServiceState(): XposedService? {
 // ==================== 顶栏 ====================
 
 @Composable
-private fun MainHeader(activity: MainActivity, modifier: Modifier = Modifier) {
+private fun MainHeader(activity: MainActivity, onOpenAbout: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MiuixTheme.colorScheme
     Row(
         modifier = modifier
@@ -226,7 +230,7 @@ private fun MainHeader(activity: MainActivity, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .clip(RoundedCornerShape(percent = 50))
                 .background(Color(MiuiX.primarySoft(activity.isNight())))
-                .clickable { activity.startActivity(android.content.Intent(activity, AboutActivity::class.java)) }
+                .clickable { onOpenAbout() }
                 .padding(horizontal = 14.dp, vertical = 7.dp),
             contentAlignment = Alignment.Center,
         ) {
@@ -286,138 +290,6 @@ private fun StatusCard(service: XposedService?, night: Boolean) {
             color = colors.onSurfaceSecondary,
             lineHeight = (MiuiX.ROW_SUMMARY * MiuiX.LINE_SPACING).sp,
             modifier = Modifier.padding(top = 4.dp),
-        )
-    }
-}
-
-// ==================== 区块标题 ====================
-
-@Composable
-private fun SectionHeader(title: String, subtitle: String) {
-    val colors = MiuixTheme.colorScheme
-    Column(modifier = Modifier.padding(top = MiuiX.SECTION_TOP.dp, bottom = 6.dp)) {
-        Text(
-            text = title,
-            fontSize = MiuiX.SECTION.sp,
-            fontWeight = FontWeight.Bold,
-            color = colors.onSurfaceSecondary,
-        )
-        Text(
-            text = subtitle,
-            fontSize = MiuiX.MICRO.sp,
-            color = colors.outline,
-            modifier = Modifier.padding(start = 4.dp, top = 0.dp),
-        )
-    }
-}
-
-// ==================== 卡片容器 ====================
-
-@Composable
-private fun GroupCard(content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MiuixTheme.colorScheme.surface)
-            .padding(horizontal = MiuiX.ROW_PAD_H.dp, vertical = MiuiX.ROW_PAD_V.dp),
-    ) {
-        content()
-    }
-}
-
-// ==================== 开关行 ====================
-
-@Composable
-private fun SwitchRow(
-    title: String,
-    summary: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    val colors = MiuixTheme.colorScheme
-    var isChecked by remember { mutableStateOf(checked) }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(enabled = enabled) { isChecked = !isChecked; onCheckedChange(isChecked) }
-            .padding(vertical = MiuiX.ROW_PAD_V.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(
-                text = title,
-                fontSize = MiuiX.ROW_TITLE.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (enabled) colors.onSurface else colors.outline,
-            )
-            Text(
-                text = summary,
-                fontSize = MiuiX.ROW_SUMMARY.sp,
-                color = if (enabled) colors.onSurfaceSecondary else colors.outline,
-                modifier = Modifier.padding(top = 2.dp),
-            )
-        }
-        Switch(
-            checked = isChecked,
-            onCheckedChange = { isChecked = it; onCheckedChange(it) },
-            enabled = enabled,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = colors.primary,
-                uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color(MiuiX.SWITCH_TRACK_OFF),
-            ),
-        )
-    }
-}
-
-// ==================== 导航入口行 ====================
-
-@Composable
-private fun NavRow(
-    title: String,
-    summary: String,
-    value: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    val colors = MiuixTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = MiuiX.ROW_PAD_V.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-            Text(
-                text = title,
-                fontSize = MiuiX.ROW_TITLE.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (enabled) colors.onSurface else colors.outline,
-            )
-            Text(
-                text = summary,
-                fontSize = MiuiX.ROW_SUMMARY.sp,
-                color = if (enabled) colors.onSurfaceSecondary else colors.outline,
-                modifier = Modifier.padding(top = 2.dp),
-            )
-        }
-        Text(
-            text = value,
-            fontSize = MiuiX.CAPTION.sp,
-            color = colors.onSurfaceSecondary,
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = "›",
-            fontSize = 20.sp,
-            color = colors.outline,
-            modifier = Modifier.size(20.dp, 20.dp),
         )
     }
 }

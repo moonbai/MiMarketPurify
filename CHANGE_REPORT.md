@@ -216,3 +216,51 @@ Compose 主页用 `MiuixTheme` 自行着色、`forceDarkAllowed` 对它无效，
 - [ ] 开启悬浮底栏，验证选中/未选中态、角标、`Stacked` 布局图标+文字、毛玻璃效果（问题 ②）；
 - [ ] 点"检查更新"与首次启动，确认版本比对、Toast 提示、跳转发布页正常（问题 ④）；
 - [ ] LSPosed 作用域勾选"应用商店"，确认模块入口、远程偏好读写、各 Hook 开关不受影响（R8 回归）。
+
+---
+
+## 八、全局 Compose 统一（主页底栏化 + 子页/关于页 Compose 化 + 悬浮底栏换用 MiuiX 主题）
+
+### 背景
+- 上一轮「主页整页 Compose + 子页保留原生 View」的混合架构，导致 **两套 UI 语汇并存**：
+  原生 `SettingsBaseActivity` 的 `addSwitchRow/addNavRow/groupCard/...` 与 Compose `MainScreen` 的
+  `SwitchRow/NavRow/GroupCard/...` 是同一套卡片/开关/导航的两种实现（即用户感知到的"重复"）。
+- 二级页（子设置页、关于页）因为是原生 View + 字面 `setBackgroundColor`，在小米强制深色模式下
+  仍可能出现"白字白底"；而 Compose 主页由 `MiuixTheme` 主题感知渲染，天然规避该问题。
+- 悬浮底栏（`MiuixFloatingTabBar`）虽已包 `MiuixTheme`，但标签字号与角标颜色仍取自
+  `androidx.compose.material3.MaterialTheme`，与主页 `MiuixTheme.colorScheme` 不一致。
+
+### 改动
+1. **新增 `ui/components/SettingsComponents.kt`（公共 Compose 构件）**：把 `GroupCard / SectionHeader /
+   SwitchRow / NavRow / CheckboxRow / Footer / SubTopBar` 与偏好绑定构件 `PrefSwitch / PrefSlider /
+   PrefColorRow`、以及 `AboutContent` 统一收口到此处。**主页、二级设置页、关于页共用同一套**，
+   从根上消除重复。
+2. **`SubSettingsActivity` 整体 Compose 化**：删除全部原生 View 构建器，改用 `setContent { MiuixTheme { ... } }`，
+   按 `page` 分发到 `AdsScreen/MineScreen/TabsScreen/MiscScreen/TabBarConfigScreen`；
+   同时删除死代码 `buildModule`/`buildExtra` 与孤儿常量 `PAGE_MODULE`/`PAGE_EXTRA`。
+3. **`AboutActivity` 整体 Compose 化**：改为薄壳 `ComponentActivity` + `setContent`，内容复用 `AboutContent`。
+4. **`SettingsBaseActivity` 降为纯逻辑基类**：删除全部原生 UI 构建器、`ColorPickerView` 自定义取色器、
+   相关数据结构与 `updateGateState` 机制；新增 `refreshSignal`（Compose 观察 service 重连以重读偏好）。
+   所有远程偏好读写、service 连接补写、桌面图标隐藏等逻辑原样保留。
+5. **`MainActivity` 底栏化**：主页改为底部标签栏，**一栏「主页」、一栏「关于」**（`AboutContent` 作为第二个标签，
+   与原独立 `AboutActivity` 共用同一内容）；顶栏"关于"按钮改为切换到底栏关于页。
+6. **颜色选择器改用 miuix 组件**：`TabBarConfigScreen` 里的 4 个颜色项改用 `top.yukonga.miuix.kmp.basic.ColorPicker`
+   内嵌于 `AlertDialog`，替换原先自绘的 `ColorPickerView` + 原生 `AlertDialog`。
+7. **悬浮底栏换用 MiuiX 主题**：`MiuixFloatingTabBar` 删除 `MaterialTheme` 依赖——
+   标签字号改用显式 `fontSize`；角标颜色由 `MaterialTheme.colorScheme.{error,onError}` 改为
+   `MiuixTheme.colorScheme.{error,onError}`，与主页同源。
+
+### 配色一致性说明
+- 所有页面配色统一来自 `MiuixTheme.colorScheme`（miuix-kmp `0.9.4-rc01` 的 `Colors`，含
+  `background/surface/onSurface/onSurfaceSecondary/outline/dividerLine/primary/error/onError`）。
+- 二级页/关于页改为 Compose 后，**不再依赖原生 `MiuiX.bg()/card()/onSurface()` 等字面色桥接**，
+  强制深色反色导致"白字白底"的问题一并消除（与之前 `forceDarkAllowed=false` 的修复互不冲突、双重保险）。
+
+### 测试注意事项
+- [ ] `assembleRelease` 编译通过（重点：miuix `ColorPicker(color, onColorChanged)` 签名、各 `MiuixTheme.colorScheme` 字段、material3 控件 `Switch/Checkbox/Slider/AlertDialog` 参数）。
+- [ ] 主页底部标签栏：「主页」「关于」切换正常，关于页内容与独立 `AboutActivity` 一致。
+- [ ] 二级页（广告/我的/标签/其他/悬浮底栏配置）全部 Compose 渲染，深浅色下文字与背景对比清晰、无白字白底。
+- [ ] 悬浮底栏配置页 4 个颜色项点开为 miuix 取色器，选定/恢复默认/取消均正确落盘（#AARRGGBB）。
+- [ ] 悬浮底栏（市场 App 内）标签文字大小、角标红点颜色与原先一致，且不再引用 `MaterialTheme`。
+- [ ] 总开关关闭时，各二级页开关行置灰禁用；底部标签筛选开关关闭时标签勾选区隐藏；悬浮底栏总开关关闭时参数面板收起。
+- [ ] service 重连后，二级页开关状态随远程偏好刷新（依赖 `refreshSignal`）。

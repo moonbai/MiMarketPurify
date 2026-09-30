@@ -5,26 +5,37 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import com.mars.mimarketpurify.util.UpdateCheckResult
 import com.mars.mimarketpurify.ui.MainScreen
+import com.mars.mimarketpurify.ui.components.AboutContent
+import com.mars.mimarketpurify.util.UpdateCheckResult
 import com.mars.mimarketpurify.util.UpdateChecker
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 /**
- * 程序主页：**整页 Compose**（参考 AritxOnly/HyperModifier 的方案，主页改用 MiuixTheme 渲染）。
+ * 程序主页：**整页 Compose**，并采用底部标签栏（主页 / 关于）两种形态。
  *
  * 主页只保留**高频开关**：总开关、下载超级岛 / 细节修正 / 升级提醒三个高级功能；
  * 其余按「同一个页面」或「带子选项」为维度收进 [SubSettingsActivity]。
+ * 「关于」作为底栏第二个标签页，与独立 [AboutActivity] 共用 [AboutContent]。
  *
- * 顶栏固定 + 内容区滚动的整体结构，以及分组卡片、标题/摘要/开关整行可点的交互，
- * 均由 `ui/MainScreen.kt` 用 Compose 重写；所有远程偏好读写、入口自愈、隐藏桌面图标等
- * 逻辑仍复用 [SettingsBaseActivity] 的现有方法，保持改动最小化。
- *
- * 「隐藏桌面图标」不再禁用本 Activity，而是禁用桌面入口 alias，
- * 保证 LSPosed 等框架始终可以打开主页（详见 manifest 注释）。
+ * 所有远程偏好读写、入口自愈、隐藏桌面图标等逻辑仍复用 [SettingsBaseActivity]。
  */
 class MainActivity : SettingsBaseActivity() {
 
@@ -73,13 +84,22 @@ class MainActivity : SettingsBaseActivity() {
         // 入口自愈：曾被旧版本锁出的设备，覆盖安装后自动恢复
         EntryGuardReceiver.ensureEntryEnabled(this)
 
-        // 暗色模式：状态栏图标随背景反色（亮色背景→深色图标，暗色背景→浅色图标）
+        // 暗色模式：状态栏图标随背景反色
         WindowCompat.getInsetsController(window, window.decorView)
             ?.isAppearanceLightStatusBars = !isNight()
 
         setContent {
             MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
-                MainScreen(activity = this@MainActivity)
+                var tab by remember { mutableStateOf(0) } // 0 = 主页，1 = 关于
+                Column(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                        when (tab) {
+                            0 -> MainScreen(activity = this@MainActivity, onOpenAbout = { tab = 1 })
+                            else -> AboutContent(activity = this@MainActivity, onBack = { tab = 0 })
+                        }
+                    }
+                    BottomNavBar(selected = tab) { tab = it }
+                }
             }
         }
 
@@ -164,5 +184,45 @@ class MainActivity : SettingsBaseActivity() {
 
     internal fun openPage(page: String) {
         startActivity(SubSettingsActivity.intent(this, page))
+    }
+}
+
+// ==================== 底部标签栏 ====================
+
+@Composable
+private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
+    val colors = MiuixTheme.colorScheme
+    Column {
+        HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            TabItem(index = 0, label = "主页", selected = selected == 0, onSelect = onSelect)
+            TabItem(index = 1, label = "关于", selected = selected == 1, onSelect = onSelect)
+        }
+    }
+}
+
+@Composable
+private fun TabItem(index: Int, label: String, selected: Boolean, onSelect: (Int) -> Unit) {
+    val colors = MiuixTheme.colorScheme
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .clickable { onSelect(index) }
+            .background(if (selected) Color(MiuiX.primarySoft(true)) else Color.Transparent)
+            .padding(horizontal = 28.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            fontSize = MiuiX.ROW_TITLE.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) colors.primary else colors.outline,
+        )
     }
 }

@@ -2,54 +2,44 @@ package com.mars.mimarketpurify
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.drawable.GradientDrawable
-import android.view.Gravity
-import android.view.View
-import android.widget.CompoundButton
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.Switch
-import android.widget.SeekBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.mars.mimarketpurify.App.ServiceStateListener
 import com.mars.mimarketpurify.Settings.PREFS_GROUP
 import io.github.libxposed.service.XposedService
 
+/**
+ * 设置页的**纯逻辑基类**（不再包含任何原生 View 构建器）。
+ *
+ * 仅保留：Xposed service 连接与重连补写、远程偏好读写、桌面图标隐藏/恢复、入口自愈，
+ * 以及一个供 Compose 页面观察 service 状态的 [refreshSignal]。
+ *
+ * 所有 UI 已迁移到 Compose（见 [com.mars.mimarketpurify.ui.components]），
+ * 原生构建器（addSwitchRow / addNavRow / groupCard / ColorPickerView 等）已删除，
+ * 避免与主页 Compose 形成两套 UI 语汇的重复。
+ */
 abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener {
 
     protected var service: XposedService? = null
 
-    protected lateinit var content: LinearLayout
-
-    protected val gatedRows = mutableListOf<SwitchRow>()
-
-    private val switchEntries = mutableListOf<SwitchEntry>()
-
-    private val navRows = mutableListOf<NavRow>()
-
-    private val sliderEntries = mutableListOf<SliderEntry>()
+    /** service 未连接期间的待写入布尔值，连接后补写。 */
+    private val pendingWrites = mutableMapOf<String, Boolean>()
 
     /** service 未连接期间的待写入整型值，连接后补写。 */
     private val pendingIntWrites = mutableMapOf<String, Int>()
 
+    /**
+     * Compose 页面观察此信号以重新读取偏好。
+     * [onServiceStateChanged] 在补写完待写入项后自增，触发依赖它的 [androidx.compose.runtime.remember] 重新取数。
+     */
+    val refreshSignal = mutableStateOf(0)
+
     protected val launcherAlias: ComponentName by lazy {
         ComponentName(this, "$packageName.LauncherAlias")
     }
-
-    /**
-     * service 断开期间的待写入开关。
-     * writeRemote 发现 service 为 null 时暂存到这里，
-     * onServiceStateChanged 连接后自动补写。
-     */
-    private val pendingWrites = mutableMapOf<String, Boolean>()
 
     // ==================== 生命周期与刷新 ====================
 
@@ -68,433 +58,27 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
         runOnUiThread {
             // 补写 service 断开期间的待写入项
             if (service != null && pendingWrites.isNotEmpty()) {
-                val prefs = service?.getRemotePreferences(PREFS_GROUP)
-                pendingWrites.forEach { (k, v) ->
-                    prefs?.edit()?.putBoolean(k, v)?.apply()
-                }
+                val prefs = service.getRemotePreferences(PREFS_GROUP)
+                pendingWrites.forEach { (k, v) -> prefs?.edit()?.putBoolean(k, v)?.apply() }
                 pendingWrites.clear()
             }
             if (service != null && pendingIntWrites.isNotEmpty()) {
-                val prefs = service?.getRemotePreferences(PREFS_GROUP)
-                pendingIntWrites.forEach { (k, v) ->
-                    prefs?.edit()?.putInt(k, v)?.apply()
-                }
+                val prefs = service.getRemotePreferences(PREFS_GROUP)
+                pendingIntWrites.forEach { (k, v) -> prefs?.edit()?.putInt(k, v)?.apply() }
                 pendingIntWrites.clear()
             }
             refreshAll()
         }
     }
 
-    protected open fun onRefresh() {}
-
-    protected fun refreshAll() {
-        switchEntries.forEach { e -> e.sw.isChecked = readLocal(e.key, e.def) }
-        navRows.forEach { n -> n.value.text = n.compute() }
-        sliderEntries.forEach { e -> e.sync(readLocalInt(e.key, e.def)) }
+    /** 重连 / 外部改动后统一刷新入口；Compose 页面通过 [refreshSignal] 重新取数。 */
+    protected open fun refreshAll() {
         onRefresh()
-        updateGateState()
+        refreshSignal.value++
     }
 
-    // ==================== 布局骨架 ====================
-
-    protected fun setupRoot(header: LinearLayout) {
-        val night = isNight()
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(MiuiX.bg(night))
-        }
-        val scroll = ScrollView(this)
-        content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        scroll.addView(content)
-
-        root.addView(
-            header,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-        root.addView(
-            scroll,
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
-        )
-        setContentView(root)
-
-        // 暗色模式：状态栏图标随背景反色（亮色背景→深色图标，暗色背景→浅色图标）
-        WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = !night
-
-        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
-            val bars = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-            header.setPadding(dp(MiuiX.PAGE_H), dp(MiuiX.PAGE_H) + bars.top, dp(MiuiX.PAGE_H), dp(12))
-            content.setPadding(
-                dp(MiuiX.PAGE_H), dp(6), dp(MiuiX.PAGE_H), dp(MiuiX.PAGE_H) + bars.bottom
-            )
-            insets
-        }
-        ViewCompat.requestApplyInsets(root)
-    }
-
-    protected fun buildSubTopBar(header: LinearLayout, title: String) {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        row.addView(ImageView(this).apply {
-            setImageResource(R.drawable.ic_back)
-            setBackgroundResource(R.drawable.bg_icon_ripple)
-            scaleType = ImageView.ScaleType.CENTER
-            contentDescription = "返回"
-            isClickable = true
-            isFocusable = true
-            layoutParams = LinearLayout.LayoutParams(dp(MiuiX.TOUCH_MIN), dp(MiuiX.TOUCH_MIN)).also {
-                it.marginStart = -dp(12)
-            }
-            setOnClickListener { finish() }
-        })
-        row.addView(TextView(this).apply {
-            text = title
-            textSize = MiuiX.PAGE_TITLE
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(MiuiX.onSurface(isNight()))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.marginStart = -dp(8) }
-        })
-        header.addView(row)
-        header.addView(headerDivider())
-    }
-
-    protected fun headerDivider(): View = View(this).apply {
-        setBackgroundColor(MiuiX.outlineVariant(isNight()))
-        layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            dp(1).coerceAtLeast(1)
-        )
-    }
-
-    protected fun addSectionHeader(
-        title: String,
-        subtitle: String,
-        parent: LinearLayout = content
-    ) {
-        parent.addView(sectionTitle(title))
-        parent.addView(TextView(this).apply {
-            text = subtitle
-            textSize = MiuiX.MICRO
-            setTextColor(MiuiX.outline(isNight()))
-            setPadding(dp(4), 0, 0, dp(6))
-        })
-    }
-
-    // ==================== 功能行 ====================
-
-    protected fun addSwitchRow(
-        group: LinearLayout,
-        title: String,
-        summary: String,
-        checked: Boolean,
-        tag: String,
-        default: Boolean = true,
-        gated: Boolean = true,
-        remote: Boolean = true,
-        onChanged: (Boolean) -> Unit
-    ): CompoundButton {
-        val row = row()
-        val textWrap = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
-            ).also { it.marginEnd = dp(12) }
-        }
-        val titleView = rowTitle(title)
-        val summaryView = rowSummary(summary)
-        textWrap.addView(titleView)
-        textWrap.addView(summaryView)
-
-        val sw = Switch(this).apply {
-            this.tag = tag
-            isChecked = checked
-            setOnCheckedChangeListener { _, isChecked -> onChanged(isChecked) }
-            getDrawable(R.drawable.switch_track)
-                ?.let { trackDrawable = it.tinted(MiuiX.primary(isNight()), MiuiX.SWITCH_TRACK_OFF) }
-            getDrawable(R.drawable.switch_thumb)
-                ?.let { thumbDrawable = it }
-            switchMinWidth = dp(48)
-        }
-
-        row.addView(textWrap)
-        row.addView(sw)
-        row.tappable(this, R.drawable.bg_row_ripple)
-        row.setOnClickListener { sw.toggle() }
-        if (group.childCount > 0) {
-            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(MiuiX.ROW_GAP)
-        }
-        group.addView(row)
-
-        if (remote) switchEntries += SwitchEntry(tag, default, sw)
-        if (gated) gatedRows += SwitchRow(row, sw, titleView, summaryView)
-        return sw
-    }
-
-    /**
-     * 数值调节行（纯原生 SeekBar）：上排「标题 + 当前值」，下排滑杆。
-     * 只在**拖动结束**时落盘，避免 onProgressChanged 每像素打一次 binder 写。
-     */
-    protected fun addSliderRow(
-        group: LinearLayout,
-        title: String,
-        summary: String,
-        key: String,
-        minValue: Int,
-        maxValue: Int,
-        initialValue: Int,
-        defaultValue: Int,
-        gated: Boolean = true,
-        format: (Int) -> String,
-        onChanged: (Int) -> Unit
-    ): SeekBar {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(MiuiX.ROW_PAD_H), dp(MiuiX.ROW_PAD_V), dp(MiuiX.ROW_PAD_H), dp(MiuiX.ROW_PAD_V))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        }
-        val topRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val textWrap = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                .also { it.marginEnd = dp(12) }
-        }
-        val titleView = rowTitle(title)
-        val summaryView = rowSummary(summary)
-        textWrap.addView(titleView)
-        textWrap.addView(summaryView)
-        val valueView = TextView(this).apply {
-            text = format(initialValue)
-            textSize = MiuiX.CAPTION
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(MiuiX.primary(isNight()))
-        }
-
-        topRow.addView(textWrap)
-        topRow.addView(valueView)
-
-        val span = maxValue - minValue
-        val startProgress = (initialValue - minValue).coerceIn(0, span)
-        val seek = SeekBar(this).apply {
-            tag = key
-            max = span
-            progress = startProgress
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                    valueView.text = format(minValue + progress)
-                }
-
-                override fun onStartTrackingTouch(sb: SeekBar?) {}
-
-                override fun onStopTrackingTouch(sb: SeekBar?) {
-                    val v = (sb?.progress ?: 0) + minValue
-                    if (v.coerceIn(minValue, maxValue) != readLocalInt(key, defaultValue)) onChanged(v)
-                }
-            })
-        }
-        row.addView(topRow)
-        row.addView(seek)
-        if (group.childCount > 0) {
-            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(MiuiX.ROW_GAP)
-        }
-        group.addView(row)
-
-        sliderEntries += SliderEntry(key, defaultValue, seek, valueView, minValue, maxValue, format)
-        if (gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
-        return seek
-    }
-
-    protected fun addNavRow(
-        group: LinearLayout,
-        title: String,
-        summary: String,
-        gated: Boolean = true,
-        value: () -> String,
-        onClick: () -> Unit
-    ) {
-        val row = row()
-        val textWrap = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
-            ).also { it.marginEnd = dp(8) }
-        }
-        val titleView = rowTitle(title)
-        val summaryView = rowSummary(summary)
-        textWrap.addView(titleView)
-        textWrap.addView(summaryView)
-
-        val valueView = TextView(this).apply {
-            text = value()
-            textSize = MiuiX.CAPTION
-            setTextColor(MiuiX.onSurfaceVariant(isNight()))
-        }
-        val arrow = ImageView(this).apply {
-            setImageResource(R.drawable.ic_chevron_right)
-            scaleType = ImageView.ScaleType.CENTER
-            layoutParams =
-                LinearLayout.LayoutParams(dp(20), dp(20)).also { it.marginStart = dp(6) }
-        }
-
-        row.addView(textWrap)
-        row.addView(valueView)
-        row.addView(arrow)
-        row.tappable(this, R.drawable.bg_row_ripple)
-        row.setOnClickListener { onClick() }
-        if (group.childCount > 0) {
-            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(MiuiX.ROW_GAP)
-        }
-        group.addView(row)
-
-        navRows += NavRow(valueView, value)
-        if (gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
-    }
-
-    // ===================== 颜色选择行 =====================
-        protected fun addColorPickerRow(
-        group: LinearLayout,
-        title: String,
-        tag: String,
-        defaultColor: Int,
-        gated: Boolean = true
-    ) {
-        val row = row()
-        val textWrap = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
-            ).also { it.marginEnd = dp(12) }
-        }
-        val titleView = rowTitle(title)
-        val summaryView = rowSummary("点击选择颜色（支持 #AARRGGBB 带透明度）")
-        textWrap.addView(titleView)
-        textWrap.addView(summaryView)
-
-        val previewBox = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32))
-        }
-
-        // -1 表示未自定义，预览用 defaultColor（但写入时仍写 -1）
-        fun renderPreview() {
-            val stored = readLocalInt(tag, -1)
-            val shown = if (stored == -1) defaultColor else stored
-            previewBox.background = GradientDrawable().apply {
-                setColor(shown)
-                cornerRadius = dpf(8f)
-            }
-        }
-        renderPreview()
-
-        row.addView(textWrap)
-        row.addView(previewBox)
-        row.tappable(this, R.drawable.bg_row_ripple)
-        row.setOnClickListener {
-            val stored = readLocalInt(tag, -1)
-            val current = if (stored == -1) defaultColor else stored
-            showColorPickerDialog(current, defaultColor) { newColor ->
-                // newColor == defaultColor 视为恢复默认，写 -1
-                writeRemoteInt(tag, newColor)
-                renderPreview()
-            }
-        }
-        if (group.childCount > 0) {
-            (row.layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(MiuiX.ROW_GAP)
-        }
-        group.addView(row)
-        if (gated) gatedRows += SwitchRow(row, null, titleView, summaryView)
-    }
-
-    protected fun showColorPickerDialog(initColor: Int, defaultColor: Int, onPick: (Int) -> Unit) {
-            val rootLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(12), dp(12), dp(8))
-        }
-
-        val picker = ColorPickerView(this).apply {
-            setColor(initColor)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                (300 * resources.displayMetrics.density).toInt()
-            )
-        }
-        rootLayout.addView(picker)
-
-        val inputField = android.widget.EditText(this).apply {
-            hint = "#AARRGGBB"
-            setText(String.format("#%08X", initColor))
-            textSize = 16f
-            gravity = android.view.Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = dp(12) }
-        }
-        rootLayout.addView(inputField)
-
-        picker.onColorChanged = { argb ->
-            inputField.setText(String.format("#%08X", argb))
-        }
-
-        android.app.AlertDialog.Builder(this)
-            .setTitle("选择颜色")
-            .setView(rootLayout)
-            .setPositiveButton("确定") { _, _ ->
-                val raw = inputField.text.toString().trim()
-                val parsed = runCatching {
-                    val clean = if (raw.startsWith("#")) raw.substring(1) else raw
-                    when (clean.length) {
-                        // #AARRGGBB
-                        8 -> {
-                            val a = clean.substring(0, 2).toLong(16)
-                            val r = clean.substring(2, 4).toLong(16)
-                            val g = clean.substring(4, 6).toLong(16)
-                            val b = clean.substring(6, 8).toLong(16)
-                            ((a shl 24) or (r shl 16) or (g shl 8) or b).toInt()
-                        }
-                        // #RRGGBB，默认不透明
-                        6 -> {
-                            val r = clean.substring(0, 2).toLong(16)
-                            val g = clean.substring(2, 4).toLong(16)
-                            val b = clean.substring(4, 6).toLong(16)
-                            (0xFF000000.toInt() or
-                                (r.toInt() shl 16) or (g.toInt() shl 8) or b.toInt())
-                        }
-                        else -> android.graphics.Color.parseColor(raw)
-                    }
-                }.getOrDefault(picker.color)
-                onPick(parsed)
-            }
-            .setNeutralButton("恢复默认") { _, _ -> onPick(-1) }
-            .setNegativeButton("取消", null)
-            .show()
-    }
-
-
-    protected open fun updateGateState() {
-        val master = readLocal(Settings.KEY_MASTER, true)
-        sliderEntries.forEach { it.seek.isEnabled = master }
-        gatedRows.forEach { r ->
-            r.sw?.isEnabled = master
-            r.row.isClickable = master
-            r.row.isFocusable = master
-            r.title.setTextColor(if (master) MiuiX.onSurface(isNight()) else MiuiX.outline(isNight()))
-            r.summary.setTextColor(if (master) MiuiX.onSurfaceVariant(isNight()) else MiuiX.outline(isNight()))
-        }
-    }
+    /** 子类可重写：在刷新时重新同步本地 UI 状态。默认空实现（偏好由 [refreshSignal] 驱动）。 */
+    protected open fun onRefresh() {}
 
     // ==================== 远程偏好 ====================
 
@@ -502,15 +86,9 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
         return service?.getRemotePreferences(PREFS_GROUP)?.getBoolean(key, def) ?: def
     }
 
-    /**
-     * 写远程偏好。
-     * service 为 null 时暂存到 [pendingWrites]，
-     * 等 onServiceStateChanged 连接后自动补写。
-     */
     internal fun writeRemote(key: String, value: Boolean) {
         val prefs = service?.getRemotePreferences(PREFS_GROUP)
         if (prefs == null) {
-            // service 未连接：暂存，等连接后补写
             pendingWrites[key] = value
             return
         }
@@ -531,7 +109,6 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
     internal fun readLocalInt(key: String, def: Int): Int =
         service?.getRemotePreferences(PREFS_GROUP)?.getInt(key, def) ?: def
 
-    /** 写整型远程偏好；service 未连接时暂存，连接后补写。 */
     internal fun writeRemoteInt(key: String, value: Int) {
         val prefs = service?.getRemotePreferences(PREFS_GROUP)
         if (prefs == null) {
@@ -547,9 +124,7 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
 
     internal fun writeRemoteString(key: String, value: String) {
         val prefs = service?.getRemotePreferences(PREFS_GROUP)
-        if (prefs == null) {
-            return
-        }
+        if (prefs == null) return
         runCatching {
             prefs.edit()?.putString(key, value)?.apply()
         }.onFailure {
@@ -562,7 +137,7 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
     internal fun isLauncherIconHidden(): Boolean {
         return runCatching {
             packageManager.getComponentEnabledSetting(launcherAlias) ==
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
         }.getOrDefault(false)
     }
 
@@ -581,298 +156,8 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
                 this,
                 if (hide) "已隐藏桌面图标，可在 LSPosed 模块列表中进入主页"
                 else "已恢复桌面图标",
-                Toast.LENGTH_LONG
+                Toast.LENGTH_LONG,
             ).show()
         }
     }
-
-    // ==================== 工具辅助函数 ====================
-    protected fun dp(value: Int): Int = resources.displayMetrics.density.times(value).toInt()
-    protected fun dpf(value: Float): Float = resources.displayMetrics.density * value
-
-    protected fun row(): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(MiuiX.ROW_PAD_H), dp(MiuiX.ROW_PAD_V), dp(MiuiX.ROW_PAD_H), dp(MiuiX.ROW_PAD_V))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        }
-    }
-
-    protected fun rowTitle(text: String): TextView = TextView(this).apply {
-        this.text = text
-        textSize = MiuiX.ROW_TITLE
-        setTextColor(MiuiX.onSurface(isNight()))
-    }
-
-    protected fun rowSummary(text: String): TextView = TextView(this).apply {
-        this.text = text
-        textSize = MiuiX.ROW_SUMMARY
-        setTextColor(MiuiX.onSurfaceVariant(isNight()))
-        setPadding(0, dp(2), 0, 0)
-    }
-
-    protected fun sectionTitle(text: String): TextView = TextView(this).apply {
-        this.text = text
-        textSize = MiuiX.SECTION
-        setTypeface(null, android.graphics.Typeface.BOLD)
-        setTextColor(MiuiX.onSurfaceVariant(isNight()))
-    }
-
-    protected fun groupCard(): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            background = GradientDrawable().apply {
-                setColor(MiuiX.card(isNight()))
-                cornerRadius = dpf(16f)
-            }
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dp(12)
-            }
-        }
-    }
-
-    // 扩展：drawable 着色
-    private fun android.graphics.drawable.Drawable.tinted(on: Int, off: Int): android.graphics.drawable.Drawable {
-        return mutate().apply {
-            setTintList(android.content.res.ColorStateList(
-                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                intArrayOf(on, off)
-            ))
-        }
-    }
-
-    private fun View.tappable(ctx: ComponentActivity, rippleRes: Int) {
-        background = ctx.getDrawable(rippleRes)
-        isClickable = true
-        isFocusable = true
-    }
-
-    // ===================== 内置颜色取色器（色相条 + SV 面板 + Alpha 条） =====================
-    protected inner class ColorPickerView(context: android.content.Context) : View(context) {
-        private val densityF = resources.displayMetrics.density
-
-        var color: Int = android.graphics.Color.WHITE
-            private set
-        var onColorChanged: ((Int) -> Unit)? = null
-
-        private val hsv = floatArrayOf(0f, 0f, 1f)
-        private var alpha = 255f
-
-        private var svRect = android.graphics.RectF()
-        private var hueRect = android.graphics.RectF()
-        private var alphaRect = android.graphics.RectF()
-
-        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        private var svBitmap: android.graphics.Bitmap? = null
-        private var hueShader: android.graphics.Shader? = null
-        private var alphaShader: android.graphics.Shader? = null
-        private var svBitmapHue = -1f
-
-        private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).also {
-            it.strokeWidth = 1f * densityF
-            it.color = 0x33000000
-            it.style = Paint.Style.STROKE
-        }
-
-        fun setColor(argb: Int) {
-            android.graphics.Color.colorToHSV(argb, hsv)
-            alpha = android.graphics.Color.alpha(argb).toFloat()
-            rebuildAll()
-            invalidate()
-        }
-
-        override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-            super.onSizeChanged(w, h, oldw, oldh)
-            val hueBarW = 26f * densityF
-            val alphaBarH = 26f * densityF
-            svRect.set(0f, 0f, w - hueBarW, h - alphaBarH)
-            hueRect.set(w - hueBarW, 0f, w.toFloat(), h - alphaBarH)
-            alphaRect.set(0f, h - alphaBarH, w.toFloat(), h.toFloat())
-            svBitmapHue = -1f
-            rebuildAll()
-        }
-
-        private fun rebuildAll() {
-            val w = svRect.width().toInt()
-            val h = svRect.height().toInt()
-            if (w <= 0 || h <= 0) return
-
-            if (svBitmap == null || svBitmapHue != hsv[0]) {
-                svBitmap?.recycle()
-                val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
-                val px = IntArray(w * h)
-                for (y in 0 until h) {
-                    val v = 1f - y.toFloat() / (h - 1)
-                    for (x in 0 until w) {
-                        val s = x.toFloat() / (w - 1)
-                        px[y * w + x] = android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], s, v))
-                    }
-                }
-                bmp.setPixels(px, 0, w, 0, 0, w, h)
-                svBitmap = bmp
-                svBitmapHue = hsv[0]
-            }
-
-            hueShader = android.graphics.LinearGradient(
-                0f, hueRect.top, 0f, hueRect.bottom,
-                intArrayOf(
-                    android.graphics.Color.RED, android.graphics.Color.YELLOW,
-                    android.graphics.Color.GREEN, android.graphics.Color.CYAN,
-                    android.graphics.Color.BLUE, android.graphics.Color.MAGENTA,
-                    android.graphics.Color.RED
-                ), null, android.graphics.Shader.TileMode.CLAMP
-            )
-
-            val opaque = android.graphics.Color.HSVToColor(255, hsv)
-            alphaShader = android.graphics.LinearGradient(
-                alphaRect.left, 0f, alphaRect.right, 0f,
-                android.graphics.Color.argb(0,
-                    android.graphics.Color.red(opaque),
-                    android.graphics.Color.green(opaque),
-                    android.graphics.Color.blue(opaque)),
-                opaque, android.graphics.Shader.TileMode.CLAMP
-            )
-            invalidate()
-        }
-
-        private fun refreshAfterSVPan() {
-            val opaque = android.graphics.Color.HSVToColor(255, hsv)
-            alphaShader = android.graphics.LinearGradient(
-                alphaRect.left, 0f, alphaRect.right, 0f,
-                android.graphics.Color.argb(0,
-                    android.graphics.Color.red(opaque),
-                    android.graphics.Color.green(opaque),
-                    android.graphics.Color.blue(opaque)),
-                opaque, android.graphics.Shader.TileMode.CLAMP
-            )
-            invalidate()
-        }
-
-        override fun onDraw(canvas: android.graphics.Canvas) {
-            super.onDraw(canvas)
-            svBitmap?.let { canvas.drawBitmap(it, svRect.left, svRect.top, paint) }
-            canvas.drawRect(svRect, borderPaint)
-            drawHandle(canvas, svRect.left + hsv[1] * svRect.width(),
-                svRect.top + (1f - hsv[2]) * svRect.height())
-
-            paint.shader = hueShader
-            canvas.drawRect(hueRect, paint)
-            paint.shader = null
-            canvas.drawRect(hueRect, borderPaint)
-            drawHandle(canvas, hueRect.centerX(), hueRect.top + (hsv[0] / 360f) * hueRect.height())
-
-            drawCheckerboard(canvas, alphaRect)
-            paint.shader = alphaShader
-            canvas.drawRect(alphaRect, paint)
-            paint.shader = null
-            canvas.drawRect(alphaRect, borderPaint)
-            drawHandle(canvas, alphaRect.left + (alpha / 255f) * alphaRect.width(),
-                alphaRect.centerY())
-        }
-
-        private fun drawCheckerboard(canvas: android.graphics.Canvas, rect: android.graphics.RectF) {
-            val cell = 6f * densityF
-            paint.color = 0xFFDDDDDD.toInt()
-            var row = 0; var y = rect.top
-            while (y < rect.bottom) {
-                var col = 0; var x = rect.left
-                while (x < rect.right) {
-                    if ((row + col) % 2 == 0) canvas.drawRect(x, y, x + cell, y + cell, paint)
-                    x += cell; col++
-                }
-                y += cell; row++
-            }
-        }
-
-        private fun drawHandle(canvas: android.graphics.Canvas, cx: Float, cy: Float) {
-            paint.style = Paint.Style.FILL
-            paint.color = android.graphics.Color.WHITE
-            paint.setShadowLayer(3f * densityF, 0f, 1f, 0x66000000)
-            canvas.drawCircle(cx, cy, 9f * densityF, paint)
-            paint.clearShadowLayer()
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 2f * densityF
-            paint.color = 0xFF333333.toInt()
-            canvas.drawCircle(cx, cy, 9f * densityF, paint)
-            paint.style = Paint.Style.FILL
-        }
-
-        private var dragging = 0
-
-        override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
-            when (event.action) {
-                android.view.MotionEvent.ACTION_DOWN -> {
-                    dragging = when {
-                        alphaRect.contains(event.x, event.y) -> 3
-                        hueRect.contains(event.x, event.y) -> 2
-                        svRect.contains(event.x, event.y) -> 1
-                        else -> 0
-                    }
-                    if (dragging != 0) { updateFromTouch(event.x, event.y); return true }
-                    return false
-                }
-                android.view.MotionEvent.ACTION_MOVE -> {
-                    if (dragging != 0) { updateFromTouch(event.x, event.y); return true }
-                }
-                android.view.MotionEvent.ACTION_UP,
-                android.view.MotionEvent.ACTION_CANCEL -> dragging = 0
-            }
-            return super.onTouchEvent(event)
-        }
-
-        private fun updateFromTouch(x: Float, y: Float) {
-            when (dragging) {
-                1 -> {
-                    hsv[1] = ((x - svRect.left) / svRect.width()).coerceIn(0f, 1f)
-                    hsv[2] = (1f - (y - svRect.top) / svRect.height()).coerceIn(0f, 1f)
-                    refreshAfterSVPan()
-                }
-                2 -> {
-                    hsv[0] = ((y - hueRect.top) / hueRect.height() * 360f).coerceIn(0f, 360f)
-                    rebuildAll()
-                }
-                3 -> {
-                    alpha = ((x - alphaRect.left) / alphaRect.width() * 255f).coerceIn(0f, 255f)
-                    invalidate()
-                }
-            }
-            color = android.graphics.Color.HSVToColor(alpha.toInt(), hsv)
-            onColorChanged?.invoke(color)
-        }
-    }
-
-    // ==================== 数据结构 ====================
-
-    private data class SwitchEntry(val key: String, val def: Boolean, val sw: CompoundButton)
-
-    /** 滑块行登记项：service 重连或外部改动后据此刷新显示值。 */
-    private data class SliderEntry(
-        val key: String,
-        val def: Int,
-        val seek: SeekBar,
-        val valueView: TextView,
-        val min: Int,
-        val max: Int,
-        val format: (Int) -> String,
-    ) {
-        fun sync(v: Int) {
-            seek.progress = (v - min).coerceIn(0, max - min)
-            valueView.text = format(v)
-        }
-    }
-
-    protected data class SwitchRow(
-        val row: LinearLayout,
-        val sw: CompoundButton?,
-        val title: TextView,
-        val summary: TextView
-    )
-
-    private data class NavRow(val value: TextView, val compute: () -> String)
 }
