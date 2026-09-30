@@ -340,6 +340,7 @@ private fun MarketNavigationContent(
         Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     val backdrop = rememberLayerBackdrop()
     val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
+    val bottomMargin = Settings.floatingBarBottomMarginDp()
     val selectedKey = state.tabs.firstOrNull { it.nativeIndex == state.selectedIndex }?.nativeIndex
         ?: state.tabs.first().nativeIndex
 
@@ -347,7 +348,7 @@ private fun MarketNavigationContent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = bottomMargin.dp),
         ) {
             // 毛玻璃：复用 Miuix 内置模糊，采样缺失时由 FloatingNavigationBar 半透明色块兜底。
             ViewBackdropLayer(backdropSnapshot, backdrop)

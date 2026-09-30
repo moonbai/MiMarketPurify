@@ -5,26 +5,20 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.ui.MainScreen
 import com.mars.mimarketpurify.ui.components.AboutContent
 import com.mars.mimarketpurify.util.NavIcons
 import com.mars.mimarketpurify.util.UpdateCheckResult
 import com.mars.mimarketpurify.util.UpdateChecker
-import top.yukonga.miuix.kmp.basic.NavigationBar
+import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
+import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
+import top.yukonga.miuix.kmp.basic.NavigationBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -188,52 +182,38 @@ class MainActivity : SettingsBaseActivity() {
     }
 }
 
-// ==================== 底部标签栏（官方 Miuix NavigationBar 容器）====================
-// 说明：容器采用官方 NavigationBar（圆角 / 分隔线 / 窗口边距 / 配色均为 MiuiX 方案），
-// 内部 item 为自定义实现；图标全部用 [NavIcons] 在代码中自绘的 ImageVector（单色、随主题
-// 着色），不再打包任何商店栅格 WebP，规避 AndResGuard 资源混淆、零维护。
+// ==================== 底部标签栏（MiuiX 悬浮底栏 FloatingNavigationBar）====================
+// 直接采用 MiuiX 官方 FloatingNavigationBar 容器 + FloatingNavigationBarItem：
+// 悬浮圆角胶囊 + 阴影 + 窗口边距 + 配色全部由 MiuiX 方案接管；选中态主色、未选中次级文本色，
+// 与模块其余界面同源。图标沿用 [NavIcons] 自绘矢量（单色、随主题着色、随暗色自动反色）。
 
 @Composable
 private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
-    NavigationBar(showDivider = true) {
-        ProgramNavItem(
+    val colors = MiuixTheme.colorScheme
+    val itemColors = NavigationBarDefaults.navigationBarItemColors(
+        unselectedContentColor = colors.onSurfaceSecondary,
+        selectedContentColor = colors.primary,
+    )
+    FloatingNavigationBar(
+        color = colors.surfaceContainer,
+        cornerRadius = 28.dp,
+        shadowElevation = 2.dp,
+        showDivider = false,
+        defaultWindowInsetsPadding = true,
+    ) {
+        FloatingNavigationBarItem(
             selected = selected == 0,
             onClick = { onSelect(0) },
             icon = NavIcons.Home,
             label = "主页",
+            colors = itemColors,
         )
-        ProgramNavItem(
+        FloatingNavigationBarItem(
             selected = selected == 1,
             onClick = { onSelect(1) },
             icon = NavIcons.Person,
             label = "关于",
+            colors = itemColors,
         )
-    }
-}
-
-@Composable
-private fun RowScope.ProgramNavItem(
-    selected: Boolean,
-    onClick: () -> Unit,
-    icon: ImageVector,
-    label: String,
-) {
-    val colors = MiuixTheme.colorScheme
-    val color = if (selected) colors.primary else colors.onSurfaceSecondary
-    Column(
-        modifier = Modifier
-            .selectable(selected = selected, onClick = onClick, role = Role.Tab)
-            .weight(1f)
-            .padding(vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Image(
-            imageVector = icon,
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(color),
-            modifier = Modifier.size(26.dp),
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(text = label, fontSize = 12.sp, color = color)
     }
 }

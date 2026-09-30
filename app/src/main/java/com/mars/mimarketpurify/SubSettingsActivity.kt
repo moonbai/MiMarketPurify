@@ -257,6 +257,18 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
                 enabled = masterOn,
                 format = { "${it}dp" },
             )
+            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+            PrefSlider(
+                activity,
+                Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN,
+                "距底部高度",
+                "悬浮底栏距屏幕底部的外边距；数值越大越「悬空」，便于避开系统手势区",
+                min = Settings.FLOATING_BOTTOM_MARGIN_MIN,
+                max = Settings.FLOATING_BOTTOM_MARGIN_MAX,
+                default = Settings.FLOATING_BOTTOM_MARGIN_DEFAULT,
+                enabled = masterOn,
+                format = { "${it}dp" },
+            )
         }
         Footer("Tips：底栏背景色可用 #AARRGGBB 自定义透明度（如 #CCFFFFFF），实时生效。")
     }

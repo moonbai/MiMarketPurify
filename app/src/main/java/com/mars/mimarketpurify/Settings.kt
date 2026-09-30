@@ -41,6 +41,8 @@ object Settings {
     const val KEY_FLOATING_BAR_ALPHA = "floating_bar_alpha"
     /** 自定义：底栏圆角半径（dp 整数） */
     const val KEY_FLOATING_BAR_RADIUS = "floating_bar_radius"
+    /** 自定义：悬浮底栏距屏幕底部的外边距（dp 整数），即「悬空高度」，参考 HyperModifier 的 hiddenNavigationLift */
+    const val KEY_FLOATING_BAR_BOTTOM_MARGIN = "floating_bar_bottom_margin"
 
     //===== 悬浮胶囊底栏 外观&手势配置 =====
     const val KEY_FLOAT_BAR_ENABLE = "float_bar_enable"
@@ -80,6 +82,10 @@ object Settings {
     const val FLOATING_RADIUS_MIN = 0
     const val FLOATING_RADIUS_MAX = 29
     const val FLOATING_RADIUS_DEFAULT = 29
+    /** 悬浮底栏到底部外边距可调区间（dp）：0=贴边，上限让「悬空高度」足以避开手势区 */
+    const val FLOATING_BOTTOM_MARGIN_MIN = 0
+    const val FLOATING_BOTTOM_MARGIN_MAX = 48
+    const val FLOATING_BOTTOM_MARGIN_DEFAULT = 4
     const val DEFAULT_TAB_KEEP = "native_market_home,native_market_mine"
     val TAB_ITEMS: LinkedHashMap<String, String> = linkedMapOf(
         "native_market_home" to "首页",
@@ -247,6 +253,11 @@ object Settings {
     fun floatingBarRadiusDp(): Int =
         getInt(KEY_FLOATING_BAR_RADIUS, FLOATING_RADIUS_DEFAULT)
             .coerceIn(FLOATING_RADIUS_MIN, FLOATING_RADIUS_MAX)
+
+    /** 悬浮底栏到底部外边距 dp 值（越界收敛）。 */
+    fun floatingBarBottomMarginDp(): Int =
+        getInt(KEY_FLOATING_BAR_BOTTOM_MARGIN, FLOATING_BOTTOM_MARGIN_DEFAULT)
+            .coerceIn(FLOATING_BOTTOM_MARGIN_MIN, FLOATING_BOTTOM_MARGIN_MAX)
 
     fun getKeptTabs(): Set<String> {
         val raw = getRemotePrefs()?.getString(KEY_TAB_KEEP, DEFAULT_TAB_KEEP)

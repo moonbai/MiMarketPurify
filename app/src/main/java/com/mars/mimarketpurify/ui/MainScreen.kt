@@ -175,7 +175,7 @@ fun MainScreen(activity: MainActivity) {
             Text(
                 text = "Tips：开关实时生效，但还是建议重启应用商店",
                 fontSize = MiuiX.MICRO.sp,
-                color = colors.outline,
+                color = colors.onSurfaceSecondary,
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 16.dp),
             )
         }

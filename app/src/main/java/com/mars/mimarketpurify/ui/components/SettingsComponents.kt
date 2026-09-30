@@ -113,15 +113,20 @@ fun Footer(text: String) {
     Text(
         text = text,
         fontSize = MiuiX.MICRO.sp,
-        color = MiuixTheme.colorScheme.outline,
+        color = MiuixTheme.colorScheme.onSurfaceSecondary,
         modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 16.dp),
     )
 }
 
 // ==================== 子页顶栏（返回 + 标题） ====================
 
+/**
+ * 子页顶栏。`showBack` 控制是否显示左侧返回按钮：
+ * - 二级设置页默认显示（[SubSettingsActivity] 需要返回上一级）；
+ * - 关于页传 `false`，只保留标题，与主页顶栏（无返回键）保持一致。
+ */
 @Composable
-fun SubTopBar(title: String, onBack: () -> Unit) {
+fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
     val colors = MiuixTheme.colorScheme
     Column {
         Row(
@@ -131,21 +136,23 @@ fun SubTopBar(title: String, onBack: () -> Unit) {
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(50))
-                    .clickable { onBack() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "‹",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
-                )
+            if (showBack) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(50))
+                        .clickable { onBack() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "‹",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
             }
-            Spacer(Modifier.width(8.dp))
             Text(
                 text = title,
                 fontSize = MiuiX.PAGE_TITLE.sp,
@@ -452,7 +459,7 @@ private data class RefProject(val repoName: String, val url: String, val label: 
 fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
     val colors = MiuixTheme.colorScheme
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        SubTopBar(title = "关于", onBack = onBack)
+        SubTopBar(title = "关于", showBack = false, onBack = onBack)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -493,7 +500,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                         Text(
                             text = "小米应用商店净化与增强",
                             fontSize = MiuiX.MICRO.sp,
-                            color = colors.outline,
+                            color = colors.onSurfaceSecondary,
                             modifier = Modifier.padding(top = 3.dp),
                         )
                     }
