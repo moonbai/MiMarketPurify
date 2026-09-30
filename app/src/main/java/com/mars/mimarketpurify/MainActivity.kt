@@ -198,7 +198,7 @@ private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, bottom = 10.dp),
+            .padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
     ) {
         FloatingTabBar(
             items = items,

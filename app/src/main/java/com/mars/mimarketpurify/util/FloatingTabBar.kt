@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.shapes.Capsule
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.min
+import kotlin.math.minOf
 import kotlin.math.roundToInt
 
 /**
@@ -135,7 +135,7 @@ fun FloatingTabBar(
     BoxWithConstraints(
         modifier = modifier
             .widthIn(
-                max = min(
+                max = minOf(
                     FloatingTabBarDefaults.MaximumWidth,
                     FloatingTabBarDefaults.MaximumItemWidth * items.size,
                 ),
