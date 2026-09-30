@@ -431,12 +431,14 @@ fun PrefColorRow(
             confirmButton = {
                 TextButton(onClick = {
                     activity.writeRemoteInt(key, pickerColor)
+                    stored = pickerColor
                     open = false
                 }) { Text("确定", color = colors.primary) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     activity.writeRemoteInt(key, -1)
+                    stored = -1
                     open = false
                 }) { Text("恢复默认", color = colors.onSurfaceSecondary) }
             },

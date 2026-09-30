@@ -22,6 +22,9 @@ object TabFilter : BaseHook() {
 
     private const val PURIFY_UPDATE = "purify_update"
 
+    /** 移花接木（底栏更新入口）总开关，与 [Settings.KEY_UPDATE_TAB] / 悬浮底栏配置页开关一致。 */
+    private fun updateEntryEnabled(): Boolean = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
+
     private var tabField: Field? = null
     private var tabsField: Field? = null // 缓存 PageConfig.tabs 字段引用，避免每次触发都 getDeclaredField
     private var cachedPageConfig: Any? = null
@@ -76,10 +79,14 @@ object TabFilter : BaseHook() {
                 }
                 debugLog("alreadyHas=$alreadyHas")
                 if (!alreadyHas) {
-                    val tabInfo = ensurePurifyTab()
-                    if (tabInfo != null) {
-                        tabs.add(tabInfo)
-                        debugLog("注入 purify_update! tabs.size=${tabs.size}")
+                    if (!updateEntryEnabled()) {
+                        debugLog("移花接木更新入口已关闭，跳过注入")
+                    } else {
+                        val tabInfo = ensurePurifyTab()
+                        if (tabInfo != null) {
+                            tabs.add(tabInfo)
+                            debugLog("注入 purify_update! tabs.size=${tabs.size}")
+                        }
                     }
                 }
             }
@@ -120,6 +127,7 @@ object TabFilter : BaseHook() {
             val tab = tabs[index] ?: return@hooked result
             val tag = runCatching { tabField?.get(tab) as? String ?: tab.invokeAs<String>("getTag") }.getOrNull()
             if (tag != PURIFY_UPDATE) return@hooked result
+            if (!updateEntryEnabled()) return@hooked result
 
             val args = Bundle()
             args.putString("url", "market://update")
@@ -180,6 +188,7 @@ object TabFilter : BaseHook() {
                     tabField?.get(result) as? String ?: result.invokeAs<String>("getTag")
                 }.getOrNull() else null
                 if (resultTag == PURIFY_UPDATE) return@hooked result
+                if (!updateEntryEnabled()) return@hooked result
                 val tabsSize = getTabsSize()
                 if (tabsSize > 0 && index == tabsSize) {
                     debugLog("getTabInfo($index): purify_update (tabs.size=$tabsSize)")
@@ -192,19 +201,19 @@ object TabFilter : BaseHook() {
 
         runCatching { findMethod(clazz, "getTabIndexFromTag", 1)?.hooked {
             val tag = args[0] as? String
-            if (tag == PURIFY_UPDATE) return@hooked getTabsSize()
+            if (tag == PURIFY_UPDATE && updateEntryEnabled()) return@hooked getTabsSize()
             return@hooked proceed()
         } }
 
         runCatching { findMethod(clazz, "isTabValid", 1)?.hooked {
             val index = args[0] as? Int ?: return@hooked proceed()
-            if (getTabsSize() > 0 && index == getTabsSize()) return@hooked true
+            if (getTabsSize() > 0 && index == getTabsSize() && updateEntryEnabled()) return@hooked true
             return@hooked proceed()
         } }
 
         runCatching { findMethod(clazz, "toValidTabIndex", 1)?.hooked {
             val index = args[0] as? Int ?: return@hooked proceed()
-            if (getTabsSize() > 0 && index == getTabsSize()) return@hooked index
+            if (getTabsSize() > 0 && index == getTabsSize() && updateEntryEnabled()) return@hooked index
             return@hooked proceed()
         } }
     }

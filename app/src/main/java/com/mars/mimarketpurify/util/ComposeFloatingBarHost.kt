@@ -181,6 +181,13 @@ class ComposeFloatingBarHost private constructor(
             if (navigationBarPlaceholder?.visibility != View.GONE) {
                 navigationBarPlaceholder?.visibility = View.GONE
             }
+            // 崩溃兜底：被「移花接木」注入的原生「更新」tab 在部分商店版本下，其无障碍节点
+            // createAccessibilityNodeInfo 会尝试解析一个不存在的字符串资源而抛
+            // Resources$NotFoundException（见 AppErrorsTracking 上报）。悬浮态下该 tab 已被
+            // 独立更新按钮替代，这里直接将其重要度降级，阻止无障碍预取其虚拟节点。
+            NativeTabBar.tabViewsOf(nativeTabLayout)
+                .firstOrNull { NativeTabBar.tagOf(it) == UPDATE_TAB_TAG }
+                ?.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         } else {
             originalBottomContainer.alpha = originalBottomAlpha
             originalBottomContainer.importantForAccessibility = originalBottomA11y
@@ -197,7 +204,26 @@ class ComposeFloatingBarHost private constructor(
             nativeTabLayout.visibility == View.VISIBLE &&
             basicModeContainer?.visibility != View.VISIBLE &&
             tabs.size > 1
-        val next = MarketNavigationState(tabs = tabs, selectedIndex = selected, visible = visible)
+        // 实时读取外观配置，纳入 state 相等性判断——配置变化即触发重组，颜色/圆角/间距即时生效。
+        val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
+        val radiusDp = Settings.floatingBarRadiusDp()
+        val bottomMarginDp = Settings.floatingBarBottomMarginDp()
+        val barColorArgb = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, -1)
+        val indicatorColorArgb = Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, -1)
+        val textSelectedArgb = Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, -1)
+        val textNormalArgb = Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, -1)
+        val next = MarketNavigationState(
+            tabs = tabs,
+            selectedIndex = selected,
+            visible = visible,
+            showLabel = showLabel,
+            radiusDp = radiusDp,
+            bottomMarginDp = bottomMarginDp,
+            barColorArgb = barColorArgb,
+            indicatorColorArgb = indicatorColorArgb,
+            textSelectedArgb = textSelectedArgb,
+            textNormalArgb = textNormalArgb,
+        )
         val selectionChanged = next.selectedIndex != state.selectedIndex
         val becameVisible = next.visible && !state.visible
         if (next != state) state = next
@@ -309,6 +335,14 @@ private data class MarketNavigationState(
     val tabs: List<MarketTabState> = emptyList(),
     val selectedIndex: Int = 0,
     val visible: Boolean = false,
+    // 外观配置：纳入相等性判断，配置变化即触发重组，使「悬浮底栏配置」页的改动返回商店后即时生效。
+    val showLabel: Boolean = true,
+    val radiusDp: Int = 29,
+    val bottomMarginDp: Int = 4,
+    val barColorArgb: Int = -1,
+    val indicatorColorArgb: Int = -1,
+    val textSelectedArgb: Int = -1,
+    val textNormalArgb: Int = -1,
 )
 
 /**
@@ -343,23 +377,18 @@ private fun MarketNavigationContent(
     val dark = (LocalConfiguration.current.uiMode and
         Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     val backdrop = rememberLayerBackdrop()
-    val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
-    val bottomMargin = Settings.floatingBarBottomMarginDp()
+    val showLabel = state.showLabel
+    val bottomMargin = state.bottomMarginDp
 
     MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
         val colors = MiuixTheme.colorScheme
-        // 悬浮底栏外观：优先读用户自定义设置，未设置（-1 = 「恢复默认」）则沿用 MiuiX / HyperModifier
-        // 中性视觉（暗色白 / 亮色黑），以「不改动已确认外观」为原则；这些键与 SubSettingsActivity
-        // 悬浮底栏配置页一一对应。
-        val radius = Settings.floatingBarRadiusDp().dp
-        val selBgRaw = Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, -1)
-        val indicatorColor = if (selBgRaw == -1) null else Color(selBgRaw)
-        val textSelRaw = Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, -1)
-        val textSelected = if (textSelRaw == -1) null else Color(textSelRaw)
-        val textNormRaw = Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, -1)
-        val textNormal = if (textNormRaw == -1) null else Color(textNormRaw)
-        val bgRaw = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, -1)
-        val barColor = if (bgRaw == -1) null else Color(bgRaw)
+        // 外观配置统一取自 state：由 syncNativeState 实时读取并纳入相等性判断，
+        // 因此「悬浮底栏配置」页的改动在返回商店后立即生效，无需重启。
+        val radius = state.radiusDp.dp
+        val indicatorColor = if (state.indicatorColorArgb == -1) null else Color(state.indicatorColorArgb)
+        val textSelected = if (state.textSelectedArgb == -1) null else Color(state.textSelectedArgb)
+        val textNormal = if (state.textNormalArgb == -1) null else Color(state.textNormalArgb)
+        val barColor = if (state.barColorArgb == -1) null else Color(state.barColorArgb)
 
         // 移花接木：TabFilter 注入的原生更新 tab 不再塞进胶囊底栏，改由底栏**右侧独立的
         // 更新按钮**呈现（对应 HyperModifier 悬浮底栏旁的独立软玻璃动作按钮）。

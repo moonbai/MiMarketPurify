@@ -91,10 +91,10 @@ object FloatingTabBarDefaults {
     val IndicatorShape: Shape = Capsule()
 
     /** 无毛玻璃时的默认容器背景不透明度——刻意偏低，保证「背景透明」。 */
-    const val BarAlpha = 0.55f
+    const val BarAlpha = 0.4f
 
     /** 毛玻璃（有 backdrop）时叠在模糊层上的着色不透明度。 */
-    const val GlassTintAlpha = 0.42f
+    const val GlassTintAlpha = 0.28f
 
     /** 默认背景模糊半径（像素）。 */
     const val BlurRadiusPx = 28f

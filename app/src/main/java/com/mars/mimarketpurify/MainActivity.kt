@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.ui.MainScreen
@@ -195,6 +196,13 @@ private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
         FloatingTabItem(key = "home", label = "主页", icon = NavIcons.Home),
         FloatingTabItem(key = "about", label = "关于", icon = NavIcons.Person),
     )
+    // 与商店悬浮底栏共享同一套配置（颜色 / 圆角 / 标签），确保视觉一致、外观统一。
+    val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
+    val radius = Settings.floatingBarRadiusDp().dp
+    val barColor = run { val v = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, -1); if (v == -1) null else Color(v) }
+    val indicatorColor = run { val v = Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, -1); if (v == -1) null else Color(v) }
+    val textSelected = run { val v = Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, -1); if (v == -1) null else Color(v) }
+    val textNormal = run { val v = Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, -1); if (v == -1) null else Color(v) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -205,6 +213,12 @@ private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
             selectedIndex = selected,
             onSelect = onSelect,
             layout = FloatingTabLayout.Stacked,
+            showLabel = showLabel,
+            radius = radius,
+            barColor = barColor,
+            indicatorColor = indicatorColor,
+            contentSelectedColor = textSelected,
+            contentNormalColor = textNormal,
             modifier = Modifier.navigationBarsPadding(),
         )
     }
