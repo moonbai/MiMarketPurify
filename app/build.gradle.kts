@@ -68,11 +68,15 @@ android {
                 "proguard-rules.pro"
             )
         }
-        packaging {
-            resources {
-                excludes += "**"
-                merges += "META-INF/xposed/*"
-            }
+    }
+
+    // 保留 libxposed 在编译期生成的模块入口注册文件（META-INF/xposed/*）。
+    // 该文件按入口类的【原类名】登记，release 混淆后必须仍能被框架找到，
+    // 否则会出现「全部 hook 失效」。先排除全部资源再单独 merge 回 xposed 注册文件。
+    packaging {
+        resources {
+            excludes += "**"
+            merges += "META-INF/xposed/*"
         }
     }
     compileOptions {

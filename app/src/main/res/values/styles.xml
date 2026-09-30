@@ -9,6 +9,14 @@
     <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#FFF2F2F7</item>
         <item name="android:colorPrimary">#FFFF6B35</item>
+        <!--
+            关键修复：禁用系统「强制深色模式」对本活动的反色。
+            本模块 UI 用 MiuiX 自行着色（setBackgroundColor + onSurface 等），
+            强制深色会把自定义文本反成白色、却不反 setBackgroundColor 的纯色，
+            导致「白字白底看不见内容」。Compose 主页因 MiuixTheme 不受此影响，
+            原生子页 / 关于页受影响。关掉后由 isNight() 自行决定明暗，不再被系统反色。
+        -->
+        <item name="android:forceDarkAllowed">false</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>

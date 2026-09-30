@@ -6,12 +6,11 @@
 # 来裁剪，这里只保留「反射入口」与「manifest 组件」，其余一律放开混淆与裁剪。
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Xposed 入口：libxposed 通过反射实例化并调用，必须保留类名与方法签名
--keep,allowobfuscation,allowoptimization public class * extends com.mars.mimarketpurify.init.EasyXposedInit {
-    public <init>(...);
-    public void onPackageLoaded(...);
-    public void onSystemServerLoaded(...);
-}
+# Xposed 入口：libxposed 在【编译期】把入口类的【原类名】写入 META-INF/xposed/*，
+# 运行时按该原类名反射加载。因此【严禁 allowobfuscation】——一旦 R8 把 MainHook 重命名，
+# 框架就找不到入口，结果就是「全部 hook 失效」。
+# 这里保留类名与全部成员（不混淆、不重命名），保证入口可被框架按原类名找到。
+-keep public class * extends com.mars.mimarketpurify.init.EasyXposedInit { *; }
 
 # libxposed service：模块 App 侧通过它写入远程偏好，保留其公共 API
 -keep class io.github.libxposed.service.** { *; }

@@ -158,7 +158,47 @@ object UpdateChecker {
 
 ---
 
-## 五、风险点 / 注意事项
+## 五、回归修复：release 构建后的两个运行期问题
+
+上一轮改为 `assembleRelease` + R8 混淆后，真机出现两类运行期问题，已修复。
+
+### 5.1 所有子界面 / 关于页白色字体、看不见内容
+
+### 根因
+`AppTheme` 是 `Theme.Material.Light.NoActionBar`（**视图层亮色主题**）。小米 / HyperOS 的
+**强制深色模式**会对此类"未声明深色感知"的活动做反色：把自定义着色的**文本**反成白色，却
+**不反** `setBackgroundColor(White)` 这种纯色背景 → 最终"白字白底"不可见。
+Compose 主页用 `MiuixTheme` 自行着色、`forceDarkAllowed` 对它无效，所以**主页正常、原生子页异常**——
+这正好对应"主页能看、子页白字"的现象。
+
+### 改动
+1. **`app/src/main/res/values/styles.xml`**：`AppTheme` 增加
+   `<item name="android:forceDarkAllowed">false</item>`，禁止系统强制深色对本活动反色；
+   明暗改由 `isNight()` 自行决定（浅色主题下也按系统深色渲染）。
+2. **`app/src/main/java/com/mars/mimarketpurify/MiuiX.kt`**：`isNight()` 改为
+   **优先用 `UiModeManager` 读取系统深色设置**，回退到 `resources.configuration.uiMode`。
+   避免亮色视图主题把 `uiMode` 锁成"亮"导致 `isNight()` 恒为 `false`、模块永远浅色；
+   现在与 Compose 主页的 `isSystemInDarkTheme()` 一致，正确跟随系统深色模式。
+
+### 5.2 所有 hook 功能失效
+
+### 根因
+`proguard-rules.pro` 对 Xposed 入口类用了 **`-keep,allowobfuscation`**。R8 会把入口
+`MainHook`（继承 `EasyXposedInit`）**重命名**，但 libxposed 在编译期按**原类名**写入
+`META-INF/xposed/*` 注册文件、运行时按该原类名反射加载 → 找不到入口 → **全部 hook 失效**。
+（debug 构建无混淆所以此前一直正常，切换到 release 后才暴露。）
+
+### 改动
+1. **`app/proguard-rules.pro`**：入口 keep 规则去掉 `allowobfuscation`/`allowoptimization`，
+   改为 `-keep public class * extends com.mars.mimarketpurify.init.EasyXposedInit { *; }`
+   （保留类名与全部成员、不重命名），保证框架按原类名 `com.mars.mimarketpurify.MainHook` 找到入口。
+2. **`app/build.gradle.kts`**：把 `packaging { resources { excludes += "**"; merges += "META-INF/xposed/*" } }`
+   从 `buildTypes` 内部**移到 `android {}` 顶层**，确保 `META-INF/xposed/*` 注册文件在 release 包中
+   始终被保留（先排除全部资源再单独 merge 回 xposed 注册文件）。
+
+---
+
+## 六、风险点 / 注意事项
 1. **MiuiX 字段名（历史坑，已规避）**：miuix-kmp `0.9.4-rc01` 的 `Colors` **不含** `onSurfaceVariant`/`outlineVariant`，
    真实字段为 `onSurfaceSecondary`（次级文本）与 `dividerLine`（分割线）。本工程 `MiuiX.kt` 的方法名保留
    `onSurfaceVariant()`/`outlineVariant()`，仅内部改访问真实字段；Compose 侧直接用 `MiuixTheme.colorScheme.onSurfaceSecondary` 等。
@@ -170,7 +210,7 @@ object UpdateChecker {
 5. **沙箱无 Android SDK**：本环境仅 `java`/`gradle`，缺 `sdkmanager`/`ANDROID_HOME`，无法真机打包验证；
    上述为编译级核查（符号引用、import、ProGuard、依赖、manifest），请在本机/CI 完成最终 `assembleRelease` 与真机回归。
 
-## 六、测试注意事项
+## 七、测试注意事项
 - [ ] 本机/CI 执行 `assembleRelease`，确认产物为已签名、可安装、且体积仅几 MB（问题 ③）；
 - [ ] 浅色/暗色系统主题下分别打开主页，确认整页 Compose 配色、状态栏图标反色正确，内容可见（问题 ①）；
 - [ ] 开启悬浮底栏，验证选中/未选中态、角标、`Stacked` 布局图标+文字、毛玻璃效果（问题 ②）；

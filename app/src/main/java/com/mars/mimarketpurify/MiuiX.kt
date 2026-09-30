@@ -1,5 +1,6 @@
 package com.mars.mimarketpurify
 
+import android.app.UiModeManager
 import android.content.Context
 import android.content.res.Configuration
 import top.yukonga.miuix.kmp.theme.darkColorScheme
@@ -101,10 +102,18 @@ object MiuiX {
     const val REPO_URL = "https://github.com/moonbai/MiMarketPurify"
 }
 
-/** 系统当前是否处于暗色模式 */
-fun Context.isNight(): Boolean =
-    (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+/**
+ * 系统当前是否处于暗色模式。
+ * 优先用 [UiModeManager] 读取系统「深色模式」设置（不受本模块 `Theme.Material.Light`
+ * 视图主题把 uiMode 锁成亮色的影响），回退到 [Configuration.uiMode]。
+ * 这样即使活动主题是亮色，也能正确跟随系统深色模式，与 Compose 主页的 isSystemInDarkTheme 一致。
+ */
+fun Context.isNight(): Boolean {
+    val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
+    if (uiModeManager?.nightMode == UiModeManager.MODE_NIGHT_YES) return true
+    return (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
         Configuration.UI_MODE_NIGHT_YES
+}
 
 /** 给 ARGB Int 设置 alpha（返回含新 alpha 的 ARGB Int，0x00~0xFF） */
 fun Int.withAlpha(alpha: Int): Int = (alpha shl 24) or (this and 0x00FFFFFF)
