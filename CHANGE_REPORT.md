@@ -264,3 +264,85 @@ Compose 主页用 `MiuixTheme` 自行着色、`forceDarkAllowed` 对它无效，
 - [ ] 悬浮底栏（市场 App 内）标签文字大小、角标红点颜色与原先一致，且不再引用 `MaterialTheme`。
 - [ ] 总开关关闭时，各二级页开关行置灰禁用；底部标签筛选开关关闭时标签勾选区隐藏；悬浮底栏总开关关闭时参数面板收起。
 - [ ] service 重连后，二级页开关状态随远程偏好刷新（依赖 `refreshSignal`）。
+
+---
+
+## 本轮改动：关于闪退 / 顶栏按钮 / 子标题对比度 / 双底栏统一 MiuiX 方案
+
+> 针对用户反馈的五个问题：
+> ① 点击关于界面闪退；
+> ② 顶部"关于"按钮可隐藏（与底栏关于 Tab 冗余）；
+> ③ 功能分区子标题灰色看不清；
+> ④ 程序界面底栏采用 MiuiX 官方 `NavigationBar`；
+> ⑤ 商店 hook 的悬浮底栏采用 MiuiX 官方 `FloatingNavigationBar`。
+
+### 改动
+
+1. **`ui/components/SettingsComponents.kt` — 关于页闪退加固**：新增 `SafeDrawableImage`，
+   用 `ContextCompat.getDrawable(...).toBitmap().asImageBitmap()` 包 `runCatching` 加载
+   `R.mipmap.ic_launcher`（自适应启动图标）与 `R.drawable.avatar_mars`，失败回退灰色块，
+   避免 release(R8) 下自适应图标资源缺失导致整页 Compose 崩溃。`SectionHeader` 副标题由
+   `colors.outline`（最浅 token）改为 `colors.onSurfaceSecondary`，解决看不清。
+
+2. **`ui/MainScreen.kt` — 隐藏顶部"关于"按钮**：`MainHeader` 移除右上角"关于"胶囊按钮，
+   `MainScreen(activity)` 不再接收 `onOpenAbout`；同步清理 `background/clickable/Box` 等未用导入。
+   关于入口统一由底栏"关于" Tab 承担。
+
+3. **`MainActivity.kt` — 程序底栏迁移官方 `NavigationBar`**：删除自绘 `BottomNavBar`/`TabItem`
+   （`Row` + `HorizontalDivider` + `Box.clickable`），改用官方 `NavigationBar` +
+   `NavigationBarItem`（`NavigationBarDefaults.navigationBarItemColors`，`icon: ImageVector`），
+   新增 `res/drawable/ic_nav_home.xml`、`ic_nav_about.xml` 矢量图标。
+
+4. **`util/ComposeFloatingBarHost.kt` — 商店悬浮底栏迁移官方 `FloatingNavigationBar`**：
+   - 容器改用官方 `FloatingNavigationBar`（悬浮圆角 + 阴影 + 窗口边距 + 分隔线），内部自定义
+     item 渲染**应用商店安装包内的官方 Tab 图标**——这些图标已拷贝进本模块 `res/drawable-nodpi`
+     （规避商店 AndResGuard 资源混淆：混淆映射把 `tab_icon_index_n` 重命名为 `res/7Lo.webp` 等，
+     运行时按名引用必然失败，打包自带最稳）。
+   - 图标保留未选/选中双态（`_n`/`_p` WebP）、多色原色（`tint = Color.Unspecified`）、文字标签、
+     角标与 `Role.Tab` 无障碍语义；暗色用商店官方 `_darkmode` PNG，分类无暗色资源则复用亮色 WebP。
+   - 删除不再使用的 `ui/deadliner/MiuixFloatingTabBar.kt`、`FloatingTabMotion.kt`、
+     `FloatingNavigationShadow.kt`、`util/NativeTabIconSnapshotter.kt`（仅被本文件引用）。
+   - 毛玻璃沿用既有 `ViewBackdropSampler` + `LayerBackdrop` 实时采样，缺失时由 `FloatingNavigationBar`
+     半透明 `surfaceContainer` 色块兜底。
+
+### 关于"应用商店概率闪退"的归因（非本模块进程内崩溃）
+提供的崩溃栈属于 **`com.xiaomi.market` 自身进程**：`Resources$NotFoundException: String resource
+ID #0x7f090065` 发生在商店底部导航自定义视图的 `createAccessibilityNodeInfo`（被系统无障碍服务
+`AccessibilityNodePrefetcher` 遍历触发），是其**自身的缺失字符串资源 + 无障碍节点创建缺陷**，
+与本模块 About 闪退（不同进程、不同根因）无关。
+缓解：本模块接管悬浮底栏时已对原生底栏容器设置
+`IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS`（见 `updateNativeChromeReplacement`）+ 启动期
+`EarlyBottomBarSuppressor` 压制，使无障碍服务不再遍历官方原生底部导航子树，可在浮底激活期间规避该
+崩溃。若关闭本模块浮底或处于未接管窗口，仍取决于商店自身修复（如临时关闭 TalkBack/自动化工具有效）。
+
+### 关键片段
+```kotlin
+// ComposeFloatingBarHost.kt：官方容器 + 打包的官方多色图标
+FloatingNavigationBar(
+    color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.86f),
+    cornerRadius = 28.dp, shadowElevation = 1.dp, defaultWindowInsetsPadding = true,
+) {
+    Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+        state.tabs.forEach { tab ->
+            MarketFloatingTabItem(
+                selected = ..., onClick = { onDestinationSelected(tab.nativeIndex) },
+                iconRes = iconRes(tab.iconKey(), selected, dark), // 已拷贝进本模块 drawable-nodpi
+                label = if (showLabel) tab.label else "", badge = tab.badge,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+```
+
+### 测试注意事项
+- [ ] `assembleRelease` 编译通过（重点：`FloatingNavigationBar(content: @Composable () -> Unit)` 槽容器、
+   `MiuixTheme.colorScheme` 字段名、`painterResource` 对 WebP/PNG 的加载）。
+- [ ] 关于页点击不闪退；深浅色下头像/启动图标均正常显示，缺失时回退灰色块不崩溃。
+- [ ] 主页顶栏无"关于"按钮；底栏"主页/关于"切换正常。
+- [ ] 二级页功能分区子标题在深浅色下均清晰可读（不再是最浅灰）。
+- [ ] 程序底栏：主页复用打包的官方 `tab_index` 图标、关于复用 `tab_mine` 图标（均为栅格 WebP，n/p 双态、多色原色）；`ic_nav_home.xml` / `ic_nav_about.xml` 已删除，无任何 `ic_nav_*` 引用残留。
+- [ ] 商店内悬浮底栏：显示官方多色 Tab 图标（首页/游戏/排行/软件/我的/分类）、选中态、文字标签、
+     角标红点；深浅色图标切换正确；毛玻璃/圆角/阴影观感与原先一致。
+- [ ] 商店无障碍场景：开启 TalkBack 后进入商店，浮底接管期间不再触发原生底栏 `Resources$NotFound`。
+- [ ] 资源：确认 `res/drawable-nodpi/tab_*.{webp,png}` 共 22 个已打入 APK；包体积仍受 release R8 + shrinkResources 控制。

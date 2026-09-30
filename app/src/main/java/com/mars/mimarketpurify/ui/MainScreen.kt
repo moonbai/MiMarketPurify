@@ -1,8 +1,6 @@
 package com.mars.mimarketpurify.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -55,13 +53,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * [com.mars.mimarketpurify.ui.components] 里的同一套实现，避免重复。
  */
 @Composable
-fun MainScreen(activity: MainActivity, onOpenAbout: () -> Unit) {
+fun MainScreen(activity: MainActivity) {
     val colors = MiuixTheme.colorScheme
     val service = rememberServiceState()
     val masterOn = remember { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
 
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        MainHeader(activity = activity, onOpenAbout = onOpenAbout, modifier = Modifier.statusBarsPadding())
+        MainHeader(activity = activity, modifier = Modifier.statusBarsPadding())
 
         HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
 
@@ -204,7 +202,7 @@ private fun rememberServiceState(): XposedService? {
 // ==================== 顶栏 ====================
 
 @Composable
-private fun MainHeader(activity: MainActivity, onOpenAbout: () -> Unit, modifier: Modifier = Modifier) {
+private fun MainHeader(activity: MainActivity, modifier: Modifier = Modifier) {
     val colors = MiuixTheme.colorScheme
     Row(
         modifier = modifier
@@ -224,21 +222,6 @@ private fun MainHeader(activity: MainActivity, onOpenAbout: () -> Unit, modifier
                 fontSize = MiuiX.CAPTION.sp,
                 color = colors.onSurfaceSecondary,
                 modifier = Modifier.padding(top = 2.dp),
-            )
-        }
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(percent = 50))
-                .background(Color(MiuiX.primarySoft(activity.isNight())))
-                .clickable { onOpenAbout() }
-                .padding(horizontal = 14.dp, vertical = 7.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "关于",
-                fontSize = MiuiX.CAPTION.sp,
-                fontWeight = FontWeight.Bold,
-                color = colors.primary,
             )
         }
     }

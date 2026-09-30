@@ -17,9 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mars.mimarketpurify.BuildConfig
@@ -63,14 +67,42 @@ fun SectionHeader(title: String, subtitle: String) {
             text = title,
             fontSize = MiuiX.SECTION.sp,
             fontWeight = FontWeight.Bold,
-            color = colors.onSurfaceSecondary,
+            color = colors.onSurface,
         )
         Text(
             text = subtitle,
             fontSize = MiuiX.MICRO.sp,
-            color = colors.outline,
-            modifier = Modifier.padding(start = 4.dp, top = 0.dp),
+            color = colors.onSurfaceSecondary,
+            modifier = Modifier.padding(start = 4.dp, top = 2.dp),
         )
+    }
+}
+
+/**
+ * 安全加载 drawable 为 Image：用 [ContextCompat] 取 Drawable 后转 [BitmapPainter]，
+ * 避免 [androidx.compose.ui.res.painterResource] 在 release(R8) 下对自适应启动图标 /
+ * 缺失资源直接抛异常、导致整页 Compose 崩溃（点击「关于」闪退的根因之一）。
+ * 加载失败时回退为占位方块，而不是让整页崩溃。
+ */
+@Composable
+private fun SafeDrawableImage(
+    resId: Int,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Fit,
+) {
+    val context = LocalContext.current
+    val painter = remember(resId) {
+        runCatching {
+            ContextCompat.getDrawable(context, resId)
+                ?.toBitmap()
+                ?.asImageBitmap()
+                ?.let { BitmapPainter(it) }
+        }.getOrNull()
+    }
+    if (painter != null) {
+        Image(painter = painter, contentDescription = null, modifier = modifier, contentScale = contentScale)
+    } else {
+        Box(modifier.background(Color(0xFFD0D0D0).copy(alpha = 0.25f)))
     }
 }
 
@@ -438,9 +470,8 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                         .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Image(
-                        painter = painterResource(R.mipmap.ic_launcher),
-                        contentDescription = null,
+                    SafeDrawableImage(
+                        resId = R.mipmap.ic_launcher,
                         modifier = Modifier
                             .size(56.dp)
                             .clip(RoundedCornerShape(8.dp)),
@@ -505,9 +536,8 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                         .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.avatar_mars),
-                        contentDescription = null,
+                    SafeDrawableImage(
+                        resId = R.drawable.avatar_mars,
                         modifier = Modifier
                             .size(56.dp)
                             .clip(RoundedCornerShape(8.dp)),

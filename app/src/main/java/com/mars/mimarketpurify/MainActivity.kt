@@ -5,18 +5,17 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Painter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
@@ -24,6 +23,7 @@ import com.mars.mimarketpurify.ui.MainScreen
 import com.mars.mimarketpurify.ui.components.AboutContent
 import com.mars.mimarketpurify.util.UpdateCheckResult
 import com.mars.mimarketpurify.util.UpdateChecker
+import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -94,7 +94,7 @@ class MainActivity : SettingsBaseActivity() {
                 Column(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
                     Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         when (tab) {
-                            0 -> MainScreen(activity = this@MainActivity, onOpenAbout = { tab = 1 })
+                            0 -> MainScreen(activity = this@MainActivity)
                             else -> AboutContent(activity = this@MainActivity, onBack = { tab = 0 })
                         }
                     }
@@ -187,42 +187,56 @@ class MainActivity : SettingsBaseActivity() {
     }
 }
 
-// ==================== 底部标签栏 ====================
+// ==================== 底部标签栏（官方 Miuix NavigationBar 容器）====================
+// 说明：Miuix 官方 NavigationBarItem.icon 仅接受 ImageVector，而本次打包进模块的官方商店
+// Tab 图标为栅格 WebP（tab_index_* / tab_mine_*），因此「主页」「关于」项均直接复用打包的
+// 官方图标（多色原色、n/p 双态），共用 Painter 式 item，容器仍采用官方 NavigationBar
+// （圆角 / 分隔线 / 窗口边距 / 配色均为 MiuiX 方案）。
 
 @Composable
 private fun BottomNavBar(selected: Int, onSelect: (Int) -> Unit) {
-    val colors = MiuixTheme.colorScheme
-    Column {
-        HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            TabItem(index = 0, label = "主页", selected = selected == 0, onSelect = onSelect)
-            TabItem(index = 1, label = "关于", selected = selected == 1, onSelect = onSelect)
-        }
+    NavigationBar(showDivider = true) {
+        ProgramNavItem(
+            selected = selected == 0,
+            onClick = { onSelect(0) },
+            painter = painterResource(
+                if (selected == 0) R.drawable.tab_index_n else R.drawable.tab_index_p,
+            ),
+            label = "主页",
+        )
+        ProgramNavItem(
+            selected = selected == 1,
+            onClick = { onSelect(1) },
+            painter = painterResource(
+                if (selected == 1) R.drawable.tab_mine_n else R.drawable.tab_mine_p,
+            ),
+            label = "关于",
+        )
     }
 }
 
 @Composable
-private fun TabItem(index: Int, label: String, selected: Boolean, onSelect: (Int) -> Unit) {
+private fun RowScope.ProgramNavItem(
+    selected: Boolean,
+    onClick: () -> Unit,
+    painter: Painter,
+    label: String,
+) {
     val colors = MiuixTheme.colorScheme
-    Box(
+    val color = if (selected) colors.primary else colors.onSurfaceSecondary
+    Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .clickable { onSelect(index) }
-            .background(if (selected) Color(MiuiX.primarySoft(true)) else Color.Transparent)
-            .padding(horizontal = 28.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center,
+            .selectable(selected = selected, onClick = onClick, role = Role.Tab)
+            .weight(1f)
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = label,
-            fontSize = MiuiX.ROW_TITLE.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = if (selected) colors.primary else colors.outline,
+        Image(
+            painter = painter,
+            contentDescription = null,
+            modifier = Modifier.size(26.dp),
         )
+        Spacer(Modifier.height(4.dp))
+        Text(text = label, fontSize = 12.sp, color = color)
     }
 }

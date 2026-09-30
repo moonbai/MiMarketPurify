@@ -9,38 +9,50 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
-// ViewTreeSavedStateRegistryOwner 的 find/set 扩展由 androidx.savedstate 提供（lifecycle-ktx 不含），
-// 与 InjectedViewTreeOwner 实现的 androidx.savedstate.SavedStateRegistryOwner 同一包。
 import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.mars.mimarketpurify.R
 import com.mars.mimarketpurify.Settings
-import kotlin.math.roundToInt
 import com.mars.mimarketpurify.TAG
-import com.mars.mimarketpurify.ui.deadliner.MiuixFloatingTabBar
-import com.mars.mimarketpurify.ui.deadliner.MiuixFloatingTabItem
-import com.mars.mimarketpurify.ui.deadliner.MiuixFloatingTabLayout
-import androidx.compose.ui.graphics.ImageBitmap
+import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
@@ -48,10 +60,20 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
 import java.util.WeakHashMap
 
 /**
- * 用 Compose + Miuix 毛玻璃重写悬浮底栏的宿主。
- * 复用既有 NativeTabBar 反射读取与 FloatingBottomBar 生命周期骨架；原生 TabView 仍负责导航、埋点
- * 与页面切换（点击转发给原生 tab 的 [View.performClick]），本类只接管呈现层。
- * 视觉/交互参考 AritxOnly/HyperModifier，但自写标签条、不引入其私有组件。
+ * 用 Compose + Miuix 官方 [FloatingNavigationBar] 重写悬浮底栏的宿主（「MiuiX 方案」）。
+ *
+ * 关键点：
+ * - 容器采用官方 [FloatingNavigationBar]（悬浮圆角 + 阴影 + 窗口边距 + 分隔线），内部 item 为
+ *   自定义实现，以便直接渲染**应用商店安装包内的官方 Tab 图标**——这些图标已拷贝进本模块
+ *   res/drawable-nodpi（规避商店 AndResGuard 资源混淆；混淆映射把 tab_icon_index_n 重命名为
+ *   res/7Lo.webp 等，运行时按名引用必然失败，故打包自带最稳）。
+ * - 图标保留未选/选中双态（_n/_p WebP）、多色原色（tint = Unspecified）、文字标签、角标与
+ *   Role.Tab 无障碍语义；暗色用商店官方 _darkmode PNG，分类无暗色资源则复用亮色 WebP。
+ * - 毛玻璃沿用既有 ViewBackdropSampler + LayerBackdrop 实时采样方案（Miuix 内置模糊），
+ *   采样缺失时回退半透明色块。
+ *
+ * 原生 TabView 仍负责导航、埋点与页面切换（点击转发给原生 tab 的 [View.performClick]），
+ * 本类只接管呈现层，复用 NativeTabBar 反射读取与 FloatingBottomBar 生命周期骨架。
  */
 class ComposeFloatingBarHost private constructor(
     private val activity: Activity,
@@ -90,7 +112,6 @@ class ComposeFloatingBarHost private constructor(
         usePixelCopySampling = { true },
         onSnapshotChanged = { backdropSnapshot = it },
     )
-    private val iconSnapshotter = NativeTabIconSnapshotter(resources, activity.theme)
     private val visibility = FloatingNavigationVisibility(composeView)
 
     private val preDrawListener = ViewTreeObserver.OnPreDrawListener {
@@ -175,7 +196,7 @@ class ComposeFloatingBarHost private constructor(
         val nativeTabs = NativeTabBar.tabViewsOf(nativeTabLayout)
         val selected = NativeTabBar.selectedIndexOf(nativeTabLayout)
             .coerceIn(0, (nativeTabs.size - 1).coerceAtLeast(0))
-        val tabs = nativeTabs.mapIndexed { index, tab -> readTabState(tab, index, index == selected) }
+        val tabs = nativeTabs.mapIndexed { index, tab -> readTabState(tab, index) }
         val visible = originalBottomContainer.visibility == View.VISIBLE &&
             nativeTabLayout.visibility == View.VISIBLE &&
             basicModeContainer?.visibility != View.VISIBLE &&
@@ -189,14 +210,12 @@ class ComposeFloatingBarHost private constructor(
         if (selectionChanged || becameVisible) sampler.requestCaptureBurst()
     }
 
-    private fun readTabState(tab: View, index: Int, selected: Boolean): MarketTabState {
+    private fun readTabState(tab: View, index: Int): MarketTabState {
         val label = NativeTabBar.titleOf(tab)
             ?: FALLBACK_LABELS.getOrElse(index) { "入口 ${index + 1}" }
         val tag = NativeTabBar.tagOf(tab).orEmpty()
         val hasRedPoint = NativeTabBar.hasRedPoint(tab)
         val number = NativeTabBar.numberOf(tab)
-        val iconView = NativeTabBar.iconViewOf(tab)
-        val icons = iconSnapshotter.snapshot(tab, iconView, selected)
         val badge = Settings.isEnabled(Settings.KEY_FLOATING_BAR_BADGE, true) &&
             !Settings.isEnabled(Settings.KEY_TAB_BADGE, true) &&
             (hasRedPoint || number > 0)
@@ -205,7 +224,6 @@ class ComposeFloatingBarHost private constructor(
             label = label,
             tag = tag,
             badge = badge,
-            icons = icons,
         )
     }
 
@@ -280,14 +298,59 @@ private data class MarketTabState(
     val label: String,
     val tag: String,
     val badge: Boolean,
-    val icons: NativeTabIconPair?,
-)
+) {
+    /** 按标题/标签把原生 Tab 映射到官方图标键；匹配不到返回 null（该项仅显示文字）。 */
+    fun iconKey(): String? = resolveIconKey(label, tag)
+}
 
 private data class MarketNavigationState(
     val tabs: List<MarketTabState> = emptyList(),
     val selectedIndex: Int = 0,
     val visible: Boolean = false,
 )
+
+/**
+ * 官方 Tab 图标（已拷贝进本模块 res/drawable-nodpi，规避商店 AndResGuard 资源混淆）。
+ * 亮色用 WebP（index/game/rank/soft/mine/category 的 _n/_p），暗色用官方 _darkmode PNG。
+ */
+private val ICON_PAIRS_LIGHT = mapOf(
+    "index" to (R.drawable.tab_index_n to R.drawable.tab_index_p),
+    "game" to (R.drawable.tab_game_n to R.drawable.tab_game_p),
+    "rank" to (R.drawable.tab_rank_n to R.drawable.tab_rank_p),
+    "soft" to (R.drawable.tab_soft_n to R.drawable.tab_soft_p),
+    "mine" to (R.drawable.tab_mine_n to R.drawable.tab_mine_p),
+    "category" to (R.drawable.tab_category_n to R.drawable.tab_category_p),
+)
+
+private val ICON_PAIRS_DARK = mapOf(
+    "index" to (R.drawable.tab_index_n_dark to R.drawable.tab_index_p_dark),
+    "game" to (R.drawable.tab_game_n_dark to R.drawable.tab_game_p_dark),
+    "rank" to (R.drawable.tab_rank_n_dark to R.drawable.tab_rank_p_dark),
+    "soft" to (R.drawable.tab_soft_n_dark to R.drawable.tab_soft_p_dark),
+    "mine" to (R.drawable.tab_mine_n_dark to R.drawable.tab_mine_p_dark),
+    // 分类无暗色资源，复用亮色 WebP
+)
+
+private fun resolveIconKey(label: String, tag: String): String? {
+    val l = label.trim()
+    val t = tag.trim().lowercase()
+    return when {
+        l.contains("首页") || t.contains("home") || t.contains("index") -> "index"
+        l.contains("游戏") || t.contains("game") -> "game"
+        l.contains("排行") || l.contains("榜单") || t.contains("rank") -> "rank"
+        l.contains("软件") || t.contains("soft") -> "soft"
+        l.contains("我的") || t.contains("mine") || t.contains("账户") -> "mine"
+        l.contains("分类") || t.contains("category") -> "category"
+        else -> null
+    }
+}
+
+/** 解析出官方 Tab 图标的 drawable 资源 id（0 表示无对应图标，仅显示文字）。 */
+private fun iconRes(key: String?, selected: Boolean, dark: Boolean): Int {
+    if (key == null) return 0
+    val pair = (if (dark) ICON_PAIRS_DARK[key] else null) ?: ICON_PAIRS_LIGHT[key] ?: return 0
+    return if (selected) pair.second else pair.first
+}
 
 @Composable
 private fun MarketNavigationContent(
@@ -300,40 +363,25 @@ private fun MarketNavigationContent(
     val dark = (LocalConfiguration.current.uiMode and
         Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     val backdrop = rememberLayerBackdrop()
-    val selectedTab =
-        state.tabs.firstOrNull { it.nativeIndex == state.selectedIndex } ?: state.tabs.first()
-    val selectedKey = selectedTab.nativeIndex.toString()
-
-    // 图标优先取原生 TabView 的实时快照（含状态着色），保证与原 App 视觉一致；
-    // 仅在极端缺失时回退为 1x1 透明 Painter，由 MiuixFloatingTabBar 渲染为无图标项。
-    val transparentPainter = remember { BitmapPainter(ImageBitmap(1, 1)) }
-    val items = state.tabs.map { tab ->
-        val nativeIcons = tab.icons
-        MiuixFloatingTabItem(
-            key = tab.nativeIndex.toString(),
-            label = if (Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)) tab.label else "",
-            selectedIcon = nativeIcons?.let { BitmapPainter(it.selected) } ?: transparentPainter,
-            unselectedIcon = nativeIcons?.let { BitmapPainter(it.unselected) } ?: transparentPainter,
-            // 沿用原生 TabView 图标自带配色（与 AritxOnly/HyperModifier 的 Market 浮底一致）
-            preserveOriginalIconColors = true,
-            badge = if (tab.badge) "" else null,
-        )
-    }
+    val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
+    val selectedKey = state.tabs.firstOrNull { it.nativeIndex == state.selectedIndex }?.nativeIndex
+        ?: state.tabs.first().nativeIndex
 
     MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
                 .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
         ) {
-            MiuixFloatingTabBar(
-                items = items,
-                selectedKey = selectedKey,
-                onItemSelected = { onDestinationSelected(it.key.toIntOrNull() ?: 0) },
-                backdrop = backdrop,
-                snapshot = backdropSnapshot,
-                layout = MiuixFloatingTabLayout.Stacked,
+            // 毛玻璃：复用 Miuix 内置模糊，采样缺失时由 FloatingNavigationBar 半透明色块兜底。
+            ViewBackdropLayer(backdropSnapshot, backdrop)
+            FloatingNavigationBar(
+                color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.86f),
+                cornerRadius = 28.dp,
+                horizontalOutSidePadding = 0.dp,
+                shadowElevation = 1.dp,
+                showDivider = false,
+                defaultWindowInsetsPadding = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .onGloballyPositioned { coords ->
@@ -347,7 +395,85 @@ private fun MarketNavigationContent(
                             ),
                         )
                     },
-            )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    state.tabs.forEach { tab ->
+                        val selected = tab.nativeIndex == selectedKey
+                        MarketFloatingTabItem(
+                            selected = selected,
+                            onClick = { onDestinationSelected(tab.nativeIndex) },
+                            iconRes = iconRes(tab.iconKey(), selected, dark),
+                            label = if (showLabel) tab.label else "",
+                            badge = tab.badge,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 悬浮底栏的单个入口：官方多色 Tab 图标（_n/_p 双态）+ 可选文字标签 + 可选角标 + Role.Tab 语义。
+ * 选中态用中性半透明胶囊背景，避免拍平官方图标原有的多色。
+ */
+@Composable
+private fun MarketFloatingTabItem(
+    selected: Boolean,
+    onClick: () -> Unit,
+    iconRes: Int,
+    label: String,
+    badge: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MiuixTheme.colorScheme
+    val isDark = colors.onSurface.luminance() > 0.5f
+    val contentColor = if (selected) colors.primary else colors.onSurfaceSecondary
+    val indicatorColor = if (isDark) {
+        Color.White.copy(alpha = 0.14f)
+    } else {
+        Color.Black.copy(alpha = 0.08f)
+    }
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) indicatorColor else Color.Transparent)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(contentAlignment = Alignment.TopEnd) {
+                if (iconRes != 0) {
+                    Image(
+                        painter = painterResource(iconRes),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+                if (badge) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(colors.error),
+                    )
+                }
+            }
+            if (label.isNotEmpty()) {
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = contentColor,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
