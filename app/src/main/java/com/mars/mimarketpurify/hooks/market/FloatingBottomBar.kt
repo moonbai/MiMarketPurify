@@ -159,6 +159,7 @@ object FloatingBottomBar : BaseHook() {
         }
     }
 
-    private const val RETRY_MAX_FRAMES = 60
-    private const val RETRY_TIMEOUT_MS = 4_000L
+    // 与 HyperModifier 对齐：底栏可能晚于 onCreate 才 inflate，给足 8s 重试窗口。
+    private const val RETRY_MAX_FRAMES = 240
+    private const val RETRY_TIMEOUT_MS = 8_000L
 }

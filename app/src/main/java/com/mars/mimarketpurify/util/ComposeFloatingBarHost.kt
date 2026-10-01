@@ -176,6 +176,7 @@ class ComposeFloatingBarHost private constructor(
         overlayParent.setViewTreeViewModelStoreOwner(previousViewModelStoreOwner)
         overlayParent.setViewTreeSavedStateRegistryOwner(previousSavedStateRegistryOwner)
         owner.dispose()
+        NativeTabBar.clearBarCache(activity)
         Log.i(TAG, "ComposeFloatingBarHost 已释放")
     }
 
@@ -368,14 +369,8 @@ class ComposeFloatingBarHost private constructor(
         private val FALLBACK_LABELS = listOf("首页", "游戏", "榜单", "我的")
         private val active = WeakHashMap<Activity, ComposeFloatingBarHost>()
 
-        private fun findBottomBar(activity: Activity): View? {
-            val id = activity.resources.getIdentifier(
-                "tab_container_layout",
-                "id",
-                activity.packageName,
-            )
-            return id.takeIf { it != 0 }?.let(activity::findViewById)
-        }
+        private fun findBottomBar(activity: Activity): View? =
+            NativeTabBar.bottomContainer(activity)
 
         fun attach(activity: Activity): ComposeFloatingBarHost? {
             if (activity.isFinishing || activity.isDestroyed) return null
@@ -397,17 +392,14 @@ class ComposeFloatingBarHost private constructor(
         }
 
         private fun create(activity: Activity): ComposeFloatingBarHost? = runCatching {
-            val res = activity.resources
-            fun id(name: String): Int = res.getIdentifier(name, "id", activity.packageName)
-            val bottom = NativeTabBar.bottomContainer(activity) ?: run {
-                Log.w(TAG, "悬浮底栏：底栏容器定位失败（tab_container_layout 不存在且无结构候选）")
+            // 三级定位（资源名 → getTabViews → 几何/结构），抗 AndResGuard 与类名混淆。
+            // 返回 outer（整条原生底栏，用于隐藏）+ tabs（直接子项即 TabView 的容器，用于读取/点击）。
+            val ref = NativeTabBar.locateBottomBar(activity) ?: run {
+                Log.w(TAG, "悬浮底栏：底栏容器定位失败（资源名 / 方法名 / 几何结构均未命中）")
                 return null
             }
-            // tabLayout 定位全失败时（资源名被混淆），直接复用结构回退得到的 bottomContainer
-            // ——它本身就是暴露 getTabViews() 的底栏 TabView 容器，[tabViewsOf] 仍能读取原生标签。
-            val tabLayout = NativeTabBar.tabContainerIn(bottom)
-                ?: NativeTabBar.tabContainer(activity)
-                ?: bottom
+            val bottom = ref.outer
+            val tabLayout = ref.tabs
             // 内容容器：多数版本主界面用 fragment_container 承载页面碎片；但部分商店版本（或早期
             // 注入时机）该 id 并不存在。它仅用于「页面内容延伸到浮层之下」的视觉参考，并非挂载必需
             // —— 而 samplingView 主源已用 android.R.id.content 兜底，故此处同样用 decorView 的

@@ -665,7 +665,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
             val info = updateInfo!!
             AlertDialog(
                 onDismissRequest = { showUpdate = false },
-                title = { Text(text = "模块更新", color = colors.onSurface) },
+                title = { Text(text = "更新提示", color = colors.onSurface) },
                 text = {
                     val sizeText = if (info.sizeBytes > 0) {
                         "大小：%.1f MB".format(info.sizeBytes / 1048576.0)
@@ -709,13 +709,13 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                                 }
                             },
                         )
-                    }) { Text(text = "下载并安装", color = colors.primary) }
+                    }) { Text(text = "在线下载", color = colors.primary) }
                 },
                 dismissButton = {
                     TextButton(onClick = {
                         showUpdate = false
                         openLink(activity, info.releaseUrl)
-                    }) { Text(text = "去发布页", color = colors.onSurfaceSecondary) }
+                    }) { Text(text = "查看发布信息", color = colors.onSurfaceSecondary) }
                 },
             )
         }
@@ -731,7 +731,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            text = "正在下载更新包…",
+                            text = "正在下载最新安装包…",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = colors.onSurface,
