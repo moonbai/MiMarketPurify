@@ -27,6 +27,7 @@ import com.mars.mimarketpurify.hooks.market.UpdateCardSkin
 import com.mars.mimarketpurify.hooks.market.MinePageClean
 import com.mars.mimarketpurify.hooks.market.UpdateCardUi
 import com.mars.mimarketpurify.hooks.market.UpdateDownloadAds
+import com.mars.mimarketpurify.hooks.market.UpdateTabA11yGuard
 import com.mars.mimarketpurify.init.AppPackage
 import com.mars.mimarketpurify.init.AppRegister
 import com.mars.mimarketpurify.hooks.market.UpdateTabEntry
@@ -69,7 +70,8 @@ object Market : AppRegister() {
             AntiSelfDestruct,
             UpdateTabEntry,
             ConfigBackupRestore,
-            FloatingAdHook
+            FloatingAdHook,
+            UpdateTabA11yGuard
         )
     }
 }

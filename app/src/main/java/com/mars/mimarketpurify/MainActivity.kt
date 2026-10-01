@@ -234,8 +234,12 @@ private fun BottomNavBar(selected: Int, modifier: Modifier = Modifier, onSelect:
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .padding(start = 12.dp, end = 12.dp, bottom = bottomMargin.dp)
-            .navigationBarsPadding(),
+            // 关键：容器显式固定为底栏高度。ViewBackdropLayer 会按采样区域 requiredSize，
+            // 若父容器高度由内容决定，就会被它撑高并随采样范围不断放大（正反馈），最终把底栏
+            // 上移并用浮层色块盖住底部内容。与商店侧 ComposeFloatingBarHost 保持同一处理。
+            .height(FloatingTabBarDefaults.Height),
         contentAlignment = Alignment.Center,
     ) {
         ViewBackdropLayer(snapshot, backdrop)
