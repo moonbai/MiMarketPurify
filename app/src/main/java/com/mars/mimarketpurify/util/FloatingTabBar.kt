@@ -379,16 +379,20 @@ private fun IconWithBadge(item: FloatingTabItem, color: Color, selected: Boolean
             // 保留原生彩色：单色关闭且抓到彩色双态时，按选中态直出（不 tint）。
             item.preserveOriginalIconColors &&
                 (item.iconBitmapSelected != null || item.iconBitmapUnselected != null) -> {
+                // 外层 when 条件已保证 selected/unselected 至少其一非 null，但编译器无法把
+                // 「A ?: B」整体收窄为非空，故这里用 if (bmp != null) 让 Image 拿到非空 ImageBitmap。
                 val bmp = if (selected) {
                     item.iconBitmapSelected ?: item.iconBitmapUnselected
                 } else {
                     item.iconBitmapUnselected ?: item.iconBitmapSelected
                 }
-                Image(
-                    bitmap = bmp,
-                    contentDescription = null,
-                    modifier = Modifier.size(FloatingTabBarDefaults.TabIconSize).then(scaleMod),
-                )
+                if (bmp != null) {
+                    Image(
+                        bitmap = bmp,
+                        contentDescription = null,
+                        modifier = Modifier.size(FloatingTabBarDefaults.TabIconSize).then(scaleMod),
+                    )
+                }
             }
             item.iconBitmap != null -> Image(
                 bitmap = item.iconBitmap,
