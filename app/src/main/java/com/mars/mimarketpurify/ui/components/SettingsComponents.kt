@@ -1,10 +1,18 @@
 package com.mars.mimarketpurify.ui.components
 
+import android.app.AlertDialog
+import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.net.URL
 import com.mars.mimarketpurify.util.UpdateChecker
 import com.mars.mimarketpurify.util.UpdateCheckResult
 import androidx.compose.foundation.Image
@@ -417,7 +425,7 @@ fun PrefColorRow(
                 color = colors.onSurface,
             )
             Text(
-                text = "点击滑动颜色条选择颜色",
+                text = "点击后滑动颜色条选择颜色及透明度",
                 fontSize = MiuiX.ROW_SUMMARY.sp,
                 color = colors.onSurfaceSecondary,
                 modifier = Modifier.padding(top = 2.dp),
@@ -640,12 +648,7 @@ private fun checkForUpdatesManual(context: Context) {
         val result = UpdateChecker.check()
         activity.runOnUiThread {
             when (result) {
-                is UpdateCheckResult.Available -> {
-                    Toast.makeText(context, "发现新版本 v${result.versionName}", Toast.LENGTH_LONG).show()
-                    runCatching {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(result.releaseUrl)))
-                    }
-                }
+                is UpdateCheckResult.Available -> showUpdateDialog(activity, result)
 
                 is UpdateCheckResult.Latest ->
                     Toast.makeText(context, "已是最新版本", Toast.LENGTH_SHORT).show()
@@ -661,4 +664,94 @@ private data class GroupCardState(val title: String, val subtitle: String)
 
 private fun openLink(activity: ComponentActivity, url: String) {
     runCatching { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+}
+
+/**
+ * 发现新版本后的交互：弹窗展示版本与更新说明；
+ *  - 若解析到 APK 直链：主按钮「下载并安装」走应用内下载 + FileProvider 调起安装；
+ *  - 否则（无直链）：只保留「前往发布页」兜底。
+ */
+private fun showUpdateDialog(activity: ComponentActivity, result: UpdateCheckResult.Available) {
+    val sizeText = if (result.sizeBytes > 0) {
+        "大小：%.1f MB".format(result.sizeBytes / 1048576.0)
+    } else ""
+    val msg = buildString {
+        append("发现新版本 v${result.versionName}")
+        if (sizeText.isNotEmpty()) append("\n$sizeText")
+        if (result.notes.isNotBlank()) append("\n\n${result.notes.take(800)}")
+    }
+    val canDirect = result.apkUrl.isNotBlank()
+    AlertDialog.Builder(activity).apply {
+        setTitle("模块更新")
+        setMessage(msg)
+        if (canDirect) {
+            setPositiveButton("下载并安装") { _, _ ->
+                downloadAndInstall(activity, result.apkUrl, result.apkName)
+            }
+        }
+        setNegativeButton(if (canDirect) "去发布页" else "前往下载") { _, _ ->
+            openLink(activity, result.releaseUrl)
+        }
+        setCancelable(true)
+        show()
+    }
+}
+
+/** 后台把 APK 下到本地，完成后经 FileProvider 调起系统安装。 */
+private fun downloadAndInstall(activity: ComponentActivity, apkUrl: String, apkName: String) {
+    val dialog = ProgressDialog(activity).apply {
+        setMessage("正在下载更新包…")
+        setCancelable(false)
+        show()
+    }
+    Thread {
+        try {
+            val dir = activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: activity.cacheDir
+            dir.mkdirs()
+            val file = File(dir, apkName.ifBlank { "MiMarketPurify_update.apk" })
+            downloadFile(apkUrl, file)
+            activity.runOnUiThread {
+                dialog.dismiss()
+                installApk(activity, file)
+            }
+        } catch (e: Exception) {
+            activity.runOnUiThread {
+                dialog.dismiss()
+                Toast.makeText(activity, "下载失败：${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }.start()
+}
+
+private fun downloadFile(url: String, dest: File) {
+    val conn = URL(url).openConnection() as HttpURLConnection
+    conn.connectTimeout = 15_000
+    conn.readTimeout = 15_000
+    try {
+        if (conn.responseCode != HttpURLConnection.HTTP_OK) throw IOException("HTTP ${conn.responseCode}")
+        conn.inputStream.use { input ->
+            FileOutputStream(dest).use { out ->
+                val buf = ByteArray(8192)
+                var read: Int
+                while (input.read(buf).also { read = it } != -1) out.write(buf, 0, read)
+            }
+        }
+    } finally {
+        conn.disconnect()
+    }
+}
+
+/** 用 FileProvider 暴露 APK 并调起安装（Android 7+ 禁止 file://，必须走 content://）。 */
+private fun installApk(context: Context, file: File) {
+    val uri = FileProvider.getUriForFile(context, "com.mars.mimarketpurify.fileprovider", file)
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, "application/vnd.android.package-archive")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    runCatching { context.startActivity(intent) }.onFailure {
+        // 安装权限未授予或被拒：退回发布页，让用户手动获取
+        Toast.makeText(context, "无法调起安装，已转去发布页", Toast.LENGTH_LONG).show()
+        openLink(context as ComponentActivity, "https://github.com/moonbai/MiMarketPurify/releases/latest")
+    }
 }

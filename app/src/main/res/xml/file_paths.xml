@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 更新包下载目录：getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) -->
+    <external-files-path name="downloads" path="Download" />
+    <!-- 兜底：cacheDir -->
+    <cache-path name="cache" path="." />
+</paths>

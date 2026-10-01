@@ -3,6 +3,8 @@
 
     <!-- 检查更新需要联网读取 GitHub Releases -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 直接下载并安装自身更新包（Android 8+ 装未知来源包必需） -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!--
         关于「隐藏桌面图标」的实现要点（重要）：
@@ -85,6 +87,17 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- 更新包安装：向系统安装器临时暴露本地 APK（Android 7+ 禁止 file://） -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.mars.mimarketpurify.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 
