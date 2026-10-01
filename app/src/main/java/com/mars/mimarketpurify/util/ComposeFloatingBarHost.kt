@@ -416,6 +416,7 @@ private fun MarketNavigationContent(
                 nativeIndex = -1,
                 label = "更新",
                 tag = UPDATE_TAB_TAG,
+                badge = false,
                 isUpdate = true,
             )
         } else {

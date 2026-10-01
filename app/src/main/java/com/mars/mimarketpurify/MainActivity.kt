@@ -1,9 +1,11 @@
 package com.mars.mimarketpurify
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
+import kotlin.math.roundToInt
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -31,6 +33,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.util.ViewBackdropBounds
+import com.mars.mimarketpurify.util.ViewBackdropLayer
 import com.mars.mimarketpurify.util.ViewBackdropSampler
 import com.mars.mimarketpurify.util.ViewBackdropSnapshot
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
