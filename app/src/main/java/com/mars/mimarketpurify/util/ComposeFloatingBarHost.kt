@@ -1,11 +1,8 @@
 package com.mars.mimarketpurify.util
 
 import android.app.Activity
-import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.res.Configuration
-import android.net.Uri
 import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
@@ -44,6 +41,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.mars.mimarketpurify.R
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
+import com.mars.mimarketpurify.util.MarketUpdateLauncher
 import com.mars.mimarketpurify.util.NavIcons
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
@@ -196,6 +194,12 @@ class ComposeFloatingBarHost private constructor(
     }
 
     private fun syncNativeState() {
+        // 实时响应悬浮底栏总开关：关闭后即便 Activity 生命周期未重新触发（如模块内即时切换开关），
+        // 也在下一帧自释放并还原原生底栏，避免「关了开关底栏还在」的残留。
+        if (!Settings.isEnabled(Settings.KEY_FLOATING_BAR, false)) {
+            dispose()
+            return
+        }
         val nativeTabs = NativeTabBar.tabViewsOf(nativeTabLayout)
         val selected = NativeTabBar.selectedIndexOf(nativeTabLayout)
             .coerceIn(0, (nativeTabs.size - 1).coerceAtLeast(0))
@@ -218,14 +222,14 @@ class ComposeFloatingBarHost private constructor(
         // 此时有效 tab 数为「原生数 + 1」。
         val hasNativeUpdate = tabs.any { it.isUpdate }
         val syntheticUpdate = updateEntryOn && !hasNativeUpdate
-        // 默认要求「原生底栏可见且 tab 数 > 1」才接管悬浮胶囊；
-        // 但移花接木会补出「更新」项（有效 tab 数 ≥ 2），此时即便商店把原生底栏因
-        // 「只剩 1 个 tab」而隐藏/置灰，也必须展示悬浮胶囊，否则整条底栏会消失。
         val nativeBarPresent = originalBottomContainer.visibility == View.VISIBLE &&
             nativeTabLayout.visibility == View.VISIBLE &&
             basicModeContainer?.visibility != View.VISIBLE
-        val visible = (nativeBarPresent && tabs.size > 1) ||
-            (syntheticUpdate && tabs.isNotEmpty())
+        // 悬浮底栏在「商店本应展示底栏」且「有可展示的 tab」时显示：
+        //  - 不再要求原生 tab 数 > 1（筛选到只剩首页时也应显示悬浮胶囊，否则整条底栏消失）；
+        //  - 移花接木注入「更新」后有效 tab 数 ≥ 2；即便某些版本未为注入项生成 TabView，
+        //    syntheticUpdate 也会补出合成项，此时只要原生 tab 非空就照样展示悬浮胶囊。
+        val visible = tabs.isNotEmpty() && (nativeBarPresent || syntheticUpdate)
         // 实时读取外观配置，纳入 state 相等性判断——配置变化即触发重组，颜色/圆角/间距即时生效。
         val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
         val radiusDp = Settings.floatingBarRadiusDp()
@@ -323,10 +327,10 @@ class ComposeFloatingBarHost private constructor(
      * （多版本一致为 `com.xiaomi.market.ui.UpdateListActivity`），这里显式启动它。
      */
     private fun openMarketUpdatePage() {
-        if (launchMarketUpdatePage()) return
-        // 兜底一：老版本深链（部分机型/版本确实注册过该 scheme）
-        if (launchByUri("market://update")) return
-        // 兜底二：触发原生「更新」TabView 的点击（若该版本确实生成了对应 TabView），避免完全无效果
+        // 直达应用商店「应用更新 / 升级」页：先试已知 Activity 类名，再退回 Manifest 模糊匹配
+        // （逻辑统一在 [MarketUpdateLauncher]，悬浮底栏与原生「更新」tab 点击共用）。
+        if (MarketUpdateLauncher.launch(activity)) return
+        // 兜底：触发原生「更新」TabView 的点击（若该版本确实生成了对应 TabView），避免完全无效果
         runCatching {
             NativeTabBar.tabViewsOf(nativeTabLayout)
                 .firstOrNull { NativeTabBar.tagOf(it) == UPDATE_TAB_TAG }
@@ -334,64 +338,9 @@ class ComposeFloatingBarHost private constructor(
         }
     }
 
-    /**
-     * 拉起商店「应用更新」页：先试已知类名，再退回从商店自身 Manifest 的 Activity 列表里
-     * 模糊匹配（Activity 类名不受 AndResGuard 资源混淆影响，跨版本也较稳）。命中即返回 true。
-     */
-    private fun launchMarketUpdatePage(): Boolean {
-        val pkg = activity.packageName
-        UPDATE_PAGE_ACTIVITIES.forEach { name ->
-            if (startExplicit(pkg, name)) return true
-        }
-        queryUpdateActivities(pkg).forEach { name ->
-            if (startExplicit(pkg, name)) return true
-        }
-        return false
-    }
-
-    /** 显式启动商店内某个 Activity（同进程上下文，可拉起未导出的内部 Activity）；失败返回 false。 */
-    private fun startExplicit(pkg: String, name: String): Boolean = runCatching {
-        activity.startActivity(Intent().setComponent(ComponentName(pkg, name)))
-        true
-    }.getOrDefault(false)
-
-    /** 从商店 Manifest 的 Activity 列表里挑「名字像更新页」的候选，UpdateList* 优先。 */
-    private fun queryUpdateActivities(pkg: String): List<String> {
-        val info = runCatching {
-            activity.packageManager.getPackageInfo(
-                pkg,
-                PackageManager.PackageInfoFlags.of(PackageManager.GET_ACTIVITIES.toLong()),
-            )
-        }.getOrNull() ?: return emptyList()
-        return (info.activities ?: emptyArray())
-            .mapNotNull { it.name }
-            .filter { n ->
-                val simple = n.substringAfterLast('.').lowercase()
-                simple.contains("update") && simple.endsWith("activity") &&
-                    !simple.contains("download") && !simple.contains("version")
-            }
-            .sortedByDescending { it.contains("updatelist", ignoreCase = true) }
-    }
-
-    /** 按深链拉起；解析不到组件时返回 false。 */
-    private fun launchByUri(uri: String): Boolean = runCatching {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        activity.startActivity(intent)
-        true
-    }.getOrDefault(false)
-
     companion object {
         private val FALLBACK_LABELS = listOf("首页", "游戏", "榜单", "我的")
         private val active = WeakHashMap<Activity, ComposeFloatingBarHost>()
-
-        /** 商店「应用更新 / 升级」页 Activity 候选（按命中概率排序；跨版本兜底）。 */
-        private val UPDATE_PAGE_ACTIVITIES = listOf(
-            "com.xiaomi.market.ui.UpdateListActivity",
-            "com.xiaomi.market.business_ui.update.UpdateListActivity",
-            "com.xiaomi.market.business_ui.main.update.UpdateListActivity",
-            "com.xiaomi.market.ui.UpdateActivity",
-        )
 
         private fun findBottomBar(activity: Activity): View? {
             val id = activity.resources.getIdentifier(

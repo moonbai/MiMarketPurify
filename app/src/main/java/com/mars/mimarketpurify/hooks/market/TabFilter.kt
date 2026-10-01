@@ -6,6 +6,8 @@ import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
+import com.mars.mimarketpurify.util.MarketUpdateLauncher
+import com.mars.mimarketpurify.util.NativeTabBar
 import com.mars.mimarketpurify.util.getFieldValue
 import com.mars.mimarketpurify.util.invokeAs
 import io.github.kyuubiran.ezxhelper.core.finder.FieldFinder.`-Static`.fieldFinder
@@ -30,6 +32,10 @@ object TabFilter : BaseHook() {
     private var cachedPageConfig: Any? = null
     private var purifyTabInfo: Any? = null
 
+    /** 原生「更新」tab 点击跳转的去抖时间戳（毫秒），避免连续触发。 */
+    private var lastUpdateLaunchTs = 0L
+    private const val UPDATE_LAUNCH_DEBOUNCE_MS = 800L
+
     private fun findMethod(clazz: Class<*>, name: String, paramCount: Int): Method? {
         return clazz.declaredMethods.firstOrNull { m ->
             m.name == name && m.parameterTypes.size == paramCount
@@ -42,6 +48,7 @@ object TabFilter : BaseHook() {
         runCatching { hookPageConfig() }
         runCatching { hookInitTabs() }
         runCatching { hookGetFragmentInfo() }
+        runCatching { hookNativeUpdateClick() }
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] init() 完成")
     }
 
@@ -137,6 +144,36 @@ object TabFilter : BaseHook() {
             return@hooked fragInfo
         }
         HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked PageConfig.getFragmentInfo()")
+    }
+
+    // = = = = 原生「更新」tab 点击拦截 = = = =
+
+    /**
+     * 拦截原生「更新」tab 的点击：直达应用商店更新页。
+     *
+     * 该 tab 由移花接木注入（tag=purify_update），但商店自身的路由是
+     * `market://update`（系统并未注册此 scheme），点击只会走到 dummy 碎片、毫无反应。
+     * 这里在 `View.performClick` 层面拦截，无论悬浮底栏是否开启都能跳转
+     * （悬浮底栏开启时「更新」入口走其自身的 [com.mars.mimarketpurify.util.ComposeFloatingBarHost]
+     * 点击逻辑，走不到这里的原生 tab；本拦截只在悬浮底栏关闭、用户直接点原生「更新」tab 时生效）。
+     */
+    private fun hookNativeUpdateClick() {
+        runCatching {
+            val performClick = android.view.View::class.java.getDeclaredMethod("performClick")
+            HookEnv.base.hook(performClick).intercept { param ->
+                if (!updateEntryEnabled()) return@intercept param.proceed()
+                val v = param.thisObject as? android.view.View ?: return@intercept param.proceed()
+                val tag = runCatching { NativeTabBar.tagOf(v) }.getOrNull()
+                if (tag != PURIFY_UPDATE) return@intercept param.proceed()
+                val now = System.currentTimeMillis()
+                if (now - lastUpdateLaunchTs < UPDATE_LAUNCH_DEBOUNCE_MS) return@intercept param.proceed()
+                lastUpdateLaunchTs = now
+                MarketUpdateLauncher.launch(v.context)
+                true
+            }
+        }.onFailure {
+            HookEnv.base.log(Log.WARN, TAG, "[TabFilter] hook 原生更新 tab 点击失败: ${it.message}")
+        }
     }
 
     // = = = = PageConfig hook = = = =
