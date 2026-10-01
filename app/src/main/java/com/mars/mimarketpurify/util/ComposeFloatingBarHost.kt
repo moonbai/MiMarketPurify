@@ -54,6 +54,7 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import java.util.WeakHashMap
 
 /**
