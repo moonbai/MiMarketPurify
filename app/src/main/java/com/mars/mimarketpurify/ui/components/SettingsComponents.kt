@@ -12,6 +12,7 @@ import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.net.HttpURLConnection
 import java.net.URL
 import com.mars.mimarketpurify.util.UpdateChecker
 import com.mars.mimarketpurify.util.UpdateCheckResult

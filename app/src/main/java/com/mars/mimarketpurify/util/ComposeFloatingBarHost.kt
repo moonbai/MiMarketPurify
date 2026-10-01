@@ -334,7 +334,10 @@ class ComposeFloatingBarHost private constructor(
             openMarketUpdatePage()
             return
         }
-        val tab = NativeTabBar.tabViewsOf(nativeTabLayout).getOrNull(index) ?: return
+        // 不复用 attach 时捕获的 nativeTabLayout：商店在某些场景（配置变更 / 页面重建）会重建底栏容器，
+        // 旧引用已 detach，performClick 打到空 View 会导致「点了没反应」。每次点击按 activity 重新定位，
+        // 命中当前存活的原生 TabView。顺序与 syncNativeState 的 nativeIndex 一致（同源 tabContainerIn）。
+        val tab = NativeTabBar.tabViews(activity).getOrNull(index) ?: return
         state = state.copy(selectedIndex = index)
         runCatching { tab.performClick() }
         composeView.post { runCatching { syncNativeState() } }
@@ -352,9 +355,10 @@ class ComposeFloatingBarHost private constructor(
         // 直达应用商店「应用更新 / 升级」页：先试已知 Activity 类名，再退回 Manifest 模糊匹配
         // （逻辑统一在 [MarketUpdateLauncher]，悬浮底栏与原生「更新」tab 点击共用）。
         if (MarketUpdateLauncher.launch(activity)) return
-        // 兜底：触发原生「更新」TabView 的点击（若该版本确实生成了对应 TabView），避免完全无效果
+        // 兜底：触发原生「更新」TabView 的点击（若该版本确实生成了对应 TabView），避免完全无效果。
+        // 同样用 activity 重新定位，避免使用已 detach 的旧 nativeTabLayout 引用。
         runCatching {
-            NativeTabBar.tabViewsOf(nativeTabLayout)
+            NativeTabBar.tabViews(activity)
                 .firstOrNull { NativeTabBar.tagOf(it) == UPDATE_TAB_TAG }
                 ?.performClick()
         }

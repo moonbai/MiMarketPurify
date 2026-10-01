@@ -57,7 +57,15 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun MainScreen(activity: MainActivity) {
     val colors = MiuixTheme.colorScheme
     val service = rememberServiceState()
-    val masterOn = remember { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
+    // 订阅远程偏好刷新信号：从二级页返回 / service 重连后，refreshSignal 自增，
+    // 依赖它的 remember 重新取数，入口摘要与总开关随之刷新（否则关闭/开启开关后主页仍显示旧文案）。
+    val tick by activity.refreshSignal
+    val masterOn = remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
+    val adSummary by remember(tick) { mutableStateOf(activity.countText(activity.adKeys)) }
+    val tabsSummary by remember(tick) { mutableStateOf(activity.tabsText()) }
+    val tabbarSummary by remember(tick) { mutableStateOf(activity.tabbarText()) }
+    val mineSummary by remember(tick) { mutableStateOf(activity.countText(activity.mineKeys)) }
+    val miscSummary by remember(tick) { mutableStateOf(activity.countText(activity.miscKeys)) }
 
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
         MainHeader(activity = activity, modifier = Modifier.statusBarsPadding())
@@ -95,35 +103,35 @@ fun MainScreen(activity: MainActivity) {
                 NavRow(
                     title = "广告净化",
                     summary = "开屏、首页信息流、搜索、下载升级、应用详情等一系列广告",
-                    value = activity.countText(activity.adKeys),
+                    value = adSummary,
                     enabled = masterOn.value,
                 ) { activity.openPage(SubSettingsActivity.PAGE_ADS) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 NavRow(
                     title = "底栏自定义",
                     summary = "底部标签筛选",
-                    value = activity.tabsText(),
+                    value = tabsSummary,
                     enabled = masterOn.value,
                 ) { activity.openPage(SubSettingsActivity.PAGE_TABS) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 NavRow(
                     title = "悬浮底栏配置",
                     summary = "底栏颜色、透明度、显示效果参数",
-                    value = activity.tabbarText(),
+                    value = tabbarSummary,
                     enabled = masterOn.value,
                 ) { activity.openPage(SubSettingsActivity.PAGE_TAB_BAR) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 NavRow(
                     title = "「我的」页精简",
                     summary = "我的页应用推荐、官方入口、清理板块",
-                    value = activity.countText(activity.mineKeys),
+                    value = mineSummary,
                     enabled = masterOn.value,
                 ) { activity.openPage(SubSettingsActivity.PAGE_MINE) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 NavRow(
                     title = "其他界面精简",
                     summary = "升级记录、搜索相关推荐等零散页面",
-                    value = activity.countText(activity.miscKeys),
+                    value = miscSummary,
                     enabled = masterOn.value,
                 ) { activity.openPage(SubSettingsActivity.PAGE_MISC) }
             }

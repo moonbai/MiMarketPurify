@@ -101,9 +101,6 @@ class MainActivity : SettingsBaseActivity() {
 
         setContent {
             MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
-                // 观察 service 连接状态：连接后刷新底栏配置（悬浮底栏配色/标签开关等实时生效）
-                @Suppress("UNUSED_VARIABLE")
-                val refresh = refreshSignal.value
                 var tab by remember { mutableStateOf(0) } // 0 = 主页，1 = 关于
                 Box(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
                     // 内容区：整屏铺满，**不**在这里给底栏预留内边距。
@@ -122,6 +119,16 @@ class MainActivity : SettingsBaseActivity() {
 
         // 首次启动静默检查更新（不弹窗，仅在发现新版本时轻提示）
         maybeCheckUpdateOnFirstLaunch()
+    }
+
+    /**
+     * 从二级设置页返回主页时，远程偏好可能已被改动（本地写走 XposedService，不触发本页重组）。
+     * 这里自增 [refreshSignal]，让 [MainScreen] 重新取数，刷新「已开启 N 个 / 悬浮已开启」等入口摘要，
+     * 避免关闭筛选、关闭悬浮底栏后主页仍显示旧状态。
+     */
+    override fun onResume() {
+        super.onResume()
+        refreshAll()
     }
 
     /** 仅首次启动静默检查一次；在本地 SharedPreferences 记录标记，不依赖远程偏好（service 可能未连）。 */
