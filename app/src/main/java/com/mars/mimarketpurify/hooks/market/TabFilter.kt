@@ -220,7 +220,8 @@ object TabFilter : BaseHook() {
 
     // = = = = TabInfo.fromJSON = = = =
 
-    private fun tagOf(tab: Any): String? {
+    private fun tagOf(tab: Any?): String? {
+        if (tab == null) return null
         tabField?.let { f -> runCatching { return f.get(tab) as? String } }
         return runCatching { tab.invokeAs<String>("getTag") }.getOrNull()
     }
@@ -253,7 +254,7 @@ object TabFilter : BaseHook() {
                 // 不会在「屏蔽到只剩首页」时被商店当成单 tab 而整体隐藏；也无需依赖悬浮胶囊的合成兜底，
                 // 真正融入原底栏架构。原生 TabView 的点击仍走商店自身 tab 路由（market://update）。
                 if (updateEntryEnabled()) {
-                    val alreadyHas = list.any { runCatching { tagOf(it) }.getOrNull() == PURIFY_UPDATE }
+                    val alreadyHas = list.any { runCatching { tagOf(it ?: return@any false) }.getOrNull() == PURIFY_UPDATE }
                     if (!alreadyHas) {
                         val tabInfo = ensurePurifyTab()
                         if (tabInfo != null) {
