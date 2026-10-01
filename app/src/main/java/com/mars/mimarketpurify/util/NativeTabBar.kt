@@ -53,8 +53,10 @@ object NativeTabBar {
     /** 底栏最外层容器（tab_container_layout），找不到返回 null。 */
     fun bottomContainer(activity: Activity): View? {
         // 优先按资源名定位（多数商店版本仍为 tab_container_layout）。
-        resId(activity, ID_TAB_CONTAINER_LAYOUT).takeIf { it != 0 }?.let(activity::findViewById)
-            ?.let { return it }
+        val id = resId(activity, ID_TAB_CONTAINER_LAYOUT)
+        if (id != 0) {
+            activity.findViewById<View>(id)?.let { return it }
+        }
         // 结构回退：部分商店版本（如新版 update）该 id 被 AndResGuard 混淆或改名，
         // 导致悬浮底栏「未找到原生底栏 View」而永不挂载。改在内容树里找含 getTabViews()
         // 的最浅容器——底栏 TabView 容器独有该方法（见 [tabViewsOf]），子页面局部标签栏通常没有，
