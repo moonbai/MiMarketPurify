@@ -1,6 +1,7 @@
 package com.mars.mimarketpurify.util
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.util.Log
@@ -66,15 +67,36 @@ import java.util.WeakHashMap
  * 本类只接管呈现层，复用 NativeTabBar 反射读取与 FloatingBottomBar 生命周期骨架。
  */
 /**
- * 待更新应用数缓存（会话级）。
+ * 待更新应用数缓存。
  *
- * 商店把「待更新应用数」挂在「我的」标签的红点/数字上。若用户把「我的」筛掉，原生 TabView 不复存在、
- * 该数据源随之消失，导致「更新」标签角标丢失。这里在每次同步时从「我的」TabView 读取并缓存其最新值，
- * 缓存值在本会话内持续有效——即便随后筛选掉「我的」，只要本次会话「我的」曾渲染过，待更新数仍会
- * 归并显示到「更新」标签。
+ * 商店把「待更新应用数」挂在「我的」标签的红点/数字上。若用户在底栏自定义里把「我的」筛掉，
+ * 原生 TabView 不复存在、该数据源随之消失，导致「更新」标签角标丢失。这里双管齐下：
+ *  - 会话内：用单例字段 [count] 缓存最近一次从「我的」TabView 读取到的数值；
+ *  - 跨会话 / 跨「我的」隐藏：把该值持久化到目标 app 私有 SP（hook 进程与目标 app 同 UID，可写其
+ *    `shared_prefs`），attach 时回载。这样即便「我的」被隐藏或进程重启，只要历史上捕获过一次，
+ *    待更新数仍会归并显示到「更新」标签（含用户「底栏自定义不显示我的」这一典型场景）。
  */
 private object UpdateBadgeState {
     @Volatile var count: Int = 0
+
+    private const val PREFS_NAME = "mimarketpurify_update_cache"
+    private const val KEY_COUNT = "update_count"
+
+    /** 从目标 app 私有 SP 回载上次持久化的待更新数（宿主 attach 时调用一次）。 */
+    fun load(ctx: Context) {
+        runCatching {
+            val sp = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            count = sp.getInt(KEY_COUNT, 0).coerceAtLeast(0)
+        }.onFailure { Log.w(TAG, "回载待更新数缓存失败: ${it.message}") }
+    }
+
+    /** 把当前 [count] 持久化到目标 app 私有 SP（捕获到「我的」新数值且发生变化时调用）。 */
+    fun save(ctx: Context) {
+        runCatching {
+            ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putInt(KEY_COUNT, count).apply()
+        }.onFailure { Log.w(TAG, "持久化待更新数缓存失败: ${it.message}") }
+    }
 }
 
 class ComposeFloatingBarHost private constructor(
@@ -143,6 +165,9 @@ class ComposeFloatingBarHost private constructor(
             }
         }
 
+        // 回载持久化的待更新数缓存（应对「底栏自定义不显示我的」导致「我的」TabView 不可见、
+        // 无法再读取待更新数的场景）：只要历史上捕获过一次，这里就能恢复，使「更新」标签继续显示数量。
+        UpdateBadgeState.load(activity)
         syncNativeState()
         overlayParent.addView(
             composeView,
@@ -301,9 +326,13 @@ class ComposeFloatingBarHost private constructor(
         val iconView = NativeTabBar.iconViewOf(tab)
         val icons = iconSnapshotter.snapshot(tab, iconView, selected)
         // 捕获「我的」标签上的待更新数：缓存其红点/数字，供「更新」标签兜底显示。
-        // （筛选掉「我的」后该 TabView 消失，但缓存值在本会话内仍有效。）
+        // （筛选掉「我的」后该 TabView 消失，但缓存值在本会话 + 持久化 SP 中仍有效，见 UpdateBadgeState。）
         if (tag.contains("mine", ignoreCase = true) || label.contains("我的")) {
-            UpdateBadgeState.count = if (hasRedPoint) maxOf(number, 1) else number
+            val c = if (hasRedPoint) maxOf(number, 1) else number
+            if (c != UpdateBadgeState.count) {
+                UpdateBadgeState.count = c
+                UpdateBadgeState.save(activity)
+            }
         }
         // 角标默认按「底栏角标净化」总开关（KEY_TAB_BADGE，即设置里「我的」页的「底栏角标」）决定：
         // 关闭净化（保留角标）时显示原生红点/数字。开启移花接木后，syncNativeState 会统一把
@@ -536,17 +565,31 @@ private fun MarketNavigationContent(
         // 点击走原生 performClick；更新 tab 点击直达更新页（见 selectDestination）。
         val monochrome = Settings.isEnabled(Settings.KEY_FLOATING_BAR_MONOCHROME, true)
         val items = effectiveTabs.map { tab ->
-            FloatingTabItem(
-                key = tab.nativeIndex.toString(),
-                label = if (showLabel) tab.label else "",
-                icon = tab.icon(),
-                iconBitmapSelected = tab.icons?.selected,
-                iconBitmapUnselected = tab.icons?.unselected,
-                iconMonochrome = if (monochrome) tab.icons?.selectedMonochrome else null,
-                preserveOriginalIconColors = !monochrome && tab.icons != null,
-                badge = tab.badge,
-                badgeNumber = tab.badgeNumber,
-            )
+            if (tab.isUpdate) {
+                // 「更新」入口由模块注入（TabFilter 克隆原生 TabInfo 模板后只覆盖 tag/titles/url），
+                // 其原生 TabView 没有真实图标资源、克隆来的图标常为首页图标，抓到的位图/单色 mask
+                // 也呈首页形状。故强制用自绘矢量 NavIcons.Update，不再依赖原生图标快照——
+                // 单色模式下由 IconWithBadge 的 icon 分支以 ColorFilter.tint(color) 着色（随主题反色）。
+                FloatingTabItem(
+                    key = tab.nativeIndex.toString(),
+                    label = if (showLabel) tab.label else "",
+                    icon = NavIcons.Update,
+                    badge = tab.badge,
+                    badgeNumber = tab.badgeNumber,
+                )
+            } else {
+                FloatingTabItem(
+                    key = tab.nativeIndex.toString(),
+                    label = if (showLabel) tab.label else "",
+                    icon = tab.icon(),
+                    iconBitmapSelected = tab.icons?.selected,
+                    iconBitmapUnselected = tab.icons?.unselected,
+                    iconMonochrome = if (monochrome) tab.icons?.selectedMonochrome else null,
+                    preserveOriginalIconColors = !monochrome && tab.icons != null,
+                    badge = tab.badge,
+                    badgeNumber = tab.badgeNumber,
+                )
+            }
         }
 
         Box(

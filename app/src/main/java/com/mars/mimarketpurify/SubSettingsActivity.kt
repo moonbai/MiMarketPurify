@@ -185,8 +185,8 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
         PrefSwitch(
             activity,
             Settings.KEY_UPDATE_TAB,
-            "底栏更新入口（移花接木）",
-            "在商店原生底栏注入「更新」入口并直达更新页；独立于悬浮底栏——关闭悬浮底栏后该入口仍保留在原生底栏。待更新数量会显示在「更新」标签上",
+            "底栏更新入口",
+            "在商店原生底栏注入「更新」入口并直达更新页",
             default = true,
             enabled = masterOn,
         )
@@ -238,6 +238,15 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID_3D, "3D液态效果", "选中项显示跟随移动的3D液态胶囊，图标带弹性缩放", enabled = masterOn)
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标，栏体更矮更清爽", enabled = masterOn)
+            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+            PrefSwitch(
+                activity,
+                Settings.KEY_FLOATING_BAR_MONOCHROME,
+                "单色图标",
+                "开启后图标抽成单色描边、随主题着色（暗色自动反色）；关闭则保留商店原生彩色图标",
+                default = true,
+                enabled = masterOn,
+            )
         }
         GroupCard {
             PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xE6FFFFFF.toInt())
