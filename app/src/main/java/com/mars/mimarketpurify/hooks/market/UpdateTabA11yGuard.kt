@@ -96,8 +96,13 @@ object UpdateTabA11yGuard : BaseHook() {
     private fun tryApply(activity: Activity): Boolean {
         if (!enabled() || activity.isFinishing || activity.isDestroyed) return false
         val tab = runCatching {
-            NativeTabBar.tabViews(activity)
-                .firstOrNull { NativeTabBar.tagOf(it) == UPDATE_TAB_TAG }
+            NativeTabBar.tabViews(activity).firstOrNull { t ->
+                val tag = NativeTabBar.tagOf(t)
+                val title = NativeTabBar.titleOf(t)
+                // 优先按 tag 精确匹配；部分商店版本对注入 tab 不暴露 getTabViewTag，
+                // 退化为按标题「更新 / Update」匹配，保证降级一定能命中。
+                tag == UPDATE_TAB_TAG || title == "更新" || title == "Update"
+            }
         }.getOrNull() ?: return false
         if (tab.importantForAccessibility != View.IMPORTANT_FOR_ACCESSIBILITY_NO) {
             tab.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
