@@ -1,7 +1,9 @@
 package com.mars.mimarketpurify.util
 
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
@@ -257,16 +259,18 @@ class ComposeFloatingBarHost private constructor(
         sampler.requestCaptureBurst()
     }
 
-    /** 移花接木：点击「更新」入口时直接拉起应用商店更新页（market://update，即模块注入 tab 所用的深链）。 */
+    /**
+     * 移花接木：点击「更新」入口时直达应用商店的「应用更新 / 升级」页面。
+     *
+     * 注意：更新页并不是 `market://update` 这种深链（该 scheme 系统里并不存在，所以此前点了
+     * 「没反应」——Intent 解析不到任何组件）。真正的更新页是一个**独立 Activity**
+     * （多版本一致为 `com.xiaomi.market.ui.UpdateListActivity`），这里显式启动它。
+     */
     private fun openMarketUpdatePage() {
-        val launched = runCatching {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://update"))
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            activity.startActivity(intent)
-            true
-        }.getOrElse { false }
-        if (launched) return
-        // 兜底：仍是触发原生「更新」TabView 的点击（旧机制），避免完全无效果
+        if (launchMarketUpdatePage()) return
+        // 兜底一：老版本深链（部分机型/版本确实注册过该 scheme）
+        if (launchByUri("market://update")) return
+        // 兜底二：触发原生「更新」TabView 的点击（若该版本确实生成了对应 TabView），避免完全无效果
         runCatching {
             NativeTabBar.tabViewsOf(nativeTabLayout)
                 .firstOrNull { NativeTabBar.tagOf(it) == UPDATE_TAB_TAG }
@@ -274,9 +278,64 @@ class ComposeFloatingBarHost private constructor(
         }
     }
 
+    /**
+     * 拉起商店「应用更新」页：先试已知类名，再退回从商店自身 Manifest 的 Activity 列表里
+     * 模糊匹配（Activity 类名不受 AndResGuard 资源混淆影响，跨版本也较稳）。命中即返回 true。
+     */
+    private fun launchMarketUpdatePage(): Boolean {
+        val pkg = activity.packageName
+        UPDATE_PAGE_ACTIVITIES.forEach { name ->
+            if (startExplicit(pkg, name)) return true
+        }
+        queryUpdateActivities(pkg).forEach { name ->
+            if (startExplicit(pkg, name)) return true
+        }
+        return false
+    }
+
+    /** 显式启动商店内某个 Activity（同进程上下文，可拉起未导出的内部 Activity）；失败返回 false。 */
+    private fun startExplicit(pkg: String, name: String): Boolean = runCatching {
+        activity.startActivity(Intent().setComponent(ComponentName(pkg, name)))
+        true
+    }.getOrDefault(false)
+
+    /** 从商店 Manifest 的 Activity 列表里挑「名字像更新页」的候选，UpdateList* 优先。 */
+    private fun queryUpdateActivities(pkg: String): List<String> {
+        val info = runCatching {
+            activity.packageManager.getPackageInfo(
+                pkg,
+                PackageManager.PackageInfoFlags.of(PackageManager.GET_ACTIVITIES.toLong()),
+            )
+        }.getOrNull() ?: return emptyList()
+        return (info.activities ?: emptyArray())
+            .mapNotNull { it.name }
+            .filter { n ->
+                val simple = n.substringAfterLast('.').lowercase()
+                simple.contains("update") && simple.endsWith("activity") &&
+                    !simple.contains("download") && !simple.contains("version")
+            }
+            .sortedByDescending { it.contains("updatelist", ignoreCase = true) }
+    }
+
+    /** 按深链拉起；解析不到组件时返回 false。 */
+    private fun launchByUri(uri: String): Boolean = runCatching {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        activity.startActivity(intent)
+        true
+    }.getOrDefault(false)
+
     companion object {
         private val FALLBACK_LABELS = listOf("首页", "游戏", "榜单", "我的")
         private val active = WeakHashMap<Activity, ComposeFloatingBarHost>()
+
+        /** 商店「应用更新 / 升级」页 Activity 候选（按命中概率排序；跨版本兜底）。 */
+        private val UPDATE_PAGE_ACTIVITIES = listOf(
+            "com.xiaomi.market.ui.UpdateListActivity",
+            "com.xiaomi.market.business_ui.update.UpdateListActivity",
+            "com.xiaomi.market.business_ui.main.update.UpdateListActivity",
+            "com.xiaomi.market.ui.UpdateActivity",
+        )
 
         private fun findBottomBar(activity: Activity): View? {
             val id = activity.resources.getIdentifier(

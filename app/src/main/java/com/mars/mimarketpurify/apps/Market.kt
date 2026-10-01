@@ -27,7 +27,6 @@ import com.mars.mimarketpurify.hooks.market.UpdateCardSkin
 import com.mars.mimarketpurify.hooks.market.MinePageClean
 import com.mars.mimarketpurify.hooks.market.UpdateCardUi
 import com.mars.mimarketpurify.hooks.market.UpdateDownloadAds
-import com.mars.mimarketpurify.hooks.market.UpdateTabA11yGuard
 import com.mars.mimarketpurify.hooks.market.ResourcesNotFoundGuard
 import com.mars.mimarketpurify.init.AppPackage
 import com.mars.mimarketpurify.init.AppRegister
@@ -72,7 +71,6 @@ object Market : AppRegister() {
             UpdateTabEntry,
             ConfigBackupRestore,
             FloatingAdHook,
-            UpdateTabA11yGuard,
             ResourcesNotFoundGuard
         )
     }

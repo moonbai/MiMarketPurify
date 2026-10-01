@@ -106,13 +106,14 @@ class MainActivity : SettingsBaseActivity() {
                 val refresh = refreshSignal.value
                 var tab by remember { mutableStateOf(0) } // 0 = 主页，1 = 关于
                 Box(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
-                    // 内容区：底部预留悬浮底栏高度，避免内容被遮挡；底栏以浮层形式叠加在底部中央，
-                    // 内容可滚动到其下方，呈现「悬浮 + 通透」的效果（与商店一致）。
-                    Box(modifier = Modifier.fillMaxSize().padding(bottom = FloatingTabBarDefaults.Height + 12.dp)) {
-                        when (tab) {
-                            0 -> MainScreen(activity = this@MainActivity)
-                            else -> AboutContent(activity = this@MainActivity, onBack = { tab = 0 })
-                        }
+                    // 内容区：整屏铺满，**不**在这里给底栏预留内边距。
+                    // 关键：一旦在外层 Box 上 padding，就等于永久裁掉一截滚动视口——底部会固定空出
+                    // 一条白栏（内容永远滚不到那里，视觉上像被「白条」遮住）。改为由各标签页在自身
+                    // 滚动内容里预留胶囊高度：内容能一直延伸到底（悬浮 + 通透，与商店一致），
+                    // 滚到底时最后一项也能完整露出。
+                    when (tab) {
+                        0 -> MainScreen(activity = this@MainActivity)
+                        else -> AboutContent(activity = this@MainActivity, onBack = { tab = 0 })
                     }
                     BottomNavBar(selected = tab, modifier = Modifier.align(Alignment.BottomCenter)) { tab = it }
                 }

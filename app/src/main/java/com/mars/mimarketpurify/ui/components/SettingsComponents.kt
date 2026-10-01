@@ -35,6 +35,7 @@ import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.R
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.SettingsBaseActivity
+import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -472,7 +473,9 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
-                .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp),
+                .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
+                // 与主页一致：在滚动内容里为悬浮底栏预留高度，避免底部出现空白栏、末项被遮。
+                .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
         ) {
             // 应用卡片
             GroupCard {

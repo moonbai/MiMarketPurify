@@ -37,6 +37,7 @@ import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.SubSettingsActivity
 import com.mars.mimarketpurify.isNight
+import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.ui.components.GroupCard
 import com.mars.mimarketpurify.ui.components.NavRow
 import com.mars.mimarketpurify.ui.components.SectionHeader
@@ -68,7 +69,11 @@ fun MainScreen(activity: MainActivity) {
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
-                .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 6.dp),
+                .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 6.dp)
+                // 悬浮底栏让位：预留「胶囊高度 + 距底边距」的底部内边距（在滚动内容里，随内容一起滚）。
+                // 这样滚动视口能一直延伸到底、内容从胶囊下方穿过（通透），滚到底时最后一项也完整露出；
+                // 旧写法把这段预留放在外层 Box 上，等于永久裁掉视口，底部会固定空出一条白栏。
+                .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
         ) {
             StatusCard(service = service, night = activity.isNight())
             Spacer(Modifier.height(12.dp))
