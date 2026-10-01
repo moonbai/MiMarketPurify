@@ -392,10 +392,18 @@ class ComposeFloatingBarHost private constructor(
         }
 
         private fun create(activity: Activity): ComposeFloatingBarHost? = runCatching {
-            // 三级定位（资源名 → getTabViews → 几何/结构），抗 AndResGuard 与类名混淆。
+            // 定位策略（对齐 HyperModifier MarketFloatingNavigation.create）：
+            //   1) 资源名 tab_container_layout(outer) + tab_container(tabs)；
+            //   2) 方法名回退：暴露 getTabViews() 的容器。
             // 返回 outer（整条原生底栏，用于隐藏）+ tabs（直接子项即 TabView 的容器，用于读取/点击）。
             val ref = NativeTabBar.locateBottomBar(activity) ?: run {
-                Log.w(TAG, "悬浮底栏：底栏容器定位失败（资源名 / 方法名 / 几何结构均未命中）")
+                val idLayout = activity.resources.getIdentifier("tab_container_layout", "id", activity.packageName)
+                val idTabs = activity.resources.getIdentifier("tab_container", "id", activity.packageName)
+                Log.w(
+                    TAG,
+                    "悬浮底栏：locateBottomBar 失败 id(tab_container_layout)=$idLayout " +
+                        "id(tab_container)=$idTabs（两者均非 0 才会命中；getTabViews 兜底也未命中）",
+                )
                 return null
             }
             val bottom = ref.outer

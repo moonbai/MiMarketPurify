@@ -2,7 +2,6 @@ package com.mars.mimarketpurify.hooks.market
 
 import android.app.Activity
 import android.util.Log
-import android.view.ViewTreeObserver
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
@@ -27,7 +26,7 @@ import java.util.WeakHashMap
  * - **不使用** [BaseHook.hooked] 的开关门控（那样关掉开关时连「卸载浮层」的逻辑
  *   也会被跳过，用户关掉开关后浮层会一直挂在屏幕上）；改为在拦截体内**实时读开关**：
  *   开启 → 挂载宿主；关闭 → 释放宿主并还原原生底栏；
- * - 首次进入时原生底栏可能还没 inflate，用 OnPreDrawListener 按帧重试，
+ * - 首次进入时原生底栏可能还没 inflate，用 postDelayed 按真实时间（8s）重试，
  *   带上限自动放弃，避免无限空转。
  */
 object FloatingBottomBar : BaseHook() {
@@ -42,8 +41,8 @@ object FloatingBottomBar : BaseHook() {
     private const val MAIN_ACTIVITY =
         "com.xiaomi.market.business_ui.main.MarketTabActivity"
 
-    /** 等待底栏 inflate 的重试监听，Activity 销毁时移除。 */
-    private val pendingRetry = WeakHashMap<Activity, ViewTreeObserver.OnPreDrawListener>()
+    /** 等待底栏 inflate 的重试任务，Activity 销毁时移除。 */
+    private val pendingRetry = WeakHashMap<Activity, Runnable>()
 
     /** 已经装过生命周期 hook 的方法，避免重复安装。 */
     private val installed = HashSet<String>()
@@ -122,44 +121,45 @@ object FloatingBottomBar : BaseHook() {
         return true
     }
 
-    /** 按帧重试挂载，带上限；期间顺手压制原生底栏，避免它先闪一帧再被替换。 */
+    /**
+     * 按**真实时间**重试挂载（对齐 HyperModifier 的 postDelayed 重试）：底栏可能晚于 onCreate 才
+     * inflate，用 postDelayed 固定间隔轮询、以 wall-clock 8s 为上限——不受帧率影响。
+     * 早期用 OnPreDrawListener + 帧数上限的写法，在商店高速渲染时会 0.3s 内跑满 240 帧提前放弃，
+     * 导致底栏还没出来就停止重试、永远挂不上。
+     */
     private fun scheduleRetry(activity: Activity) {
         if (pendingRetry.containsKey(activity)) return
         val decor = activity.window?.decorView ?: return
-        val observer = decor.viewTreeObserver.takeIf { it.isAlive } ?: return
-
         val startedAt = android.os.SystemClock.uptimeMillis()
-        var frames = 0
-        val listener = ViewTreeObserver.OnPreDrawListener {
-            frames++
-            runCatching {
-                if (!enabled() || activity.isFinishing || activity.isDestroyed) {
+        val runnable = object : Runnable {
+            override fun run() {
+                if (activity.isFinishing || activity.isDestroyed || !enabled()) {
                     cancelRetry(activity)
-                    return@OnPreDrawListener true
+                    return
                 }
                 if (tryAttach(activity)) {
                     cancelRetry(activity)
-                } else if (frames >= RETRY_MAX_FRAMES ||
-                    android.os.SystemClock.uptimeMillis() - startedAt >= RETRY_TIMEOUT_MS
-                ) {
-                    debugLog("重试超限（$frames 帧），放弃本次悬浮底栏挂载")
-                    cancelRetry(activity)
+                    return
                 }
+                if (android.os.SystemClock.uptimeMillis() - startedAt >= RETRY_TIMEOUT_MS) {
+                    debugLog("重试超时（${RETRY_TIMEOUT_MS}ms），放弃本次悬浮底栏挂载")
+                    cancelRetry(activity)
+                    return
+                }
+                decor.postDelayed(this, RETRY_INTERVAL_MS)
             }
-            true
         }
-        observer.addOnPreDrawListener(listener)
-        pendingRetry[activity] = listener
+        pendingRetry[activity] = runnable
+        decor.postDelayed(runnable, RETRY_INTERVAL_MS)
     }
 
     private fun cancelRetry(activity: Activity) {
-        pendingRetry.remove(activity)?.let { listener ->
-            val vto = activity.window?.decorView?.viewTreeObserver
-            if (vto != null && vto.isAlive) runCatching { vto.removeOnPreDrawListener(listener) }
+        pendingRetry.remove(activity)?.let { runnable ->
+            activity.window?.decorView?.removeCallbacks(runnable)
         }
     }
 
     // 与 HyperModifier 对齐：底栏可能晚于 onCreate 才 inflate，给足 8s 重试窗口。
-    private const val RETRY_MAX_FRAMES = 240
+    private const val RETRY_INTERVAL_MS = 32L
     private const val RETRY_TIMEOUT_MS = 8_000L
 }

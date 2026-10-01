@@ -64,11 +64,10 @@ object NativeTabBar {
         }
 
     /**
-     * 定位商店底栏，返回 (outer, tabs)。三级策略：
-     *  1. 资源名 `tab_container_layout`(outer) + `tab_container`(tabs) —— 未混淆版本；
-     *  2. 暴露 `getTabViews()` 的 View —— 方法名未被改写的版本；
-     *  3. 几何/结构定位 —— 屏幕底部、横向、含多个「图标+文字」Tab 子项的最浅容器，
-     *     不依赖任何资源名或方法名，抗 AndResGuard 与类名混淆（最终兜底）。
+     * 定位商店底栏，返回 (outer, tabs)。完全对齐 HyperModifier `MarketFloatingNavigation.create()`
+     * 的查证方式（其在该商店版本实测有效）：
+     *  1. 资源名 `tab_container_layout`(outer) + `tab_container`(tabs) —— 该商店版本未被混淆，稳定命中；
+     *  2. 方法名回退：遍历内容树找暴露 `getTabViews()` 的容器（极少数改了资源名、未改方法名的版本）。
      *
      * 结果按 Activity 缓存：一旦命中便逐帧复用（仅当底栏被 detach / 隐藏才重新定位）。
      */
@@ -84,7 +83,7 @@ object NativeTabBar {
             }
         }
 
-        // 1) 资源名 fast path（未混淆版本，含 HyperModifier 目标版本）
+        // 1) 资源名 fast path（与 HyperModifier 完全一致：该商店版本未混淆，稳定命中）
         val nameOuter = resId(activity, ID_TAB_CONTAINER_LAYOUT).takeIf { it != 0 }
             ?.let { activity.findViewById<View>(it) }
         val nameTabs = resId(activity, ID_TAB_CONTAINER).takeIf { it != 0 }
@@ -93,14 +92,9 @@ object NativeTabBar {
             return cache(activity, BottomBarRef(nameOuter, nameTabs))
         }
 
-        // 2) 方法名回退（getTabViews 未被改写）
+        // 2) 方法名回退（getTabViews 未被改写，但资源名被改）
         findByGetTabViews(activity)?.let { return cache(activity, it) }
 
-        // 3) 几何/结构定位（抗混淆最终兜底）
-        findBottomBarByGeometry(activity)?.let {
-            Log.i(TAG, "悬浮底栏：几何定位底栏成功 outer=${it.outer.javaClass.simpleName} tabs=${it.tabs.javaClass.simpleName}")
-            return cache(activity, it)
-        }
         return null
     }
 
@@ -136,86 +130,6 @@ object NativeTabBar {
     }
 
     /**
-     * 几何/结构定位底栏：遍历 decorView，找「屏幕底部区域 + 够宽 + ≥2 个 tab 样直接子项」的
-     * 最浅 ViewGroup 作为 tabs 容器；再向上回溯到「仍贴底且高度条状」的最浅祖先作为 outer frame。
-     * 该策略只认位置与子项形态，完全不依赖资源名 / 方法名 / 类名，对混淆版本稳定生效。
-     *
-     * 子项「像 tab」的判定以**可点击**为首要信号（tab 切换必然可点击，且不受图标/文字是否
-     * 以 ImageView/TextView 呈现、是否已在 attach 时加载完成的影响），图标/文字仅作补充——
-     * 这样即使商店底栏是自定义自绘 View（内部画图标文字、无 ImageView/TextView 子节点）也能命中。
-     */
-    private fun findBottomBarByGeometry(activity: Activity): BottomBarRef? {
-        val root = activity.window.decorView ?: return null
-        val screenH = root.height.takeIf { it > 0 } ?: return null
-        val screenW = root.width.takeIf { it > 0 } ?: return null
-        val bottomZoneTop = (screenH * 0.62f).toInt()      // 屏幕底部 38% 起算为「底栏候选区」
-        val minWidth = (screenW * 0.5f).toInt()            // 至少占半屏宽，排除窄条
-        val maxBarH = (screenH * 0.2f).toInt().coerceAtLeast(1)
-
-        data class Candidate(val view: View, val tabs: Int, val bottom: Int)
-        val candidates = ArrayList<Candidate>()
-
-        fun scan(v: View, depth: Int) {
-            if (depth > MAX_DEPTH || isComposeView(v)) return
-            if (v is ViewGroup) {
-                val tabs = tabLikeChildren(v)
-                if (tabs.size >= 2) {
-                    val pos = IntArray(2)
-                    v.getLocationOnScreen(pos)
-                    val bottom = pos[1] + v.height
-                    val wide = v.width >= minWidth
-                    val inZone = bottom >= bottomZoneTop
-                    // 条状约束：排除整屏高的内容容器（fragment_container 等含大量可点击卡片，
-                    // 若只按「宽+底部+可点击子项多」会被误判成底栏）；真底栏高度通常 ≤ 20% 屏高。
-                    val thin = v.height <= maxBarH
-                    if (wide && inZone && thin) {
-                        candidates.add(Candidate(v, tabs.size, bottom))
-                    }
-                }
-                for (i in 0 until v.childCount) scan(v.getChildAt(i) ?: continue, depth + 1)
-            }
-        }
-        scan(root, 0)
-        if (candidates.isEmpty()) {
-            // 诊断：无任何候选——把底部区域里「够宽、含 ≥1 个可点击子项」的容器也列出来，
-            // 便于在混淆版下确认真实层级（下一轮日志即可据此精准定位）。
-            val diag = ArrayList<Candidate>()
-            fun scanDiag(v: View, depth: Int) {
-                if (depth > MAX_DEPTH || isComposeView(v)) return
-                if (v is ViewGroup) {
-                    val clickableKids = (0 until v.childCount).count {
-                        val c = v.getChildAt(it) ?: return@count false
-                        c.isClickable || c.hasOnClickListeners() ||
-                            c.descendantsAny { it.isClickable || it.hasOnClickListeners() }
-                    }
-                    val pos = IntArray(2)
-                    v.getLocationOnScreen(pos)
-                    val bottom = pos[1] + v.height
-                    if (v.width >= minWidth && bottom >= bottomZoneTop && clickableKids >= 1) {
-                        diag.add(Candidate(v, clickableKids, bottom))
-                    }
-                    for (i in 0 until v.childCount) scanDiag(v.getChildAt(i) ?: continue, depth + 1)
-                }
-            }
-            scanDiag(root, 0)
-            diag.sortByDescending { it.tabs * 100_000 + it.bottom }
-            Log.w(
-                TAG,
-                "悬浮底栏：几何定位无候选（资源名/方法名均未命中）。底部候选容器(前5)=" +
-                    diag.take(5).joinToString(" | ") {
-                        "cls=${it.view.javaClass.simpleName} kids=${(it.view as? ViewGroup)?.childCount ?: 0} clickableKids=${it.tabs} bottom=${it.bottom}"
-                    },
-            )
-            return null
-        }
-        // 评分：tab 数越多、越靠屏幕底部越优先（区分真底栏与顶部/中部子标签栏）
-        candidates.sortByDescending { it.tabs * 100_000 + it.bottom }
-        val best = candidates.first()
-        val outer = outerFrameOf(best.view, activity, maxBarH, minWidth, bottomZoneTop) ?: best.view
-        return BottomBarRef(outer, best.view)
-    }
-
-    /**
      * 从 tabs 容器向上回溯，找「仍贴屏幕底部、高度条状（≤ maxBarH）、够宽」的最浅祖先作为整条
      * 底栏的 outer frame。若 tabs 自身已是 frame（无更高条状祖先），返回 null（调用方回退用 tabs）。
      */
@@ -246,14 +160,11 @@ object NativeTabBar {
         return chosen
     }
 
-    /** 跳过本模块注入的 Compose 浮层，避免它自己被误判成底栏 / TabView。 */
-    private fun isComposeView(v: View): Boolean =
-        v.javaClass.name.contains("compose", ignoreCase = true)
-
     /**
      * 是否像「Tab」。**可点击为首要信号**（tab 切换必然可点击，且不受图标/文字是否以
      * ImageView/TextView 呈现、attach 时是否加载完成的影响——自定义自绘底栏也能命中）；
      * 不可点击时，退化为「含图标或文字」兜底（应对个别 tab 项把 clickable 放在更内层包装的情况）。
+     * 仅用于结构读取 TabView（[collectLeafTabs]），不参与底栏定位。
      */
     private fun isTabLike(v: View): Boolean {
         if (v.visibility != View.VISIBLE) return false
@@ -265,16 +176,6 @@ object NativeTabBar {
             it is TextView && it.visibility == View.VISIBLE && !(it.text?.isNullOrBlank() ?: true)
         }
         return hasIcon || hasText
-    }
-
-    /** 一个 ViewGroup 的「直接子项里像 Tab 的」集合（用于几何定位底栏）。 */
-    private fun tabLikeChildren(v: ViewGroup): List<View> {
-        val out = ArrayList<View>(v.childCount)
-        for (i in 0 until v.childCount) {
-            val c = v.getChildAt(i) ?: continue
-            if (isTabLike(c)) out.add(c)
-        }
-        return out
     }
 
     /**
