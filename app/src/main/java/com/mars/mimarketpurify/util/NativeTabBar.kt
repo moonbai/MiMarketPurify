@@ -203,7 +203,7 @@ object NativeTabBar {
                 TAG,
                 "悬浮底栏：几何定位无候选（资源名/方法名均未命中）。底部候选容器(前5)=" +
                     diag.take(5).joinToString(" | ") {
-                        "cls=${it.view.javaClass.simpleName} kids=${it.view.childCount} clickableKids=${it.tabs} bottom=${it.bottom}"
+                        "cls=${it.view.javaClass.simpleName} kids=${(it.view as? ViewGroup)?.childCount ?: 0} clickableKids=${it.tabs} bottom=${it.bottom}"
                     },
             )
             return null
