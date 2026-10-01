@@ -39,7 +39,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
  */
 
 @Composable
-internal fun ViewBackdropLayer(
+fun ViewBackdropLayer(
     snapshot: ViewBackdropSnapshot?,
     backdrop: LayerBackdrop,
 ) {
@@ -66,7 +66,7 @@ internal fun ViewBackdropLayer(
     }
 }
 
-internal data class ViewBackdropBounds(val left: Int, val top: Int, val width: Int, val height: Int)
+data class ViewBackdropBounds(val left: Int, val top: Int, val width: Int, val height: Int)
 
 data class ViewBackdropSnapshot(
     val bitmap: Bitmap,
@@ -77,7 +77,7 @@ data class ViewBackdropSnapshot(
     val generation: Long,
 )
 
-internal class ViewBackdropSampler(
+class ViewBackdropSampler(
     private val source: View,
     private val excludedView: View? = null,
     private val pixelCopyWindow: Window? = null,

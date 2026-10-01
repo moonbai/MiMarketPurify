@@ -1,7 +1,9 @@
 package com.mars.mimarketpurify.util
 
 import android.app.Activity
+import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
@@ -242,12 +244,34 @@ class ComposeFloatingBarHost private constructor(
         )
     }
 
-    private fun selectDestination(index: Int) {
+    private fun selectDestination(index: Int, isUpdate: Boolean) {
+        // 「移花接木」更新入口：直达应用商店更新页，不再依赖原生 dummy 碎片（此前点击无效果）。
+        if (isUpdate) {
+            openMarketUpdatePage()
+            return
+        }
         val tab = NativeTabBar.tabViewsOf(nativeTabLayout).getOrNull(index) ?: return
         state = state.copy(selectedIndex = index)
         runCatching { tab.performClick() }
         composeView.post { runCatching { syncNativeState() } }
         sampler.requestCaptureBurst()
+    }
+
+    /** 移花接木：点击「更新」入口时直接拉起应用商店更新页（market://update，即模块注入 tab 所用的深链）。 */
+    private fun openMarketUpdatePage() {
+        val launched = runCatching {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://update"))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            activity.startActivity(intent)
+            true
+        }.getOrElse { false }
+        if (launched) return
+        // 兜底：仍是触发原生「更新」TabView 的点击（旧机制），避免完全无效果
+        runCatching {
+            NativeTabBar.tabViewsOf(nativeTabLayout)
+                .firstOrNull { NativeTabBar.tagOf(it) == UPDATE_TAB_TAG }
+                ?.performClick()
+        }
     }
 
     companion object {
@@ -363,7 +387,7 @@ private fun MarketNavigationContent(
     state: MarketNavigationState,
     backdropSnapshot: ViewBackdropSnapshot?,
     onBackdropBoundsChanged: (ViewBackdropBounds) -> Unit,
-    onDestinationSelected: (Int) -> Unit,
+    onDestinationSelected: (Int, Boolean) -> Unit,
 ) {
     if (!state.visible || state.tabs.isEmpty()) return
     val dark = (LocalConfiguration.current.uiMode and
@@ -382,9 +406,25 @@ private fun MarketNavigationContent(
         val textNormal = if (state.textNormalArgb == -1) null else Color(state.textNormalArgb)
         val barColor = if (state.barColorArgb == -1) null else Color(state.barColorArgb)
 
+        // 「移花接木」更新入口：原生底栏已注入该 tab 时直接复用（isUpdate=true）；
+        // 若某些商店版本未为注入项生成对应 TabView（导致胶囊里看不到「更新」），
+        // 这里补一个合成项兜底，保证入口一定可见、可点。
+        val hasUpdate = state.tabs.any { it.isUpdate }
+        val showUpdateEntry = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
+        val effectiveTabs = if (showUpdateEntry && !hasUpdate) {
+            state.tabs + MarketTabState(
+                nativeIndex = -1,
+                label = "更新",
+                tag = UPDATE_TAB_TAG,
+                isUpdate = true,
+            )
+        } else {
+            state.tabs
+        }
+
         // 全部原生 tab（含「移花接木」注入的更新入口）统一以胶囊内 tab 呈现，
-        // 点击走原生 performClick；不再把更新 tab 剥离成独立按钮（此前会导致移花接木无效）。
-        val items = state.tabs.map { tab ->
+        // 点击走原生 performClick；更新 tab 点击直达更新页（见 selectDestination）。
+        val items = effectiveTabs.map { tab ->
             FloatingTabItem(
                 key = tab.nativeIndex.toString(),
                 label = if (showLabel) tab.label else "",
@@ -427,7 +467,11 @@ private fun MarketNavigationContent(
                 FloatingTabBar(
                     items = items,
                     selectedIndex = state.selectedIndex,
-                    onSelect = { index -> state.tabs.getOrNull(index)?.let { onDestinationSelected(it.nativeIndex) } },
+                    onSelect = { index ->
+                        effectiveTabs.getOrNull(index)?.let {
+                            onDestinationSelected(it.nativeIndex, it.isUpdate)
+                        }
+                    },
                     layout = FloatingTabLayout.Stacked,
                     showLabel = showLabel,
                     radius = radius,
