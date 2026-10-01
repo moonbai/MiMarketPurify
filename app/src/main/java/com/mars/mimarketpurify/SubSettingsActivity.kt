@@ -244,8 +244,6 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID_3D, "3D液态效果", "选中项显示跟随移动的3D液态胶囊，图标带弹性缩放", enabled = masterOn)
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标，栏体更矮更清爽", enabled = masterOn)
-            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-            PrefSwitch(activity, Settings.KEY_FLOATING_BAR_BADGE, "显示角标", "悬浮栏同步原生红点/数字角标，受底栏角标净化开关控制", enabled = masterOn)
         }
         GroupCard {
             PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xE6FFFFFF.toInt())

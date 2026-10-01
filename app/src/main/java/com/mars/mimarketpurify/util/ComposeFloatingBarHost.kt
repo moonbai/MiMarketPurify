@@ -196,10 +196,20 @@ class ComposeFloatingBarHost private constructor(
         val selected = NativeTabBar.selectedIndexOf(nativeTabLayout)
             .coerceIn(0, (nativeTabs.size - 1).coerceAtLeast(0))
         val tabs = nativeTabs.mapIndexed { index, tab -> readTabState(tab, index) }
-        val visible = originalBottomContainer.visibility == View.VISIBLE &&
+        // 移花接木（底栏更新入口）开启、且原生底栏未自带「更新」TabView 时，
+        // MarketNavigationContent 会用 effectiveTabs 补一个合成「更新」项，
+        // 此时有效 tab 数为「原生数 + 1」。
+        val updateEntryOn = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
+        val hasNativeUpdate = tabs.any { it.isUpdate }
+        val syntheticUpdate = updateEntryOn && !hasNativeUpdate
+        // 默认要求「原生底栏可见且 tab 数 > 1」才接管悬浮胶囊；
+        // 但移花接木会补出「更新」项（有效 tab 数 ≥ 2），此时即便商店把原生底栏因
+        // 「只剩 1 个 tab」而隐藏/置灰，也必须展示悬浮胶囊，否则整条底栏会消失。
+        val nativeBarPresent = originalBottomContainer.visibility == View.VISIBLE &&
             nativeTabLayout.visibility == View.VISIBLE &&
-            basicModeContainer?.visibility != View.VISIBLE &&
-            tabs.size > 1
+            basicModeContainer?.visibility != View.VISIBLE
+        val visible = (nativeBarPresent && tabs.size > 1) ||
+            (syntheticUpdate && tabs.isNotEmpty())
         // 实时读取外观配置，纳入 state 相等性判断——配置变化即触发重组，颜色/圆角/间距即时生效。
         val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
         val radiusDp = Settings.floatingBarRadiusDp()
@@ -234,8 +244,9 @@ class ComposeFloatingBarHost private constructor(
         val tag = NativeTabBar.tagOf(tab).orEmpty()
         val hasRedPoint = NativeTabBar.hasRedPoint(tab)
         val number = NativeTabBar.numberOf(tab)
-        val badge = Settings.isEnabled(Settings.KEY_FLOATING_BAR_BADGE, true) &&
-            !Settings.isEnabled(Settings.KEY_TAB_BADGE, true) &&
+        // 角标统一由「底栏角标净化」总开关（KEY_TAB_BADGE，即设置里「我的」页的「底栏角标」）
+        // 控制，悬浮底栏不再保留独立的「显示角标」开关（二者二选一，保留全局这一个）。
+        val badge = !Settings.isEnabled(Settings.KEY_TAB_BADGE, true) &&
             (hasRedPoint || number > 0)
         return MarketTabState(
             nativeIndex = index,

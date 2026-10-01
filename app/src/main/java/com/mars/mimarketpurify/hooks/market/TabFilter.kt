@@ -248,6 +248,20 @@ object TabFilter : BaseHook() {
                     removed
                 }
                 if (beforeCount != list.size) debugLog("fromJSON: ${beforeCount} → ${list.size} tabs")
+                // 移花接木：把「更新」入口真正写进原生底栏的 tab 列表（与商店其它原生 tab 同源），
+                // 商店据此渲染出一个真实的「更新」TabView，底栏因此始终保持「首页 / 更新」两项，
+                // 不会在「屏蔽到只剩首页」时被商店当成单 tab 而整体隐藏；也无需依赖悬浮胶囊的合成兜底，
+                // 真正融入原底栏架构。原生 TabView 的点击仍走商店自身 tab 路由（market://update）。
+                if (updateEntryEnabled()) {
+                    val alreadyHas = list.any { runCatching { tagOf(it) }.getOrNull() == PURIFY_UPDATE }
+                    if (!alreadyHas) {
+                        val tabInfo = ensurePurifyTab()
+                        if (tabInfo != null) {
+                            list.add(tabInfo)
+                            debugLog("fromJSON: 注入 purify_update（移花接木）")
+                        }
+                    }
+                }
                 return@hooked list
             }
             HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] hooked TabInfo.fromJSON")
