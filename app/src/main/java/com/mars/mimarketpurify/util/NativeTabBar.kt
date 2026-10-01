@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.mars.mimarketpurify.TAG
 import java.lang.reflect.Method
+import java.util.WeakHashMap
 
 /**
  * 应用商店底栏（TabView 条）的**纯原生**访问器。
@@ -184,12 +185,12 @@ object NativeTabBar {
     private fun outerFrameOf(
         tabs: View,
         activity: Activity,
-        maxBarH: Int,
-        minWidth: Int,
-        bottomZoneTop: Int,
+        maxBarH: Int = (activity.window.decorView?.height ?: 0).let { h -> if (h <= 0) 1 else (h * 0.2f).toInt() },
+        minWidth: Int = (activity.window.decorView?.width ?: 0).let { w -> (w * 0.5f).toInt() },
+        bottomZoneTop: Int = (activity.window.decorView?.height ?: 0).let { h -> (h * 0.62f).toInt() },
     ): View? {
         val decor = activity.window.decorView ?: return null
-        var cur = tabs.parent as? View ?: return null
+        var cur: View? = tabs.parent as? View ?: return null
         var chosen: View? = null
         while (cur != null && cur !== decor) {
             val pos = IntArray(2)
@@ -269,7 +270,7 @@ object NativeTabBar {
 
     /** 按资源名定位商店底栏相关 View，找不到返回 null（供 content / 占位容器复用）。 */
     fun viewByResName(activity: Activity, name: String): View? =
-        resId(activity, name).takeIf { it != 0 }?.let(activity::findViewById)
+        resId(activity, name).takeIf { it != 0 }?.let { activity.findViewById<View>(it) }
 
     /**
      * 原生底栏当前选中项下标。
@@ -283,15 +284,15 @@ object NativeTabBar {
     /** 读取指定容器的原生 TabView 列表：优先 getTabViews，失败/为空则按结构读取叶子 Tab。 */
     fun tabViewsOf(container: View): List<View> {
         (invoke(container, "getTabViews") as? List<*>)
-            .filterIsInstance<View>()
-            .takeIf { it.isNotEmpty() }
+            ?.filterIsInstance<View>()
+            ?.takeIf { it.isNotEmpty() }
             ?.let { return it }
         return collectLeafTabs(container)
     }
 
     /** 承载 TabView 的容器（tab_container），找不到返回 null。 */
     fun tabContainer(activity: Activity): View? =
-        resId(activity, ID_TAB_CONTAINER).takeIf { it != 0 }?.let(activity::findViewById)
+        resId(activity, ID_TAB_CONTAINER).takeIf { it != 0 }?.let { activity.findViewById<View>(it) }
 
     /** 底栏容器内的 tab_container（含自身），只在该子树内查找，规避同名子标签栏。 */
     fun tabContainerIn(scope: View): View? {
