@@ -223,11 +223,12 @@ class ComposeFloatingBarHost private constructor(
         val updateCount = if (updateEntryOn) {
             maxOf(UpdateBadgeState.count, tabs.maxOfOrNull { it.number } ?: 0).takeIf { it > 0 } ?: 0
         } else 0
-        // 移花接木开启：其余标签一律隐藏角标（红点/数字），仅「更新」标签显示待更新数量。
+        // 移花接木开启：仅让「更新」标签显示聚合的待更新总数；其余标签（含「我的」）保留各自原有的
+        // 红点/数字角标，不再强制清零——避免「开启更新入口后我的界面待更新指示被隐藏」的观感问题。
         val effectiveTabs = if (updateEntryOn) {
             tabs.map { tab ->
                 if (tab.isUpdate) tab.copy(badge = false, badgeNumber = updateCount)
-                else tab.copy(badge = false, badgeNumber = 0)
+                else tab
             }
         } else {
             tabs
