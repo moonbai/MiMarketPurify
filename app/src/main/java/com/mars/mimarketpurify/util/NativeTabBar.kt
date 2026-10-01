@@ -95,6 +95,16 @@ object NativeTabBar {
         // 2) 方法名回退（getTabViews 未被改写，但资源名被改）
         findByGetTabViews(activity)?.let { return cache(activity, it) }
 
+        // 3) 结构兜底（抗 AndResGuard 资源名 + 方法名双重混淆）：屏幕底部、够宽、含多个可点击
+        //    子项的容器即 tabs，向上回溯到贴底的条状祖先作 outer。不依赖任何名字。
+        findBottomBarByStructure(activity)?.let {
+            Log.i(TAG, "悬浮底栏：结构兜底定位底栏成功 outer=${it.outer.javaClass.simpleName} tabs=${it.tabs.javaClass.simpleName}")
+            return cache(activity, it)
+        }
+
+        val idL = resId(activity, ID_TAB_CONTAINER_LAYOUT)
+        val idT = resId(activity, ID_TAB_CONTAINER)
+        Log.e(TAG, "悬浮底栏：locateBottomBar 失败 id(tab_container_layout)=$idL id(tab_container)=$idT（资源名/方法名/结构均未命中）")
         return null
     }
 
@@ -127,6 +137,65 @@ object NativeTabBar {
         }
         visit(root)
         return tabs?.let { BottomBarRef(outerFrameOf(it, activity) ?: it, it) }
+    }
+
+    /**
+     * 结构兜底（抗资源名 + 方法名双重混淆）：遍历 decorView，找「屏幕底部区域 + 够宽 + 高度条状 +
+     * 直接子项里 ≥2 个像 Tab（可点击优先）」的最浅 ViewGroup 作为 tabs；再向上回溯到「仍贴底、
+     * 高度条状、够宽」的最浅祖先作为整条底栏 outer。完全不依赖资源名 / 方法名 / 类名。
+     *
+     * 判定以 **可点击** 为 Tab 首要信号（tab 切换必然可点击，且不受图标/文字是否以 ImageView/TextView
+     * 呈现、attach 时是否加载完成的影响），因此即便是自定义自绘底栏也能命中；整屏内容区因高度远超
+     * 条状上限会被排除。该策略仅在资源名 / 方法名均失效时作为最终兜底。
+     */
+    private fun findBottomBarByStructure(activity: Activity): BottomBarRef? {
+        val root = activity.window.decorView ?: return null
+        val screenH = root.height.takeIf { it > 0 } ?: return null
+        val screenW = root.width.takeIf { it > 0 } ?: return null
+        val bottomZoneTop = (screenH * 0.55f).toInt()   // 屏幕底部 45% 起算为候选区
+        val minWidth = (screenW * 0.5f).toInt()          // 至少占半屏宽
+        val maxBarH = (screenH * 0.22f).toInt().coerceAtLeast(1)
+
+        var bestTabs: View? = null
+        var bestScore = -1
+        fun scan(v: View, depth: Int) {
+            if (depth > MAX_DEPTH) return
+            // 跳过本模块注入的 Compose 浮层，避免它自己被误判成底栏
+            if (v.javaClass.name.contains("compose", ignoreCase = true)) return
+            if (v is ViewGroup) {
+                val tabCount = tabLikeChildren(v)
+                if (tabCount >= 2) {
+                    val pos = IntArray(2)
+                    v.getLocationOnScreen(pos)
+                    val bottom = pos[1] + v.height
+                    val wide = v.width >= minWidth
+                    val inZone = bottom >= bottomZoneTop
+                    val thin = v.height <= maxBarH
+                    if (wide && inZone && thin) {
+                        val score = tabCount * 100_000 + bottom
+                        if (score > bestScore) {
+                            bestScore = score
+                            bestTabs = v
+                        }
+                    }
+                }
+                for (i in 0 until v.childCount) scan(v.getChildAt(i) ?: continue, depth + 1)
+            }
+        }
+        scan(root, 0)
+        val tabsView = bestTabs ?: return null
+        val outer = outerFrameOf(tabsView, activity) ?: tabsView
+        return BottomBarRef(outer, tabsView)
+    }
+
+    /** 一个 ViewGroup 的直接子项里「像 Tab」的个数（用于结构兜底定位底栏）。 */
+    private fun tabLikeChildren(v: ViewGroup): Int {
+        var n = 0
+        for (i in 0 until v.childCount) {
+            val c = v.getChildAt(i) ?: continue
+            if (isTabLike(c)) n++
+        }
+        return n
     }
 
     /**

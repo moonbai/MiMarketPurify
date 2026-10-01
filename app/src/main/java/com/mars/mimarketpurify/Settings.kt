@@ -40,6 +40,8 @@ object Settings {
     const val KEY_FLOATING_BAR_RADIUS = "floating_bar_radius"
     /** 自定义：悬浮底栏距屏幕底部的外边距（dp 整数），即「悬空高度」，参考 HyperModifier 的 hiddenNavigationLift */
     const val KEY_FLOATING_BAR_BOTTOM_MARGIN = "floating_bar_bottom_margin"
+    /** 子选项：悬浮底栏图标是否使用单色（将原生图标抽成单色描边、随主题着色）；关闭则保留商店原生彩色图标 */
+    const val KEY_FLOATING_BAR_MONOCHROME = "floating_bar_monochrome"
 
     //===== 悬浮胶囊底栏 外观&手势配置 =====
     const val KEY_FLOAT_BAR_ENABLE = "float_bar_enable"

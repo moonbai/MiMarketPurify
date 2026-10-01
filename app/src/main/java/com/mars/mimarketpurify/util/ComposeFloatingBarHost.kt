@@ -49,10 +49,6 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import java.util.WeakHashMap
 
 /**
@@ -119,6 +115,7 @@ class ComposeFloatingBarHost private constructor(
         onSnapshotChanged = { backdropSnapshot = it },
     )
     private val visibility = FloatingNavigationVisibility(composeView)
+    private val iconSnapshotter = NativeTabIconSnapshotter(activity.resources, activity.theme)
 
     private val preDrawListener = ViewTreeObserver.OnPreDrawListener {
         syncNativeState()
@@ -219,7 +216,7 @@ class ComposeFloatingBarHost private constructor(
         val nativeTabs = NativeTabBar.tabViewsOf(nativeTabLayout)
         val selected = NativeTabBar.selectedIndexOf(nativeTabLayout)
             .coerceIn(0, (nativeTabs.size - 1).coerceAtLeast(0))
-        val tabs = nativeTabs.mapIndexed { index, tab -> readTabState(tab, index) }
+        val tabs = nativeTabs.mapIndexed { index, tab -> readTabState(tab, index, index == selected) }
         // 待更新应用数量：优先取会话内缓存的「我的」标签待更新数（屏蔽「我的」后仍有效），
         // 再与当前可见 tab 的数字角标取最大值；移花接木开启时统一归并到「更新」标签显示，其余标签隐藏角标。
         val updateEntryOn = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
@@ -282,32 +279,18 @@ class ComposeFloatingBarHost private constructor(
         if (selectionChanged || becameVisible) sampler.requestCaptureBurst()
     }
 
-    /** 原生 TabView 图标 → ImageBitmap（带缓存，避免每帧重建）。取不到返回 null（退化为自绘图标）。 */
-    private val iconBitmapCache = WeakHashMap<View, ImageBitmap?>()
-    private fun tabIconBitmap(tab: View): ImageBitmap? {
-        iconBitmapCache[tab]?.let { return it }
-        val bmp = runCatching {
-            val iv = NativeTabBar.iconViewOf(tab) ?: return@runCatching null
-            val d = iv.drawable ?: return@runCatching null
-            val w = iv.width.takeIf { it > 0 } ?: 48
-            val h = iv.height.takeIf { it > 0 } ?: 48
-            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            d.setBounds(0, 0, w, h)
-            d.draw(canvas)
-            bitmap.asImageBitmap()
-        }.getOrNull()
-        iconBitmapCache[tab] = bmp
-        return bmp
-    }
+    /** 原生 TabView 图标由 [NativeTabIconSnapshotter] 抓成四态位图（已迁移到 [readTabState]）。 */
 
-    private fun readTabState(tab: View, index: Int): MarketTabState {
+    private fun readTabState(tab: View, index: Int, selected: Boolean): MarketTabState {
         val label = NativeTabBar.titleOf(tab)
             ?: FALLBACK_LABELS.getOrElse(index) { "入口 ${index + 1}" }
         val tag = NativeTabBar.tagOf(tab).orEmpty()
         val hasRedPoint = NativeTabBar.hasRedPoint(tab)
         val number = NativeTabBar.numberOf(tab)
-        val iconBitmap = tabIconBitmap(tab)
+        // 抓取原生图标四态（选中/未选中 + 单色），对齐 HyperModifier 的 NativeTabIconSnapshotter；
+        // 单色开关由 MarketNavigationContent 按 Settings 决定使用哪一态。
+        val iconView = NativeTabBar.iconViewOf(tab)
+        val icons = iconSnapshotter.snapshot(tab, iconView, selected)
         // 捕获「我的」标签上的待更新数：缓存其红点/数字，供「更新」标签兜底显示。
         // （筛选掉「我的」后该 TabView 消失，但缓存值在本会话内仍有效。）
         if (tag.contains("mine", ignoreCase = true) || label.contains("我的")) {
@@ -324,7 +307,7 @@ class ComposeFloatingBarHost private constructor(
             tag = tag,
             badge = badge,
             number = number,
-            iconBitmap = iconBitmap,
+            icons = icons,
             isUpdate = tag == UPDATE_TAB_TAG || label.contains("更新"),
         )
     }
@@ -446,8 +429,8 @@ private data class MarketTabState(
     val number: Int = 0,
     /** 数字角标；>0 时悬浮底栏显示数字（覆盖红点）。 */
     val badgeNumber: Int = 0,
-    /** 原生 TabView 的图标位图（短剧等无自绘图标时复用商店自带图标），为 null 则退化为 [icon]。 */
-    val iconBitmap: ImageBitmap? = null,
+    /** 抓自原生 TabView 的图标四态位图（选中/未选中 + 单色），为 null 则退化为自绘 [icon]。 */
+    val icons: NativeTabIconPair? = null,
     /** 该项是不是「移花接木」注入的更新入口。 */
     val isUpdate: Boolean = false,
 ) {
@@ -542,12 +525,16 @@ private fun MarketNavigationContent(
 
         // 全部原生 tab（含「移花接木」注入的更新入口）统一以胶囊内 tab 呈现，
         // 点击走原生 performClick；更新 tab 点击直达更新页（见 selectDestination）。
+        val monochrome = Settings.isEnabled(Settings.KEY_FLOATING_BAR_MONOCHROME, true)
         val items = effectiveTabs.map { tab ->
             FloatingTabItem(
                 key = tab.nativeIndex.toString(),
                 label = if (showLabel) tab.label else "",
                 icon = tab.icon(),
-                iconBitmap = tab.iconBitmap,
+                iconBitmapSelected = tab.icons?.selected,
+                iconBitmapUnselected = tab.icons?.unselected,
+                iconMonochrome = if (monochrome) tab.icons?.selectedMonochrome else null,
+                preserveOriginalIconColors = !monochrome && tab.icons != null,
                 badge = tab.badge,
                 badgeNumber = tab.badgeNumber,
             )

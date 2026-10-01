@@ -78,6 +78,14 @@ data class FloatingTabItem(
     val icon: ImageVector? = null,
     /** 原生 TabView 的图标位图（优先于 [icon] 使用；短剧等无自绘图标时复用商店自带图标）。 */
     val iconBitmap: ImageBitmap? = null,
+    /** 原生图标「选中态」位图（与 [iconBitmapUnselected] 成对，用于双态图标；为 null 时退化用 [iconBitmap]）。 */
+    val iconBitmapSelected: ImageBitmap? = null,
+    /** 原生图标「未选中态」位图。 */
+    val iconBitmapUnselected: ImageBitmap? = null,
+    /** 原生图标的单色描边位图（monochrome mask），启用单色时优先使用。 */
+    val iconMonochrome: ImageBitmap? = null,
+    /** 是否保留原生图标原始配色（不随主题单色化）。单色关闭且原生图标可用时为 true。 */
+    val preserveOriginalIconColors: Boolean = false,
     val enabled: Boolean = true,
     /** 红点角标（不显示数字）。 */
     val badge: Boolean = false,
@@ -361,6 +369,27 @@ private fun IconWithBadge(item: FloatingTabItem, color: Color, selected: Boolean
     val scheme = MiuixTheme.colorScheme
     Box(contentAlignment = Alignment.TopEnd) {
         when {
+            // 单色优先：把原生图标抽成单色描边、按当前主题色重新着色（对齐 HyperModifier 的 monochrome）。
+            item.iconMonochrome != null -> Image(
+                bitmap = item.iconMonochrome,
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(color),
+                modifier = Modifier.size(FloatingTabBarDefaults.TabIconSize).then(scaleMod),
+            )
+            // 保留原生彩色：单色关闭且抓到彩色双态时，按选中态直出（不 tint）。
+            item.preserveOriginalIconColors &&
+                (item.iconBitmapSelected != null || item.iconBitmapUnselected != null) -> {
+                val bmp = if (selected) {
+                    item.iconBitmapSelected ?: item.iconBitmapUnselected
+                } else {
+                    item.iconBitmapUnselected ?: item.iconBitmapSelected
+                }
+                Image(
+                    bitmap = bmp,
+                    contentDescription = null,
+                    modifier = Modifier.size(FloatingTabBarDefaults.TabIconSize).then(scaleMod),
+                )
+            }
             item.iconBitmap != null -> Image(
                 bitmap = item.iconBitmap,
                 contentDescription = null,
