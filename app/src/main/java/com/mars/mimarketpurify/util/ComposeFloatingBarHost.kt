@@ -220,18 +220,26 @@ class ComposeFloatingBarHost private constructor(
         // 待更新应用数量：优先取会话内缓存的「我的」标签待更新数（屏蔽「我的」后仍有效），
         // 再与当前可见 tab 的数字角标取最大值；移花接木开启时统一归并到「更新」标签显示，其余标签隐藏角标。
         val updateEntryOn = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
-        val updateCount = if (updateEntryOn) {
+        // 「屏蔽角标」（KEY_TAB_BADGE，设置里「我的」页的「底栏角标」）：最高优先级。
+        // 开启后所有标签（含「更新」的待更新数量）一律不显示红点 / 数字 / 更新数量等任何角标。
+        val badgeShieldOn = Settings.isEnabled(Settings.KEY_TAB_BADGE, true)
+        // 待更新数量：仅在「移花接木」开启且「屏蔽角标」关闭时聚合——屏蔽角标时连「更新」数量也归零，
+        // 这样下方合成「更新」项（MarketNavigationContent 读取 state.updateCount）同样不再显示数量。
+        val updateCount = if (updateEntryOn && !badgeShieldOn) {
             maxOf(UpdateBadgeState.count, tabs.maxOfOrNull { it.number } ?: 0).takeIf { it > 0 } ?: 0
         } else 0
-        // 移花接木开启：仅让「更新」标签显示聚合的待更新总数；其余标签（含「我的」）保留各自原有的
-        // 红点/数字角标，不再强制清零——避免「开启更新入口后我的界面待更新指示被隐藏」的观感问题。
-        val effectiveTabs = if (updateEntryOn) {
-            tabs.map { tab ->
+        // 优先级：屏蔽角标 > 移花接木 > 默认原生角标
+        val effectiveTabs = when {
+            // 1) 屏蔽角标：包括「更新」在内的所有标签，红点 / 数字 / 更新数量一概清空。
+            badgeShieldOn -> tabs.map { it.copy(badge = false, badgeNumber = 0) }
+            // 2) 移花接木：仅「更新」标签显示聚合待更新数，其余标签（含「我的」）清除红点——
+            //    待更新数量已从「我的」迁移到「更新」，故「我的」仅移除角标、标签本身仍保留（不隐藏界面）。
+            updateEntryOn -> tabs.map { tab ->
                 if (tab.isUpdate) tab.copy(badge = false, badgeNumber = updateCount)
-                else tab
+                else tab.copy(badge = false, badgeNumber = 0)
             }
-        } else {
-            tabs
+            // 3) 默认：保留各标签原生角标（含「我的」红点）。
+            else -> tabs
         }
         // 移花接木（底栏更新入口）开启、且原生底栏未自带「更新」TabView 时，
         // MarketNavigationContent 会用 effectiveTabs 补一个合成「更新」项，
