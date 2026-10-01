@@ -108,7 +108,6 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
         Feature(Settings.KEY_DETAIL, "详情页广告", "应用详情页的广告、评论与推荐位"),
         Feature(Settings.KEY_RANK, "榜单广告", "榜单界面的广告 / 推广卡片"),
     )
-    SectionHeader("广告净化", "开屏、首页信息流、搜索、下载升级、应用详情等一系列广告")
     GroupCard {
         adFeatures.forEach { f ->
             PrefSwitch(activity = activity, key = f.key, title = f.title, summary = f.summary, enabled = masterOn)
@@ -134,7 +133,6 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean) {
     var orchardOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_ORCHARD_SKIN, true)) }
     val eligible = cleanupOn && orchardOn
 
-    SectionHeader("「我的」页精简", "应用推荐、推广、清理板块与个人信息区清理")
     GroupCard {
         PrefSwitch(activity, Settings.KEY_MINE_RECOMMEND, "应用推荐与推广", "隐藏页面顶部推荐卡片与底部推广列表", enabled = masterOn)
         Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
@@ -165,7 +163,6 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
     var filterOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_TAB_FILTER, true)) }
     var kept by remember(tick) { mutableStateOf(activity.readLocalTabs()) }
 
-    SectionHeader("底部标签栏", "选择需要展示的底栏标签")
     GroupCard {
         PrefSwitch(activity, Settings.KEY_TAB_FILTER, "筛选底部标签", "选择需要展示的底栏标签", enabled = masterOn) { filterOn = it }
     }
@@ -184,7 +181,6 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             }
         }
     }
-    SectionHeader("底栏自定义", "注入与个性化底栏入口")
     GroupCard {
         PrefSwitch(
             activity,
@@ -202,7 +198,6 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
 
 @Composable
 private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean) {
-    SectionHeader("其他界面精简", "升级记录、搜索相关推荐等零散页面")
     GroupCard {
         PrefSwitch(activity, Settings.KEY_DETAIL_FEATURED, "详情页「精选」", "按文案匹配，仅在应用详情页生效", enabled = masterOn)
         Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
@@ -226,7 +221,6 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
     val tick by activity.refreshSignal
     var floatingOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_FLOATING_BAR, false)) }
 
-    SectionHeader("悬浮底栏配置", "底栏颜色、透明度、显示效果参数")
     GroupCard {
         PrefSwitch(
             activity,

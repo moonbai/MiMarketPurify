@@ -1,9 +1,9 @@
 package com.mars.mimarketpurify.ui.components
 
-import android.app.AlertDialog
-import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
@@ -474,6 +474,13 @@ private data class RefProject(val repoName: String, val url: String, val label: 
 @Composable
 fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
     val colors = MiuixTheme.colorScheme
+    // 检查更新 / 下载状态（问题1：MiuiX 风格弹窗；问题3：下载进度）。
+    // 用 Material3 AlertDialog（在 MiuixTheme 下即 MiuiX 风格）+ Miuix 进度条，替代原生 AlertDialog / ProgressDialog。
+    var updateInfo by remember { mutableStateOf<UpdateCheckResult.Available?>(null) }
+    var showUpdate by remember { mutableStateOf(false) }
+    var downloading by remember { mutableStateOf(false) }
+    // 0f..1f 表示确定进度；-1f 表示未知总长（服务器未回 Content-Length），退化为 indeterminate。
+    var downloadProgress by remember { mutableStateOf(0f) }
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
         SubTopBar(title = "关于", showBack = false, onBack = onBack)
         Column(
@@ -631,35 +638,138 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                     summary = "对比 GitHub 最新 Release 版本",
                     value = "",
                     enabled = true,
-                ) { checkForUpdatesManual(activity) }
+                ) {
+                    Thread {
+                        val result = UpdateChecker.check()
+                        activity.runOnUiThread {
+                            when (result) {
+                                is UpdateCheckResult.Available -> {
+                                    updateInfo = result
+                                    showUpdate = true
+                                }
+                                is UpdateCheckResult.Latest ->
+                                    Toast.makeText(activity, "已是最新版本", Toast.LENGTH_SHORT).show()
+                                is UpdateCheckResult.Unavailable ->
+                                    Toast.makeText(activity, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }.start()
+                }
             }
 
             Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
+        }
+
+        // ── 检查更新结果弹窗（MiuiX 风格；问题1）──
+        if (showUpdate && updateInfo != null) {
+            val info = updateInfo!!
+            AlertDialog(
+                onDismissRequest = { showUpdate = false },
+                title = { Text(text = "模块更新", color = colors.onSurface) },
+                text = {
+                    val sizeText = if (info.sizeBytes > 0) {
+                        "大小：%.1f MB".format(info.sizeBytes / 1048576.0)
+                    } else ""
+                    val body = buildString {
+                        append("发现新版本 v${info.versionName}")
+                        if (sizeText.isNotEmpty()) append("\n$sizeText")
+                        if (info.notes.isNotBlank()) append("\n\n${info.notes.take(800)}")
+                    }
+                    Text(
+                        text = body,
+                        fontSize = 14.sp,
+                        color = colors.onSurfaceSecondary,
+                        lineHeight = (14 * 1.4).sp,
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showUpdate = false
+                        downloading = true
+                        downloadProgress = 0f
+                        startDownload(
+                            activity = activity,
+                            info = info,
+                            onProgress = { d, t ->
+                                activity.runOnUiThread {
+                                    // 未知总长时退化为 indeterminate（-1f），否则按字节比计算百分比。
+                                    downloadProgress = if (t > 0) (d.toFloat() / t).coerceIn(0f, 1f) else -1f
+                                }
+                            },
+                            onDone = { file ->
+                                activity.runOnUiThread {
+                                    downloading = false
+                                    installApk(activity, file)
+                                }
+                            },
+                            onError = { e ->
+                                activity.runOnUiThread {
+                                    downloading = false
+                                    Toast.makeText(activity, "下载失败：${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            },
+                        )
+                    }) { Text(text = "下载并安装", color = colors.primary) }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showUpdate = false
+                        openLink(activity, info.releaseUrl)
+                    }) { Text(text = "去发布页", color = colors.onSurfaceSecondary) }
+                },
+            )
+        }
+
+        // ── 下载进度弹窗（MiuiX 风格；问题3）──
+        if (downloading) {
+            AlertDialog(
+                onDismissRequest = {},
+                confirmButton = {},
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = "正在下载更新包…",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface,
+                        )
+                        Spacer(Modifier.height(18.dp))
+                        if (downloadProgress >= 0f) {
+                            CircularProgressIndicator(progress = downloadProgress)
+                            Spacer(Modifier.height(12.dp))
+                            LinearProgressIndicator(
+                                progress = downloadProgress,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = "${(downloadProgress * 100).toInt()}%",
+                                fontSize = 14.sp,
+                                color = colors.onSurfaceSecondary,
+                            )
+                        } else {
+                            CircularProgressIndicator(progress = null)
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = "正在获取下载信息…",
+                                fontSize = 14.sp,
+                                color = colors.onSurfaceSecondary,
+                            )
+                        }
+                    }
+                },
+            )
         }
     }
 }
 
 /**
- * 手动检查更新：子线程请求 GitHub Releases，结果回主线程以 Toast 提示；
- * 发现新版本则直接打开发布页。插件主页与关于页共用（原在 [MainActivity]，现统一收口于此）。
+ * 检查更新的发起逻辑已内联到 [AboutContent]：点击「检查更新」于子线程调用 [UpdateChecker.check]，
+ * 结果写入 Compose 状态并以 MiuiX 风格弹窗呈现（不再用原生 AlertDialog）。
  */
-private fun checkForUpdatesManual(context: Context) {
-    val activity = context as? ComponentActivity ?: return
-    Thread {
-        val result = UpdateChecker.check()
-        activity.runOnUiThread {
-            when (result) {
-                is UpdateCheckResult.Available -> showUpdateDialog(activity, result)
-
-                is UpdateCheckResult.Latest ->
-                    Toast.makeText(context, "已是最新版本", Toast.LENGTH_SHORT).show()
-
-                is UpdateCheckResult.Unavailable ->
-                    Toast.makeText(context, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }.start()
-}
 
 private data class GroupCardState(val title: String, val subtitle: String)
 
@@ -668,73 +778,53 @@ private fun openLink(activity: ComponentActivity, url: String) {
 }
 
 /**
- * 发现新版本后的交互：弹窗展示版本与更新说明；
- *  - 若解析到 APK 直链：主按钮「下载并安装」走应用内下载 + FileProvider 调起安装；
- *  - 否则（无直链）：只保留「前往发布页」兜底。
+ * 后台下载 APK：进度经 [onProgress](字节) 回调，完成经 [onDone]、失败经 [onError] 回主线程，
+ * 由调用方（[AboutContent]）驱动 MiuiX 进度弹窗与安装调起。
  */
-private fun showUpdateDialog(activity: ComponentActivity, result: UpdateCheckResult.Available) {
-    val sizeText = if (result.sizeBytes > 0) {
-        "大小：%.1f MB".format(result.sizeBytes / 1048576.0)
-    } else ""
-    val msg = buildString {
-        append("发现新版本 v${result.versionName}")
-        if (sizeText.isNotEmpty()) append("\n$sizeText")
-        if (result.notes.isNotBlank()) append("\n\n${result.notes.take(800)}")
-    }
-    val canDirect = result.apkUrl.isNotBlank()
-    AlertDialog.Builder(activity).apply {
-        setTitle("模块更新")
-        setMessage(msg)
-        if (canDirect) {
-            setPositiveButton("下载并安装") { _, _ ->
-                downloadAndInstall(activity, result.apkUrl, result.apkName)
-            }
-        }
-        setNegativeButton(if (canDirect) "去发布页" else "前往下载") { _, _ ->
-            openLink(activity, result.releaseUrl)
-        }
-        setCancelable(true)
-        show()
-    }
-}
-
-/** 后台把 APK 下到本地，完成后经 FileProvider 调起系统安装。 */
-private fun downloadAndInstall(activity: ComponentActivity, apkUrl: String, apkName: String) {
-    val dialog = ProgressDialog(activity).apply {
-        setMessage("正在下载更新包…")
-        setCancelable(false)
-        show()
-    }
+private fun startDownload(
+    activity: ComponentActivity,
+    info: UpdateCheckResult.Available,
+    onProgress: (downloaded: Long, total: Long) -> Unit,
+    onDone: (File) -> Unit,
+    onError: (Exception) -> Unit,
+) {
     Thread {
         try {
             val dir = activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: activity.cacheDir
             dir.mkdirs()
-            val file = File(dir, apkName.ifBlank { "MiMarketPurify_update.apk" })
-            downloadFile(apkUrl, file)
-            activity.runOnUiThread {
-                dialog.dismiss()
-                installApk(activity, file)
-            }
+            val file = File(dir, info.apkName.ifBlank { "MiMarketPurify_update.apk" })
+            downloadFile(info.apkUrl, file, onProgress)
+            onDone(file)
         } catch (e: Exception) {
-            activity.runOnUiThread {
-                dialog.dismiss()
-                Toast.makeText(activity, "下载失败：${e.message}", Toast.LENGTH_LONG).show()
-            }
+            onError(e)
         }
     }.start()
 }
 
-private fun downloadFile(url: String, dest: File) {
+/** 后台把 APK 下到本地；下载进度经 [onProgress](downloaded, total，单位字节) 回调。 */
+private fun downloadFile(
+    url: String,
+    dest: File,
+    onProgress: (downloaded: Long, total: Long) -> Unit = { _, _ -> },
+) {
     val conn = URL(url).openConnection() as HttpURLConnection
     conn.connectTimeout = 15_000
     conn.readTimeout = 15_000
     try {
         if (conn.responseCode != HttpURLConnection.HTTP_OK) throw IOException("HTTP ${conn.responseCode}")
+        // contentLengthLong 为 -1 表示服务器未回 Content-Length（分块传输），此时无法计算百分比，
+        // 由上层按 total<=0 退化为 indeterminate 进度条。
+        val total = conn.contentLengthLong.takeIf { it >= 0 } ?: 0L
         conn.inputStream.use { input ->
             FileOutputStream(dest).use { out ->
                 val buf = ByteArray(8192)
                 var read: Int
-                while (input.read(buf).also { read = it } != -1) out.write(buf, 0, read)
+                var downloaded = 0L
+                while (input.read(buf).also { read = it } != -1) {
+                    out.write(buf, 0, read)
+                    downloaded += read
+                    onProgress(downloaded, total)
+                }
             }
         }
     } finally {

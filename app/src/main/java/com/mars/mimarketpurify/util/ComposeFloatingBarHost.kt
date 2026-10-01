@@ -402,7 +402,13 @@ class ComposeFloatingBarHost private constructor(
             val bottom = NativeTabBar.bottomContainer(activity) ?: return null
             val tabLayout = NativeTabBar.tabContainerIn(bottom) ?: NativeTabBar.tabContainer(activity)
                 ?: return null
-            val content = NativeTabBar.viewByResName(activity, "fragment_container") ?: return null
+            // 内容容器：多数版本主界面用 fragment_container 承载页面碎片；但部分商店版本（或早期
+            // 注入时机）该 id 并不存在。它仅用于「页面内容延伸到浮层之下」的视觉参考，并非挂载必需
+            // —— 而 samplingView 主源已用 android.R.id.content 兜底，故此处同样用 decorView 的
+            // content 兜底，避免「找不到 fragment_container 就整个浮层直接 return null、悬浮底栏永不挂载」。
+            val content = NativeTabBar.viewByResName(activity, "fragment_container")
+                ?: activity.findViewById<View>(android.R.id.content)
+                ?: return null
             val samplingView =
                 activity.findViewById<View>(android.R.id.content) ?: content
             val overlayParent = activity.window.decorView as? ViewGroup ?: return null
