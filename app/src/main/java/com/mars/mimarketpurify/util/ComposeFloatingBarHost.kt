@@ -399,9 +399,15 @@ class ComposeFloatingBarHost private constructor(
         private fun create(activity: Activity): ComposeFloatingBarHost? = runCatching {
             val res = activity.resources
             fun id(name: String): Int = res.getIdentifier(name, "id", activity.packageName)
-            val bottom = NativeTabBar.bottomContainer(activity) ?: return null
-            val tabLayout = NativeTabBar.tabContainerIn(bottom) ?: NativeTabBar.tabContainer(activity)
-                ?: return null
+            val bottom = NativeTabBar.bottomContainer(activity) ?: run {
+                Log.w(TAG, "悬浮底栏：底栏容器定位失败（tab_container_layout 不存在且无结构候选）")
+                return null
+            }
+            // tabLayout 定位全失败时（资源名被混淆），直接复用结构回退得到的 bottomContainer
+            // ——它本身就是暴露 getTabViews() 的底栏 TabView 容器，[tabViewsOf] 仍能读取原生标签。
+            val tabLayout = NativeTabBar.tabContainerIn(bottom)
+                ?: NativeTabBar.tabContainer(activity)
+                ?: bottom
             // 内容容器：多数版本主界面用 fragment_container 承载页面碎片；但部分商店版本（或早期
             // 注入时机）该 id 并不存在。它仅用于「页面内容延伸到浮层之下」的视觉参考，并非挂载必需
             // —— 而 samplingView 主源已用 android.R.id.content 兜底，故此处同样用 decorView 的

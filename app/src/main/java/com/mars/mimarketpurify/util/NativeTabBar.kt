@@ -51,8 +51,39 @@ object NativeTabBar {
         }
 
     /** 底栏最外层容器（tab_container_layout），找不到返回 null。 */
-    fun bottomContainer(activity: Activity): View? =
+    fun bottomContainer(activity: Activity): View? {
+        // 优先按资源名定位（多数商店版本仍为 tab_container_layout）。
         resId(activity, ID_TAB_CONTAINER_LAYOUT).takeIf { it != 0 }?.let(activity::findViewById)
+            ?.let { return it }
+        // 结构回退：部分商店版本（如新版 update）该 id 被 AndResGuard 混淆或改名，
+        // 导致悬浮底栏「未找到原生底栏 View」而永不挂载。改在内容树里找含 getTabViews()
+        // 的最浅容器——底栏 TabView 容器独有该方法（见 [tabViewsOf]），子页面局部标签栏通常没有，
+        // 故能区分，且不依赖任何具体资源名，抗混淆 / 抗版本漂移。
+        return findBottomContainerByStructure(activity)
+    }
+
+    /**
+     * 结构回退定位底栏容器：遍历内容树，返回**最浅**且暴露 [getTabViews] 的容器。
+     * 反射结果经 [cachedMethod] 缓存，重试期重复调用几乎零开销。
+     */
+    private fun findBottomContainerByStructure(activity: Activity): View? {
+        val root = activity.findViewById<View>(android.R.id.content) ?: return null
+        var best: View? = null
+        var bestDepth = Int.MAX_VALUE
+        fun visit(v: View, depth: Int) {
+            if (depth > MAX_DEPTH) return
+            // 底栏容器暴露 getTabViews()；命中即视为候选，取最浅者以排除深层子标签栏。
+            if (cachedMethod(v, "getTabViews") != null && depth < bestDepth) {
+                best = v
+                bestDepth = depth
+            }
+            if (v is ViewGroup) {
+                for (i in 0 until v.childCount) visit(v.getChildAt(i) ?: continue, depth + 1)
+            }
+        }
+        visit(root, 0)
+        return best
+    }
 
     /**
      * 承载 TabView 的容器（tab_container）。
