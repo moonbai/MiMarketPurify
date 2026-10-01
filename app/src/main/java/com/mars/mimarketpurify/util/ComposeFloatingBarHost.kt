@@ -69,6 +69,18 @@ import java.util.WeakHashMap
  * 原生 TabView 仍负责导航、埋点与页面切换（点击转发给原生 tab 的 [View.performClick]），
  * 本类只接管呈现层，复用 NativeTabBar 反射读取与 FloatingBottomBar 生命周期骨架。
  */
+/**
+ * 待更新应用数缓存（会话级）。
+ *
+ * 商店把「待更新应用数」挂在「我的」标签的红点/数字上。若用户把「我的」筛掉，原生 TabView 不复存在、
+ * 该数据源随之消失，导致「更新」标签角标丢失。这里在每次同步时从「我的」TabView 读取并缓存其最新值，
+ * 缓存值在本会话内持续有效——即便随后筛选掉「我的」，只要本次会话「我的」曾渲染过，待更新数仍会
+ * 归并显示到「更新」标签。
+ */
+private object UpdateBadgeState {
+    @Volatile var count: Int = 0
+}
+
 class ComposeFloatingBarHost private constructor(
     private val activity: Activity,
     private val overlayParent: ViewGroup,
@@ -196,7 +208,10 @@ class ComposeFloatingBarHost private constructor(
     private fun syncNativeState() {
         // 实时响应悬浮底栏总开关：关闭后即便 Activity 生命周期未重新触发（如模块内即时切换开关），
         // 也在下一帧自释放并还原原生底栏，避免「关了开关底栏还在」的残留。
-        if (!Settings.isEnabled(Settings.KEY_FLOATING_BAR, false)) {
+        // 仅当偏好可读且开关确实关闭时才自释放；偏好暂不可读（service 抖动）时保留现状，
+        // 避免误卸载导致「悬浮底栏失效」且无法自愈。
+        val floatingOn = Settings.isEnabled(Settings.KEY_FLOATING_BAR, false)
+        if (!floatingOn && Settings.remotePrefsAvailable()) {
             dispose()
             return
         }
@@ -204,10 +219,12 @@ class ComposeFloatingBarHost private constructor(
         val selected = NativeTabBar.selectedIndexOf(nativeTabLayout)
             .coerceIn(0, (nativeTabs.size - 1).coerceAtLeast(0))
         val tabs = nativeTabs.mapIndexed { index, tab -> readTabState(tab, index) }
-        // 待更新应用数量：取所有原生 tab 数字角标的最大值（通常来自「我的」页标签），
-        // 移花接木开启时统一归并到「更新」标签显示，其余标签隐藏角标。
+        // 待更新应用数量：优先取会话内缓存的「我的」标签待更新数（屏蔽「我的」后仍有效），
+        // 再与当前可见 tab 的数字角标取最大值；移花接木开启时统一归并到「更新」标签显示，其余标签隐藏角标。
         val updateEntryOn = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
-        val updateCount = if (updateEntryOn) tabs.maxOfOrNull { it.number }?.takeIf { it > 0 } ?: 0 else 0
+        val updateCount = if (updateEntryOn) {
+            maxOf(UpdateBadgeState.count, tabs.maxOfOrNull { it.number } ?: 0).takeIf { it > 0 } ?: 0
+        } else 0
         // 移花接木开启：其余标签一律隐藏角标（红点/数字），仅「更新」标签显示待更新数量。
         val effectiveTabs = if (updateEntryOn) {
             tabs.map { tab ->
@@ -290,6 +307,11 @@ class ComposeFloatingBarHost private constructor(
         val hasRedPoint = NativeTabBar.hasRedPoint(tab)
         val number = NativeTabBar.numberOf(tab)
         val iconBitmap = tabIconBitmap(tab)
+        // 捕获「我的」标签上的待更新数：缓存其红点/数字，供「更新」标签兜底显示。
+        // （筛选掉「我的」后该 TabView 消失，但缓存值在本会话内仍有效。）
+        if (tag.contains("mine", ignoreCase = true) || label.contains("我的")) {
+            UpdateBadgeState.count = if (hasRedPoint) maxOf(number, 1) else number
+        }
         // 角标默认按「底栏角标净化」总开关（KEY_TAB_BADGE，即设置里「我的」页的「底栏角标」）决定：
         // 关闭净化（保留角标）时显示原生红点/数字。开启移花接木后，syncNativeState 会统一把
         // 待更新数归并到「更新」标签、其余标签隐藏（覆盖此处结果）。

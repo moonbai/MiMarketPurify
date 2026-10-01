@@ -417,7 +417,7 @@ fun PrefColorRow(
                 color = colors.onSurface,
             )
             Text(
-                text = "点击选择颜色（支持 #AARRGGBB 带透明度）",
+                text = "点击滑动颜色条选择颜色",
                 fontSize = MiuiX.ROW_SUMMARY.sp,
                 color = colors.onSurfaceSecondary,
                 modifier = Modifier.padding(top = 2.dp),

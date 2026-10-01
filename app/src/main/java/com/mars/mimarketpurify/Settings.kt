@@ -223,6 +223,13 @@ object Settings {
 
     fun isMasterEnabled(): Boolean = isEnabled(KEY_MASTER, true)
 
+    /**
+     * 远程偏好当前是否可读（service 已连接 / 注入进程 provider 可用）。
+     * 用于悬浮底栏等「实时读开关」的场景：偏好暂不可读时不应据此判定开关关闭，
+     * 否则 service 抖动会误卸载悬浮底栏且无法自愈。
+     */
+    fun remotePrefsAvailable(): Boolean = getRemotePrefs() != null
+
     fun isEnabled(key: String, def: Boolean = true): Boolean {
         val remote = getRemotePrefs()
         if (remote != null) {

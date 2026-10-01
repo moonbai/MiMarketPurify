@@ -155,13 +155,19 @@ class MainActivity : SettingsBaseActivity() {
             parts += "筛选已关闭"
         } else {
             val kept = readLocalTabs().size
-            parts += if (kept <= 0) "未开启" else "已开启 $kept 个"
+            // 移花接木会在原生底栏额外注入一枚「更新」入口，统计实际可见标签时应一并计入，
+            // 否则「保留首页(1) + 开启移花接木」会显示为「已开启 1 个」，与用户看到的 2 个底栏不符。
+            val extra = if (readLocal(Settings.KEY_UPDATE_TAB, true)) 1 else 0
+            val total = kept + extra
+            parts += if (total <= 0) "未开启" else "已开启 $total 个"
         }
         return parts.joinToString(" · ")
     }
 
     internal fun tabbarText(): String {
-        return if (readLocal(Settings.KEY_FLOATING_BAR, true)) {
+        // 注意：KEY_FLOATING_BAR 默认应为 false（关闭），此处默认必须与开关默认值一致，
+        // 否则未写入过该键时会误判为「悬浮已开启」。
+        return if (readLocal(Settings.KEY_FLOATING_BAR, false)) {
             "悬浮已开启"
         } else {
             "原版底栏"
