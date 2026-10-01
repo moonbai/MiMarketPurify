@@ -51,6 +51,9 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.compose.ui.graphics.ImageBitmap
 import java.util.WeakHashMap
 
 /**
@@ -196,10 +199,22 @@ class ComposeFloatingBarHost private constructor(
         val selected = NativeTabBar.selectedIndexOf(nativeTabLayout)
             .coerceIn(0, (nativeTabs.size - 1).coerceAtLeast(0))
         val tabs = nativeTabs.mapIndexed { index, tab -> readTabState(tab, index) }
+        // 待更新应用数量：取所有原生 tab 数字角标的最大值（通常来自「我的」页标签），
+        // 移花接木开启时统一归并到「更新」标签显示，其余标签隐藏角标。
+        val updateEntryOn = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
+        val updateCount = if (updateEntryOn) tabs.maxOfOrNull { it.number }?.takeIf { it > 0 } ?: 0 else 0
+        // 移花接木开启：其余标签一律隐藏角标（红点/数字），仅「更新」标签显示待更新数量。
+        val effectiveTabs = if (updateEntryOn) {
+            tabs.map { tab ->
+                if (tab.isUpdate) tab.copy(badge = false, badgeNumber = updateCount)
+                else tab.copy(badge = false, badgeNumber = 0)
+            }
+        } else {
+            tabs
+        }
         // 移花接木（底栏更新入口）开启、且原生底栏未自带「更新」TabView 时，
         // MarketNavigationContent 会用 effectiveTabs 补一个合成「更新」项，
         // 此时有效 tab 数为「原生数 + 1」。
-        val updateEntryOn = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
         val hasNativeUpdate = tabs.any { it.isUpdate }
         val syntheticUpdate = updateEntryOn && !hasNativeUpdate
         // 默认要求「原生底栏可见且 tab 数 > 1」才接管悬浮胶囊；
@@ -218,8 +233,11 @@ class ComposeFloatingBarHost private constructor(
         val indicatorColorArgb = Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, -1)
         val textSelectedArgb = Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, -1)
         val textNormalArgb = Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, -1)
+        // 液态高亮开关：选中胶囊改用毛玻璃液态效果（与设置页「液态选中高亮动画 / 3D液态效果」对应）。
+        val liquid = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LIQUID, false)
+        val liquid3d = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LIQUID_3D, false)
         val next = MarketNavigationState(
-            tabs = tabs,
+            tabs = effectiveTabs,
             selectedIndex = selected,
             visible = visible,
             showLabel = showLabel,
@@ -229,6 +247,9 @@ class ComposeFloatingBarHost private constructor(
             indicatorColorArgb = indicatorColorArgb,
             textSelectedArgb = textSelectedArgb,
             textNormalArgb = textNormalArgb,
+            updateCount = updateCount,
+            liquid = liquid,
+            liquid3d = liquid3d,
         )
         val selectionChanged = next.selectedIndex != state.selectedIndex
         val becameVisible = next.visible && !state.visible
@@ -238,14 +259,35 @@ class ComposeFloatingBarHost private constructor(
         if (selectionChanged || becameVisible) sampler.requestCaptureBurst()
     }
 
+    /** 原生 TabView 图标 → ImageBitmap（带缓存，避免每帧重建）。取不到返回 null（退化为自绘图标）。 */
+    private val iconBitmapCache = WeakHashMap<View, ImageBitmap?>()
+    private fun tabIconBitmap(tab: View): ImageBitmap? {
+        iconBitmapCache[tab]?.let { return it }
+        val bmp = runCatching {
+            val iv = NativeTabBar.iconViewOf(tab) ?: return@runCatching null
+            val d = iv.drawable ?: return@runCatching null
+            val w = iv.width.takeIf { it > 0 } ?: 48
+            val h = iv.height.takeIf { it > 0 } ?: 48
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            d.setBounds(0, 0, w, h)
+            d.draw(canvas)
+            bitmap.asImageBitmap()
+        }.getOrNull()
+        iconBitmapCache[tab] = bmp
+        return bmp
+    }
+
     private fun readTabState(tab: View, index: Int): MarketTabState {
         val label = NativeTabBar.titleOf(tab)
             ?: FALLBACK_LABELS.getOrElse(index) { "入口 ${index + 1}" }
         val tag = NativeTabBar.tagOf(tab).orEmpty()
         val hasRedPoint = NativeTabBar.hasRedPoint(tab)
         val number = NativeTabBar.numberOf(tab)
-        // 角标统一由「底栏角标净化」总开关（KEY_TAB_BADGE，即设置里「我的」页的「底栏角标」）
-        // 控制，悬浮底栏不再保留独立的「显示角标」开关（二者二选一，保留全局这一个）。
+        val iconBitmap = tabIconBitmap(tab)
+        // 角标默认按「底栏角标净化」总开关（KEY_TAB_BADGE，即设置里「我的」页的「底栏角标」）决定：
+        // 关闭净化（保留角标）时显示原生红点/数字。开启移花接木后，syncNativeState 会统一把
+        // 待更新数归并到「更新」标签、其余标签隐藏（覆盖此处结果）。
         val badge = !Settings.isEnabled(Settings.KEY_TAB_BADGE, true) &&
             (hasRedPoint || number > 0)
         return MarketTabState(
@@ -253,6 +295,8 @@ class ComposeFloatingBarHost private constructor(
             label = label,
             tag = tag,
             badge = badge,
+            number = number,
+            iconBitmap = iconBitmap,
             isUpdate = tag == UPDATE_TAB_TAG || label.contains("更新"),
         )
     }
@@ -410,6 +454,12 @@ private data class MarketTabState(
     val label: String,
     val tag: String,
     val badge: Boolean,
+    /** 原生 tab 的数字角标（待更新应用数等），用于「更新」标签归并显示。 */
+    val number: Int = 0,
+    /** 数字角标；>0 时悬浮底栏显示数字（覆盖红点）。 */
+    val badgeNumber: Int = 0,
+    /** 原生 TabView 的图标位图（短剧等无自绘图标时复用商店自带图标），为 null 则退化为 [icon]。 */
+    val iconBitmap: ImageBitmap? = null,
     /** 该项是不是「移花接木」注入的更新入口。 */
     val isUpdate: Boolean = false,
 ) {
@@ -429,6 +479,12 @@ private data class MarketNavigationState(
     val indicatorColorArgb: Int = -1,
     val textSelectedArgb: Int = -1,
     val textNormalArgb: Int = -1,
+    /** 待更新应用数（移花接木开启时归并到「更新」标签显示）。 */
+    val updateCount: Int = 0,
+    /** 选中胶囊液态高亮开关。 */
+    val liquid: Boolean = false,
+    /** 3D 液态高亮开关。 */
+    val liquid3d: Boolean = false,
 )
 
 /**
@@ -443,12 +499,14 @@ private fun resolveIcon(label: String, tag: String): ImageVector? {
         l.contains("首页") || t.contains("home") || t.contains("index") -> NavIcons.Home
         l.contains("游戏") || t.contains("game") -> NavIcons.Game
         l.contains("排行") || l.contains("榜单") || t.contains("rank") -> NavIcons.Rank
+        l.contains("视频") || l.contains("短剧") || l.contains("剧") || l.contains("影视") -> NavIcons.List
         l.contains("软件") || t.contains("soft") -> NavIcons.Apps
-        l.contains("我的") || t.contains("mine") || t.contains("账户") -> NavIcons.Person
+        l.contains("我的") || t.contains("mine") || l.contains("账户") -> NavIcons.Person
         l.contains("分类") || t.contains("category") -> NavIcons.List
         // 移花接木：TabFilter 注入的更新入口（tag=purify_update，标题「更新」）
         l.contains("更新") || t.contains(UPDATE_TAB_TAG) || t.contains("update") -> NavIcons.Update
-        else -> null
+        // 兜底：未命中时使用通用应用图标，避免纯文字（短剧等标签优先以原生图标呈现，见 readTabState）。
+        else -> NavIcons.Apps
     }
 }
 
@@ -487,6 +545,7 @@ private fun MarketNavigationContent(
                 label = "更新",
                 tag = UPDATE_TAB_TAG,
                 badge = false,
+                badgeNumber = state.updateCount,
                 isUpdate = true,
             )
         } else {
@@ -500,7 +559,9 @@ private fun MarketNavigationContent(
                 key = tab.nativeIndex.toString(),
                 label = if (showLabel) tab.label else "",
                 icon = tab.icon(),
+                iconBitmap = tab.iconBitmap,
                 badge = tab.badge,
+                badgeNumber = tab.badgeNumber,
             )
         }
 
@@ -552,6 +613,8 @@ private fun MarketNavigationContent(
                     contentNormalColor = textNormal,
                     backdrop = backdrop,
                     expandWidth = false,
+                    liquid = state.liquid,
+                    liquid3d = state.liquid3d,
                 )
             }
         }

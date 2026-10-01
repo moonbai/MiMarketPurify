@@ -190,12 +190,12 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             activity,
             Settings.KEY_UPDATE_TAB,
             "底栏更新入口（移花接木）",
-            "在商店底栏注入「更新」入口并直达更新页；悬浮底栏开启时以胶囊内图标呈现，关闭即移除该注入",
+            "在商店原生底栏注入「更新」入口并直达更新页；独立于悬浮底栏——关闭悬浮底栏后该入口仍保留在原生底栏。待更新数量会显示在「更新」标签上",
             default = true,
             enabled = masterOn,
         )
     }
-    Footer("Tips：隐藏标签后需重启一次应用商店才会生效；悬浮底栏及其参数为实时生效。")
+    Footer("Tips：隐藏标签后需重启一次应用商店才会生效。")
 }
 
 // ==================== 其他界面精简 ====================
@@ -216,7 +216,7 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean) {
         Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
         PrefSwitch(activity, Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, "更新界面自动升级开关", "隐藏更新界面自动升级开关", enabled = masterOn)
     }
-    Footer("Tips：隐藏的可能只是标题~")
+    Footer("Tips：隐藏的可能只是标题，不过眼不见为净嘛~")
 }
 
 // ==================== 悬浮底栏配置 ====================
@@ -279,6 +279,6 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
                 format = { "${it}dp" },
             )
         }
-        Footer("Tips：底栏背景色可用 #AARRGGBB 自定义透明度（如 #CCFFFFFF），实时生效。")
+        Footer("Tips：底栏背景色实时生效。")
     }
 }

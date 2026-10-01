@@ -141,18 +141,37 @@ object TabFilter : BaseHook() {
 
     // = = = = PageConfig hook = = = =
 
-    private fun ensurePurifyTab(): Any? {
+    /**
+     * 构造「更新」注入项。优先从 [template]（一个真实原生 TabInfo）克隆全部非静态字段，
+     * 再覆盖 tag / titles / url，使注入项与原生 tab 结构完全一致，
+     * 从而能被原生底栏正常渲染（否则字段不全常被商店跳过，导致关闭悬浮底栏后「更新」入口消失）。
+     * [template] 取不到时回落到从已缓存的 PageConfig.tabs 里找一个同类型实例。
+     */
+    private fun ensurePurifyTab(template: Any? = null): Any? {
         purifyTabInfo?.let { return it }
         val tabInfoClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.TabInfo") }.getOrNull() ?: return null
+        val tab = runCatching { tabInfoClz.newInstance() }.getOrNull() ?: return null
+        val src = template ?: runCatching {
+            (cachedPageConfig?.getFieldValue("tabs") as? List<*>)
+                ?.firstOrNull { it != null && it.javaClass == tabInfoClz }
+        }.getOrNull()
+        src?.let { from ->
+            runCatching {
+                tabInfoClz.declaredFields.forEach { f ->
+                    if (Modifier.isStatic(f.modifiers)) return@forEach
+                    f.isAccessible = true
+                    runCatching { f.set(tab, f.get(from)) }
+                }
+            }
+        }
         val tagF = runCatching { tabInfoClz.fieldFinder().filterByName("tag").filterByType(String::class.java).firstOrNull() }.getOrNull()
         val titlesF = runCatching { tabInfoClz.fieldFinder().filterByName("titles").firstOrNull() }.getOrNull()
         val urlF = runCatching { tabInfoClz.fieldFinder().filterByName("url").firstOrNull() }.getOrNull()
-        val tab = runCatching { tabInfoClz.newInstance() }.getOrNull() ?: return null
         runCatching { tagF?.set(tab, PURIFY_UPDATE) }
         runCatching { titlesF?.set(tab, mapOf("cn" to "更新", "en" to "Update")) }
         runCatching { urlF?.set(tab, "market://update") }
         purifyTabInfo = tab
-        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] purify TabInfo 已创建")
+        HookEnv.base.log(Log.DEBUG, TAG, "[TabFilter] purify TabInfo 已创建（克隆模板=${src != null}）")
         return tab
     }
 
@@ -256,7 +275,7 @@ object TabFilter : BaseHook() {
                 if (updateEntryEnabled()) {
                     val alreadyHas = list.any { runCatching { tagOf(it ?: return@any false) }.getOrNull() == PURIFY_UPDATE }
                     if (!alreadyHas) {
-                        val tabInfo = ensurePurifyTab()
+                        val tabInfo = ensurePurifyTab((result as? List<*>)?.firstOrNull())
                         if (tabInfo != null) {
                             list.add(tabInfo)
                             debugLog("fromJSON: 注入 purify_update（移花接木）")

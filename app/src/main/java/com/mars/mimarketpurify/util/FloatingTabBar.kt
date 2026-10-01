@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,9 +34,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.graphicsLayer
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -70,8 +75,13 @@ data class FloatingTabItem(
     val key: String,
     val label: String,
     val icon: ImageVector? = null,
+    /** 原生 TabView 的图标位图（优先于 [icon] 使用；短剧等无自绘图标时复用商店自带图标）。 */
+    val iconBitmap: ImageBitmap? = null,
     val enabled: Boolean = true,
+    /** 红点角标（不显示数字）。 */
     val badge: Boolean = false,
+    /** 数字角标；>0 时显示数字（覆盖红点）。用于「更新」标签显示待更新数量。 */
+    val badgeNumber: Int = 0,
 )
 
 enum class FloatingTabLayout {
@@ -142,6 +152,10 @@ fun FloatingTabBar(
     backdrop: LayerBackdrop? = null,
     blurRadiusPx: Float = FloatingTabBarDefaults.BlurRadiusPx,
     expandWidth: Boolean = true,
+    /** 液态高亮：选中胶囊改用毛玻璃液态效果（参考 iOS）。 */
+    liquid: Boolean = false,
+    /** 3D 液态：在液态基础上加阴影与更强的立体感。 */
+    liquid3d: Boolean = false,
 ) {
     if (items.isEmpty()) return
     val scheme = MiuixTheme.colorScheme
@@ -211,19 +225,44 @@ fun FloatingTabBar(
             }
 
             // 滑动胶囊指示器：跟随选中项以弹簧动画平移，选中态仅靠它表达（不含主色）。
-            Box(
-                modifier = Modifier
-                    .offset {
-                        IntOffset(
-                            (visualPosition * itemWidthPx - overflowPx).roundToInt(),
-                            0,
+            // liquid 开启且 backdrop 可用时，选中胶囊改用毛玻璃液态效果（参考 iOS 液态高亮）；
+            // 3D 在此基础上再加阴影，增强立体感。
+            val indicatorBase = Modifier
+                .offset {
+                    IntOffset(
+                        (visualPosition * itemWidthPx - overflowPx).roundToInt(),
+                        0,
+                    )
+                }
+                .width(itemWidth + FloatingTabBarDefaults.IndicatorHorizontalOverflow * 2)
+                .fillMaxHeight()
+                .clip(Capsule())
+            if (liquid && backdrop != null) {
+                Box(
+                    modifier = indicatorBase
+                        .floatingGlassSurface(
+                            backdrop = backdrop,
+                            shape = Capsule(),
+                            tint = glassTint,
+                            blurRadiusPx = blurRadiusPx,
                         )
-                    }
-                    .width(itemWidth + FloatingTabBarDefaults.IndicatorHorizontalOverflow * 2)
-                    .fillMaxHeight()
-                    .clip(Capsule())
-                    .background(resolvedIndicator),
-            )
+                        .then(
+                            if (liquid3d) {
+                                Modifier.shadow(
+                                    elevation = 8.dp,
+                                    shape = Capsule(),
+                                    clip = false,
+                                    ambientColor = resolvedIndicator,
+                                    spotColor = resolvedIndicator,
+                                )
+                            } else {
+                                Modifier
+                            },
+                        ),
+                )
+            } else {
+                Box(modifier = indicatorBase.background(resolvedIndicator))
+            }
 
             Row(
                 modifier = Modifier
@@ -232,18 +271,19 @@ fun FloatingTabBar(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 items.forEachIndexed { index, item ->
-                    FloatingTabItemContent(
-                        item = item,
-                        selected = index == selectedIndex,
-                        selectedColor = resolvedSelected,
-                        normalColor = resolvedNormal,
-                        layout = layout,
-                        showLabel = showLabel,
-                        onClick = { onSelect(index) },
-                        modifier = Modifier
-                            .width(itemWidth)
-                            .fillMaxHeight(),
-                    )
+                FloatingTabItemContent(
+                    item = item,
+                    selected = index == selectedIndex,
+                    selectedColor = resolvedSelected,
+                    normalColor = resolvedNormal,
+                    layout = layout,
+                    showLabel = showLabel,
+                    liquid = liquid,
+                    onClick = { onSelect(index) },
+                    modifier = Modifier
+                        .width(itemWidth)
+                        .fillMaxHeight(),
+                )
                 }
             }
         }
@@ -258,6 +298,7 @@ private fun FloatingTabItemContent(
     normalColor: Color,
     layout: FloatingTabLayout,
     showLabel: Boolean,
+    liquid: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -289,7 +330,7 @@ private fun FloatingTabItemContent(
             FloatingTabLayout.Horizontal -> Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconWithBadge(item, color)
+                IconWithBadge(item, color, selected, liquid)
                 if (showLabel && item.label.isNotEmpty()) {
                     Spacer(Modifier.width(5.dp))
                     Label(item.label, color, selected)
@@ -299,7 +340,7 @@ private fun FloatingTabItemContent(
             FloatingTabLayout.Stacked -> Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                IconWithBadge(item, color)
+                IconWithBadge(item, color, selected, liquid)
                 if (showLabel && item.label.isNotEmpty()) {
                     Label(item.label, color, selected)
                 }
@@ -309,20 +350,51 @@ private fun FloatingTabItemContent(
 }
 
 @Composable
-private fun IconWithBadge(item: FloatingTabItem, color: Color) {
+private fun IconWithBadge(item: FloatingTabItem, color: Color, selected: Boolean, liquid: Boolean) {
+    val scale by animateFloatAsState(
+        targetValue = if (selected && liquid) 1.18f else 1f,
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium),
+        label = "floating_tab_icon_scale",
+    )
+    val scaleMod = Modifier.graphicsLayer(scaleX = scale, scaleY = scale)
+    val scheme = MiuixTheme.colorScheme
     Box(contentAlignment = Alignment.TopEnd) {
-        if (item.icon != null) {
-            Icon(
+        when {
+            item.iconBitmap != null -> Image(
+                bitmap = item.iconBitmap,
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(color),
+                modifier = Modifier.size(FloatingTabBarDefaults.TabIconSize).then(scaleMod),
+            )
+            item.icon != null -> Icon(
                 imageVector = item.icon,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(FloatingTabBarDefaults.TabIconSize),
+                modifier = Modifier.size(FloatingTabBarDefaults.TabIconSize).then(scaleMod),
             )
         }
-        if (item.badge) {
-            val scheme = MiuixTheme.colorScheme
-            Box(
+        when {
+            item.badgeNumber > 0 -> {
+                val text = if (item.badgeNumber > 99) "99+" else item.badgeNumber.toString()
+                Box(
+                    modifier = Modifier
+                        .offset(x = 5.dp, y = (-4).dp)
+                        .background(scheme.error, RoundedCornerShape(50))
+                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = text,
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
+            }
+            item.badge -> Box(
                 modifier = Modifier
+                    .offset(x = 5.dp, y = (-4).dp)
                     .size(8.dp)
                     .clip(Capsule())
                     .background(scheme.error),
