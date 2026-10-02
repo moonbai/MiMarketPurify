@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
@@ -670,17 +671,34 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                     val sizeText = if (info.sizeBytes > 0) {
                         "大小：%.1f MB".format(info.sizeBytes / 1048576.0)
                     } else ""
-                    val body = buildString {
-                        append("发现新版本 v${info.versionName}")
-                        if (sizeText.isNotEmpty()) append("\n$sizeText")
-                        if (info.notes.isNotBlank()) append("\n\n${info.notes.take(800)}")
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // 说明可能很长（含多张截图）：限高 + 纵向滚动，避免图片把弹窗撑出屏幕、
+                            // 底部「下载并安装 / 去发布页」按钮被顶掉。
+                            .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.5f).dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        Text(
+                            text = buildString {
+                                append("发现新版本 v${info.versionName}")
+                                if (sizeText.isNotEmpty()) append("\n$sizeText")
+                            },
+                            fontSize = 14.sp,
+                            color = colors.onSurfaceSecondary,
+                            lineHeight = (14 * 1.4).sp,
+                        )
+                        if (info.notes.isNotBlank()) {
+                            Spacer(Modifier.height(12.dp))
+                            // GitHub Release 说明常内联图片（`<img src="..."/>`），旧实现把整段 body
+                            // 当纯文本，导致图片标签原样显示成「代码」；这里解析为「文本 / 图片」两类块，
+                            // 文本块做轻量 Markdown 清理，图片块用内置下载器直接显示（点击可查看原图）。
+                            ReleaseNotesView(
+                                notes = info.notes,
+                                onImageClick = { openLink(activity, it) },
+                            )
+                        }
                     }
-                    Text(
-                        text = body,
-                        fontSize = 14.sp,
-                        color = colors.onSurfaceSecondary,
-                        lineHeight = (14 * 1.4).sp,
-                    )
                 },
                 confirmButton = {
                     TextButton(onClick = {
