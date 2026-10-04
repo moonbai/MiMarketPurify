@@ -1,8 +1,8 @@
 package com.mars.mimarketpurify.ui.components
 
 import android.content.Context
-import kotlin.math.roundToInt
 import android.content.Intent
+import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import android.net.Uri
@@ -18,13 +18,15 @@ import java.net.URL
 import com.mars.mimarketpurify.util.UpdateChecker
 import com.mars.mimarketpurify.util.UpdateCheckResult
 import com.mars.mimarketpurify.util.MarketRestarter
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
@@ -35,14 +37,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
@@ -59,15 +62,11 @@ import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.PrivacyPolicyActivity
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import android.view.Choreographer
-import android.view.View
 import androidx.activity.compose.BackHandler
 import com.kyant.shapes.Capsule
-import com.mars.mimarketpurify.util.ViewBackdropLayer
-import com.mars.mimarketpurify.util.ViewBackdropBounds
-import com.mars.mimarketpurify.util.ViewBackdropSampler
-import com.mars.mimarketpurify.util.ViewBackdropSnapshot
 import com.mars.mimarketpurify.util.floatingGlassSurface
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
 // ==================== SettingItem（深色模式修复：显式设 onSurface 色） ====================
@@ -577,6 +576,11 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
     var showUpdate by remember { mutableStateOf(false) }
     var downloading by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableStateOf(0f) }
+    val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    // 向上滑动超过 80dp 后隐藏检查更新按钮
+    val hideUpdateThresholdPx = with(density) { 80.dp.toPx() }
+    val showUpdateBar by remember { derivedStateOf { scrollState.value < hideUpdateThresholdPx } }
 
     // 系统返回键：关于页内统一返回（独立 Activity 关闭自身；主页内回到首页标签）
     BackHandler(onBack = onBack)
@@ -596,17 +600,24 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
         }.start()
     }
 
+    // LayerBackdrop 由页面内容提供；玻璃顶栏/底栏消费它，实现真正的高斯模糊。
+    val backdrop = rememberLayerBackdrop()
+    // 初始估计 Hero 高度（状态栏 + 内容 + 边距），首帧布局后立即修正
+    var heroHeightPx by remember { mutableStateOf(with(density) { 220.dp.roundToPx() }) }
+    val heroHeightDp = with(density) { heroHeightPx.toDp() }
+
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
+        // 滚动内容在底层，顶部留出 Hero 高度
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
+                .layerBackdrop(backdrop)
                 .navigationBarsPadding()
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
-                .padding(bottom = FloatingTabBarDefaults.Height + 32.dp),
+                .padding(top = heroHeightDp)
+                .padding(bottom = FloatingTabBarDefaults.Height + floatingBarInset + 16.dp),
         ) {
-            AboutHeroHeader(activity = activity)
-
             SettingsSection(topLabel = "功能") {
                 val features = listOf(
                     "广告净化" to "开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口",
@@ -662,15 +673,28 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
         }
 
-        // 模糊底栏：检查更新（毛玻璃胶囊，参考 HyperModifier 的玻璃悬浮按钮）
-        AboutUpdateBar(
+        // 顶部固定玻璃 Hero：图标/版本/描述置顶，背景实时模糊下方滚动内容
+        AboutHeroHeader(
             activity = activity,
-            onClick = doCheckUpdate,
+            backdrop = backdrop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { heroHeightPx = it.size.height }
+                .align(Alignment.TopCenter),
+        )
+
+        // 模糊底栏：检查更新（毛玻璃胶囊，参考 HyperModifier 的玻璃悬浮按钮）
+        AnimatedVisibility(
+            visible = showUpdateBar,
             modifier = Modifier
                 .navigationBarsPadding()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp + floatingBarInset)
                 .align(Alignment.BottomCenter),
-        )
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            AboutUpdateBar(activity = activity, onClick = doCheckUpdate, backdrop = backdrop)
+        }
 
         if (showUpdate && updateInfo != null) {
             val info = updateInfo!!
@@ -789,107 +813,60 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
 // ==================== 关于页：模糊顶栏（Hero Header） ====================
 
 /**
- * 关于页毛玻璃容器（复用悬浮底栏方案，移植自 HyperModifier 的 ViewBackdropSampler）。
- *
- * 关键点：必须通过 [onGloballyPositioned] 把自身在窗口中的矩形喂给采样器的
- * [ViewBackdropSampler.setNavigationBounds]——否则采样器 [ViewBackdropSampler.requestCapture] 因
- * bounds 为 null 直接返回、永不拍照，[ViewBackdropSnapshot] 恒为 null，毛玻璃只会回退成纯色
- * （这正是上一版「模糊没效果」的根因）。底栏 [MainActivity] 即用同款写法。
+ * 通用毛玻璃容器：从父组件传入 [LayerBackdrop]，对页面内容做高斯模糊采样。
+ * 参考 HyperModifier 的 SoftGlassSurface / DeadlinerMiuixScaffold，使用 Miuix KMP 自带的
+ * [rememberLayerBackdrop] + [floatingGlassSurface] 替代原 ViewBackdropSampler，避免整窗
+ * PixelCopy，同时保证关于页 Hero 与底栏、首页顶栏都有真实模糊。
  */
 @Composable
 internal fun AboutGlassCard(
-    activity: ComponentActivity,
+    backdrop: LayerBackdrop?,
     shape: Shape,
     modifier: Modifier,
     tint: Color? = null,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val colors = MiuixTheme.colorScheme
-    val glassTint = tint ?: colors.surfaceContainer.copy(alpha = FloatingTabBarDefaults.GlassTintAlpha)
-    val backdrop = rememberLayerBackdrop()
-    var snapshot by remember { mutableStateOf<ViewBackdropSnapshot?>(null) }
-    var sampler by remember { mutableStateOf<ViewBackdropSampler?>(null) }
-    DisposableEffect(activity) {
-        val source = activity.findViewById<View>(android.R.id.content) ?: return@DisposableEffect onDispose {}
-        val s = runCatching {
-            ViewBackdropSampler(
-                source = source,
-                excludedView = null,
-                pixelCopyWindow = activity.window,
-                usePixelCopySampling = { true },
-                onSnapshotChanged = { snapshot = it },
-            )
-        }.getOrNull() ?: return@DisposableEffect onDispose {}
-        sampler = s
-        val choreographer = Choreographer.getInstance()
-        val cb = object : Choreographer.FrameCallback {
-            override fun doFrame(frameTimeNanos: Long) {
-                // 仅在本采样器仍处活跃采样窗口（滚动/布局变化后）时补抓一帧；
-                // 不再每帧强制 requestCaptureBurst(300)，否则会持续对整窗做 PixelCopy，
-                // 导致关于页滚动掉帧。初始布局由 setNavigationBounds 触发突发采样。
-                runCatching { s.onFrame() }
-                choreographer.postFrameCallback(this)
-            }
-        }
-        choreographer.postFrameCallback(cb)
-        onDispose {
-            choreographer.removeFrameCallback(cb)
-            runCatching { s.dispose() }
-            sampler = null
-        }
-    }
+    val glassTint = tint ?: MiuixTheme.colorScheme.surfaceContainer.copy(alpha = FloatingTabBarDefaults.GlassTintAlpha)
     Box(
-        modifier = modifier.onGloballyPositioned { coords ->
-            val pos = coords.positionInWindow()
-            sampler?.setNavigationBounds(
-                ViewBackdropBounds(pos.x.roundToInt(), pos.y.roundToInt(), coords.size.width, coords.size.height),
-            )
-        },
-    ) {
-        ViewBackdropLayer(snapshot, backdrop)
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .then(
-                    if (snapshot != null) {
-                        Modifier.floatingGlassSurface(backdrop, shape, glassTint)
-                    } else {
-                        Modifier.background(glassTint, shape)
-                    },
-                )
-                .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
-            contentAlignment = Alignment.Center,
-            content = content,
-        )
-    }
+        modifier = modifier
+            .floatingGlassSurface(backdrop = backdrop, shape = shape, tint = glassTint)
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .clip(shape),
+        contentAlignment = Alignment.Center,
+        content = content,
+    )
 }
 
 /**
- * 关于页顶部模糊头图：玻璃材质卡片（参考 HyperModifier 的 ProgressiveTopBarMaterial / SoftGlassSurface）。
- * 内部 [AboutGlassCard] 自带实时背景采样，点击跳转到仓库。
+ * 关于页顶部模糊头图：玻璃材质卡片，内容置顶，无文字阴影/模糊。
+ * 点击跳转到仓库；背景随下方内容滚动实时高斯模糊。
  */
 @Composable
-private fun AboutHeroHeader(activity: ComponentActivity) {
+private fun AboutHeroHeader(
+    activity: ComponentActivity,
+    backdrop: LayerBackdrop?,
+    modifier: Modifier = Modifier,
+) {
     AboutGlassCard(
-        activity = activity,
+        backdrop = backdrop,
         shape = RoundedCornerShape(24.dp),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
             .padding(start = MiuiX.PAGE_H.dp, end = MiuiX.PAGE_H.dp, top = 12.dp, bottom = 12.dp),
         onClick = { openLink(activity, MiuiX.REPO_URL) },
     ) {
         Column(
-            modifier = Modifier.padding(top = 28.dp, bottom = 20.dp),
+            modifier = Modifier.padding(top = 20.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             SafeDrawableImage(
                 resId = R.mipmap.ic_launcher,
                 modifier = Modifier
-                    .size(88.dp)
-                    .clip(RoundedCornerShape(24.dp)),
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(22.dp)),
                 contentScale = ContentScale.Fit,
             )
             Text(
@@ -917,16 +894,16 @@ private fun AboutHeroHeader(activity: ComponentActivity) {
 /**
  * 关于页底部毛玻璃操作栏（参考 HyperModifier 的 SoftGlassFloatingActionButton）：
  * 居中胶囊按钮，文字主色高亮，点击触发检查更新。毛玻璃不可用时回退半透明纯色胶囊。
- * 内部 [AboutGlassCard] 自带实时背景采样。
  */
 @Composable
 private fun AboutUpdateBar(
     activity: ComponentActivity,
     onClick: () -> Unit,
+    backdrop: LayerBackdrop?,
     modifier: Modifier = Modifier,
 ) {
     AboutGlassCard(
-        activity = activity,
+        backdrop = backdrop,
         shape = Capsule(),
         modifier = modifier
             .widthIn(max = 300.dp)

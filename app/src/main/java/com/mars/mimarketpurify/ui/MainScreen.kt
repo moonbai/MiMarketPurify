@@ -3,9 +3,7 @@ package com.mars.mimarketpurify.ui
 import android.app.Activity
 import android.content.Context
 import android.provider.Settings
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,7 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,6 +45,9 @@ import com.mars.mimarketpurify.ui.components.SettingItem
 import com.mars.mimarketpurify.ui.components.SwitchRow
 import com.mars.mimarketpurify.ui.components.AboutGlassCard
 import com.mars.mimarketpurify.util.MarketRestarter
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import io.github.libxposed.service.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.delay
@@ -92,11 +95,22 @@ fun MainScreen(activity: MainActivity) {
         onDispose { App.removeServiceStateListener(listener) }
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        BlurHeader(activity = activity, onRestartMarket = { restartMarket(context) })
+    // 首页共享的 LayerBackdrop：下方滚动内容作为源，顶栏消费它实现固定高斯模糊。
+    val backdrop = rememberLayerBackdrop()
+    val density = LocalDensity.current
+    // 初始估计顶栏高度（状态栏 + 内容），首帧布局后立即修正，避免明显跳动
+    var headerHeightPx by remember { mutableStateOf(with(density) { 96.dp.roundToPx() }) }
+    val headerHeightDp = with(density) { headerHeightPx.toDp() }
 
+    Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
+        // 滚动内容在底层，顶部留出固定顶栏空间
         Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding()
+            modifier = Modifier
+                .fillMaxSize()
+                .layerBackdrop(backdrop)
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+                .padding(top = headerHeightDp)
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 6.dp)
                 .padding(bottom = FloatingTabBarDefaults.Height + com.mars.mimarketpurify.Settings.floatingBarBottomMarginDp().dp),
         ) {
@@ -177,19 +191,34 @@ fun MainScreen(activity: MainActivity) {
                 fontSize = MiuiX.MICRO.sp, color = colors.onSurfaceVariantSummary,
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 16.dp))
         }
+
+        // 固定模糊顶栏：覆盖在滚动内容之上，消费同一 LayerBackdrop 实现实时高斯模糊
+        BlurHeader(
+            activity = activity,
+            backdrop = backdrop,
+            onRestartMarket = { restartMarket(context) },
+            onHeightChanged = { headerHeightPx = it },
+        )
     }
 }
 
 // ═══════════ 顶栏（含重启按钮） ═══════════
 
 @Composable
-private fun BlurHeader(activity: MainActivity, onRestartMarket: () -> Unit) {
+private fun BlurHeader(
+    activity: MainActivity,
+    backdrop: LayerBackdrop?,
+    onRestartMarket: () -> Unit,
+    onHeightChanged: (Int) -> Unit = {},
+) {
     val colors = MiuixTheme.colorScheme
     var showRestartConfirm by remember { mutableStateOf(false) }
     AboutGlassCard(
-        activity = activity,
+        backdrop = backdrop,
         shape = RoundedCornerShape(0.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { onHeightChanged(it.size.height) },
     ) {
         Row(modifier = Modifier.fillMaxWidth().statusBarsPadding()
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = MiuiX.PAGE_H.dp),
