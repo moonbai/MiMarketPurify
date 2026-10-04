@@ -56,7 +56,7 @@
         <activity
             android:name=".SearchActivity"
             android:exported="false"
-            android:theme="@style/Theme.MiMarketPurify"
+            android:theme="@style/AppTheme"
             android:windowSoftInputMode="stateHidden|adjustResize" />
         <!--
             二级设置页：主页只留高频开关，「我的」页 / 底部标签栏 / 其他净化 / 模块自身

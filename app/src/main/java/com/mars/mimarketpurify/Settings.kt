@@ -212,8 +212,6 @@ object Settings {
         if (fresh != null) { remotePrefsCache = fresh; remotePrefsCachedAt = now }
         return fresh
     }
-        return fresh
-    }
 
     fun isMasterEnabled(): Boolean = isEnabled(KEY_MASTER, true)
 
@@ -264,7 +262,6 @@ object Settings {
     fun floatingBarRadiusDp(): Int =
         getInt(KEY_FLOATING_BAR_RADIUS, FLOATING_RADIUS_DEFAULT)
             .coerceIn(FLOATING_RADIUS_MIN, FLOATING_RADIUS_MAX)
-    fun floatingBarBottomMarginDp(): Int = getInt(KEY_FLOATING_BAR_BOTTOM_MARGIN, FLOATING_BOTTOM_MARGIN_DEFAULT).coerceIn(FLOATING_BOTTOM_MARGIN_MIN, FLOATING_BOTTOM_MARGIN_MAX)
 
     /** 悬浮底栏到底部外边距 dp 值（越界收敛）。 */
     fun floatingBarBottomMarginDp(): Int =
