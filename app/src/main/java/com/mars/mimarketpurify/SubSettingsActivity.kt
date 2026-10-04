@@ -4,14 +4,17 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -65,14 +68,6 @@ private fun SubSettingsScreen(page: String, activity: SubSettingsActivity, highl
     val masterOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
     val colors = MiuixTheme.colorScheme
 
-    var activeHighlight by remember { mutableStateOf(highlightKey) }
-    LaunchedEffect(highlightKey) {
-        if (highlightKey.isNotEmpty()) {
-            delay(3000L)
-            activeHighlight = ""
-        }
-    }
-
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
         val title = when (page) {
             SubSettingsActivity.PAGE_ADS -> "广告净化"
@@ -88,65 +83,52 @@ private fun SubSettingsScreen(page: String, activity: SubSettingsActivity, highl
                 .navigationBarsPadding().padding(horizontal = MiuiX.PAGE_H.dp, vertical = 6.dp),
         ) {
             when (page) {
-                SubSettingsActivity.PAGE_ADS -> AdsScreen(activity, masterOn, activeHighlight)
-                SubSettingsActivity.PAGE_MINE -> MineScreen(activity, masterOn, activeHighlight)
-                SubSettingsActivity.PAGE_TABS -> TabsScreen(activity, masterOn, activeHighlight)
-                SubSettingsActivity.PAGE_MISC -> MiscScreen(activity, masterOn, activeHighlight)
-                SubSettingsActivity.PAGE_TAB_BAR -> TabBarConfigScreen(activity, masterOn, activeHighlight)
+                SubSettingsActivity.PAGE_ADS -> AdsScreen(activity, masterOn, highlightKey)
+                SubSettingsActivity.PAGE_MINE -> MineScreen(activity, masterOn, highlightKey)
+                SubSettingsActivity.PAGE_TABS -> TabsScreen(activity, masterOn, highlightKey)
+                SubSettingsActivity.PAGE_MISC -> MiscScreen(activity, masterOn, highlightKey)
+                SubSettingsActivity.PAGE_TAB_BAR -> TabBarConfigScreen(activity, masterOn, highlightKey)
                 else -> Text("未知页面", color = colors.onSurface)
             }
         }
     }
 }
 
-// ═══════════ 广告净化 ═══════════
-
 @Composable
 private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
-    val adFeatures = listOf(
-        Feature(Settings.KEY_SPLASH, "开屏广告", "屏蔽应用商店启动时的开屏广告"),
-        Feature(Settings.KEY_MAIN_TAB, "前台广告/推荐", "屏蔽主页切换时的推荐与广告弹窗"),
-        Feature(Settings.KEY_HOME_FEED, "信息流广告", "隐藏主页底部视频/应用推荐与热词栏"),
-        Feature(Settings.KEY_SEARCH, "搜索推荐", "搜索建议、搜索页、搜索结果的软件推荐"),
-        Feature(Settings.KEY_UPDATE_DL, "升级/下载推荐", "应用升级页与下载页的软件推荐"),
-        Feature(Settings.KEY_DETAIL, "详情页广告", "应用详情页的广告、评论与推荐位"),
-        Feature(Settings.KEY_RANK, "榜单广告", "榜单界面的广告 / 推广卡片"),
-    )
     GroupCard {
-        adFeatures.forEach { f -> HighlightSwitch(activity, f.key, f.title, f.summary, masterOn, hl) }
-        HighlightSwitch(activity, Settings.KEY_FRUIT, "领水果入口", "隐藏福利活动 gif 动图入口", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_ENTRANCE, "首页活动入口", "隐藏搜索框左侧云控下发的活动小图标", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_DETAIL_EXTRAS, "详情页附加推荐", "详情页拼装推荐、底部多按钮推广栏", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_FLOATING_AD, "主页悬浮广告", "屏蔽主页底部/侧边弹出的悬浮广告", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_AD_BACK_FLOAT, "返回浮窗广告", "屏蔽返回时弹出的「返回今日头条」等悬浮浮窗", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_HOME_PAGE_DIALOG, "首页弹窗推广", "屏蔽进入首页时弹出的 Dialog 推广位", masterOn, hl)
+        listOf(
+            Settings.KEY_SPLASH to "开屏广告", Settings.KEY_MAIN_TAB to "前台广告/推荐",
+            Settings.KEY_HOME_FEED to "信息流广告", Settings.KEY_SEARCH to "搜索推荐",
+            Settings.KEY_UPDATE_DL to "升级/下载推荐", Settings.KEY_DETAIL to "详情页广告",
+            Settings.KEY_RANK to "榜单广告",
+        ).forEach { (k, t) -> HighlightSwitch(activity, k, t, "", masterOn, hl) }
+        HighlightSwitch(activity, Settings.KEY_FRUIT, "领水果入口", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_ENTRANCE, "首页活动入口", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_DETAIL_EXTRAS, "详情页附加推荐", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_FLOATING_AD, "主页悬浮广告", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_AD_BACK_FLOAT, "返回浮窗广告", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_HOME_PAGE_DIALOG, "首页弹窗推广", "", masterOn, hl)
     }
-    Footer("Tips：屏蔽后若页面空白，关掉对应页面开关即可恢复")
 }
-
-// ═══════════ 我的页 ═══════════
 
 @Composable
 private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
     val tick by activity.refreshSignal
     var cleanupOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MINE_CLEANUP, true)) }
     var orchardOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_ORCHARD_SKIN, true)) }
-    val eligible = cleanupOn && orchardOn
 
     GroupCard {
-        HighlightSwitch(activity, Settings.KEY_MINE_RECOMMEND, "应用推荐与推广", "隐藏页面顶部推荐卡片与底部推广列表", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_MINE_OFFICIAL_TAB, "应用管理入口", "隐藏页面中间的官方应用管理功能入口 tab", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_MINE_CLEANUP, "清理与卸载", "隐藏手机清理与应用卸载入口", masterOn, hl) { cleanupOn = it }
-        HighlightSwitch(activity, Settings.KEY_MINE_SUMMARY, "个人信息区", "隐藏头像、昵称、消息、收藏", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_MINE_SECURITY, "安全检测", "隐藏应用安全检测卡片", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_ORCHARD_SKIN, "更新卡片背景", "清除升级卡片的果园背景", masterOn, hl) { orchardOn = it }
-        if (eligible) HighlightSwitch(activity, Settings.KEY_CARD_EXPAND, "升级卡片横向展开", "需清理与卸载+更新卡片背景同时开启", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_TAB_BADGE, "底栏角标", "去掉底部标签页的数字角标与红点", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_MINE_RECOMMEND, "应用推荐与推广", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_MINE_OFFICIAL_TAB, "应用管理入口", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_MINE_CLEANUP, "清理与卸载", "", masterOn, hl) { cleanupOn = it }
+        HighlightSwitch(activity, Settings.KEY_MINE_SUMMARY, "个人信息区", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_MINE_SECURITY, "安全检测", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_ORCHARD_SKIN, "更新卡片背景", "", masterOn, hl) { orchardOn = it }
+        if (cleanupOn && orchardOn) HighlightSwitch(activity, Settings.KEY_CARD_EXPAND, "升级卡片横向展开", "", masterOn, hl)
+        HighlightSwitch(activity, Settings.KEY_TAB_BADGE, "底栏角标", "", masterOn, hl)
     }
-    Footer("Tips：改动一般在下次进入界面时生效，不过重启会立刻生效。")
 }
-
-// ═══════════ 标签栏 ═══════════
 
 @Composable
 private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
@@ -154,9 +136,7 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
     var filterOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_TAB_FILTER, true)) }
     var kept by remember(tick) { mutableStateOf(activity.readLocalTabs()) }
 
-    GroupCard {
-        HighlightSwitch(activity, Settings.KEY_TAB_FILTER, "筛选底部标签", "选择需要展示的底栏标签", masterOn, hl) { filterOn = it }
-    }
+    GroupCard { HighlightSwitch(activity, Settings.KEY_TAB_FILTER, "筛选底部标签", "", masterOn, hl) { filterOn = it } }
     if (filterOn) {
         GroupCard {
             Settings.TAB_ITEMS.forEach { (tag, label) ->
@@ -166,53 +146,40 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
                 }
             }
         }
-        GroupCard {
-            HighlightSwitch(activity, Settings.KEY_TAB_DEEP_CLEAN, "隐藏标签时跳过数据加载",
-                "隐藏的 Tab 不仅不显示，还跳过其内容加载，节省流量和内存", masterOn, hl)
-        }
+        GroupCard { HighlightSwitch(activity, Settings.KEY_TAB_DEEP_CLEAN, "深层精简", "", masterOn, hl) }
     }
-    GroupCard {
-        HighlightSwitch(activity, Settings.KEY_UPDATE_TAB, "底栏更新入口",
-            "在商店原生底栏注入「更新」入口并直达更新页", masterOn, hl, default = true)
-    }
-    Footer("Tips：隐藏标签后需重启一次应用商店才会生效。")
+    GroupCard { HighlightSwitch(activity, Settings.KEY_UPDATE_TAB, "底栏更新入口", "", masterOn, hl, default = true) }
 }
-
-// ═══════════ 其他界面精简 ═══════════
 
 @Composable
 private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
     GroupCard {
-        HighlightSwitch(activity, Settings.KEY_DETAIL_FEATURED, "详情页「精选」", "按文案匹配，仅在应用详情页生效", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_UPDATE_HISTORY, "升级记录推荐", "隐藏升级记录底部的精选推荐", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_SEARCH_ALSO_VIEW, "搜索页「也在看」", "隐藏搜索结果底部的推荐", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_SUB_TAB_FILTER, "顶栏推广位", "清理首页/榜单等页面顶部的推广子标签", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_HIDE_UPDATE_ALL, "全部升级按钮", "隐藏更新界面全部升级按钮", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, "自动升级开关", "隐藏更新界面自动升级开关", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_PUSH_FLOAT, "Push悬浮通知", "屏蔽 MiPush 推送的悬浮通知与游戏推广浮窗", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_UPDATE_FLOAT_CARD, "升级浮窗卡片", "屏蔽检测到新版本时弹出的浮窗升级提示", masterOn, hl)
-        HighlightSwitch(activity, Settings.KEY_BLOCK_BG_DOWNLOAD, "屏蔽后台静默下载", "禁止商店在后台自动下载应用更新，节省流量和电量", masterOn, hl)
+        listOf(
+            Settings.KEY_DETAIL_FEATURED to "详情页「精选」",
+            Settings.KEY_UPDATE_HISTORY to "升级记录推荐",
+            Settings.KEY_SEARCH_ALSO_VIEW to "搜索页「也在看」",
+            Settings.KEY_SUB_TAB_FILTER to "顶栏推广位",
+            Settings.KEY_HIDE_UPDATE_ALL to "全部升级按钮",
+            Settings.KEY_HIDE_AUTO_UPDATE_SWITCH to "自动升级开关",
+            Settings.KEY_PUSH_FLOAT to "Push悬浮通知",
+            Settings.KEY_UPDATE_FLOAT_CARD to "升级浮窗卡片",
+            Settings.KEY_BLOCK_BG_DOWNLOAD to "屏蔽后台静默下载",
+        ).forEach { (k, t) -> HighlightSwitch(activity, k, t, "", masterOn, hl) }
     }
-    Footer("Tips：隐藏的可能只是标题，不过眼不见为净嘛~")
 }
-
-// ═══════════ 悬浮底栏配置 ═══════════
 
 @Composable
 private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
     val tick by activity.refreshSignal
     var floatingOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_FLOATING_BAR, false)) }
 
-    GroupCard {
-        HighlightSwitch(activity, Settings.KEY_FLOATING_BAR, "启用悬浮底栏",
-            "在商店底部渲染胶囊风格Tab导航栏", masterOn, hl, default = false) { floatingOn = it }
-    }
+    GroupCard { HighlightSwitch(activity, Settings.KEY_FLOATING_BAR, "启用悬浮底栏", "", masterOn, hl, default = false) { floatingOn = it } }
     if (floatingOn) {
         GroupCard {
-            HighlightSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID, "液态选中高亮动画", "选中项显示跟随移动的液态胶囊", masterOn, hl)
-            HighlightSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID_3D, "3D液态效果", "选中项显示跟随移动的3D液态胶囊", masterOn, hl)
-            HighlightSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标", masterOn, hl)
-            HighlightSwitch(activity, Settings.KEY_FLOATING_BAR_MONOCHROME, "单色图标", "图标抽成单色描边、随主题着色", masterOn, hl, default = true)
+            HighlightSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID, "液态选中高亮动画", "", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID_3D, "3D液态效果", "", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_FLOATING_BAR_MONOCHROME, "单色图标", "", masterOn, hl, default = true)
         }
         GroupCard {
             PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xE6FFFFFF.toInt())
@@ -224,21 +191,18 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean,
             PrefColorRow(activity, "未选中文字/图标颜色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0xFF8E8E93.toInt())
         }
         GroupCard {
-            PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角大小",
-                "胶囊圆角半径，0直角，上限建议不超过栏高一半",
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角大小", "胶囊圆角半径",
                 min = Settings.FLOATING_RADIUS_MIN, max = Settings.FLOATING_RADIUS_MAX,
                 default = Settings.FLOATING_RADIUS_DEFAULT, enabled = masterOn, format = { "${it}dp" })
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-            PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部高度",
-                "悬浮底栏距屏幕底部的外边距；数值越大越「悬空」",
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部高度", "悬浮底栏距屏幕底部的外边距",
                 min = Settings.FLOATING_BOTTOM_MARGIN_MIN, max = Settings.FLOATING_BOTTOM_MARGIN_MAX,
                 default = Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, enabled = masterOn, format = { "${it}dp" })
         }
-        Footer("Tips：底栏背景色实时生效。")
     }
 }
 
-// ═══════════ 高亮开关组件 ═══════════
+// ═══════════ 高亮开关组件（闪烁两次 + 卡片圆角） ═══════════
 
 @Composable
 private fun HighlightSwitch(
@@ -252,12 +216,29 @@ private fun HighlightSwitch(
     onChanged: ((Boolean) -> Unit)? = null,
 ) {
     val isHighlighted = highlightKey.isNotEmpty() && highlightKey == key
-    val bgColor by animateColorAsState(
-        targetValue = if (isHighlighted) Color(0x331976D2) else Color.Transparent,
-        label = "highlight_bg"
-    )
+
+    // 闪烁动画：0→0.35→0→0.35→0，两次
+    val alpha = remember { Animatable(0f) }
+    LaunchedEffect(isHighlighted) {
+        if (isHighlighted) {
+            alpha.animateTo(0.35f, tween(200))
+            delay(150)
+            alpha.animateTo(0f, tween(200))
+            delay(150)
+            alpha.animateTo(0.35f, tween(200))
+            delay(150)
+            alpha.animateTo(0f, tween(200))
+        } else {
+            alpha.snapTo(0f)
+        }
+    }
+
+    // 遵守 GroupCard 的圆角（12dp 是 GroupCard 内部行的标准圆角）
+    val cardShape = RoundedCornerShape(12.dp)
     Box(
-        modifier = if (isHighlighted) Modifier.background(bgColor) else Modifier,
+        modifier = if (alpha.value > 0f)
+            Modifier.clip(cardShape).background(Color(0xFF1976D2).copy(alpha = alpha.value))
+        else Modifier,
     ) {
         PrefSwitch(
             activity = activity,

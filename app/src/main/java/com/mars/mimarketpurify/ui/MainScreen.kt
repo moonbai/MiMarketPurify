@@ -116,7 +116,7 @@ fun MainScreen(activity: MainActivity) {
                     recommendations.forEachIndexed { index, feature ->
                         RecommendRow(
                             feature = feature,
-                            onClick = { activity.openPage(feature.page) },
+                            onClick = { activity.startActivity(SubSettingsActivity.intent(activity, feature.page, feature.key)) },
                         )
                         if (index < recommendations.lastIndex) {
                             HorizontalDivider(
