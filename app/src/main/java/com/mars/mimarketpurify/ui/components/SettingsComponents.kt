@@ -579,8 +579,11 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
     val backdrop = rememberLayerBackdrop()
 
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        // 滚动内容：顶部放置 Hero（图标/版本/描述），向下滚动自然让出空间，
-        // 「功能」等区块紧随其后，默认即可完整看到；Hero 为普通卡片，无模糊、无文字阴影。
+        // 首屏留白（沿用关于页设计稿）：Hero 近似垂直居中于首屏，上方保留大片空白，
+        // 向下滚动后 Hero 自然上移，露出「功能/作者/参考项目/其他」等区块。
+        val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+        val heroTopGap = screenHeight * 0.40f
+        val heroBottomGap = screenHeight * 0.20f
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -590,9 +593,10 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
                 .padding(bottom = FloatingTabBarDefaults.Height + floatingBarInset + 16.dp),
         ) {
-            // 顶部 Hero：图标/版本/描述（普通卡片，无背景模糊、无文字阴影）
+            Spacer(Modifier.height(heroTopGap))
+            // 顶部 Hero：图标/版本/描述（无背景卡片、无背景模糊、无文字阴影）
             AboutHeroHeader(activity = activity)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(heroBottomGap))
 
             SettingsSection(topLabel = "功能") {
                 val features = listOf(
@@ -805,7 +809,7 @@ internal fun AboutGlassCard(
 }
 
 /**
- * 关于页顶部头图：普通卡片（surfaceContainer 背景），图标/版本/描述置顶，
+ * 关于页顶部头图：无背景卡片（图标/版本/描述直接落在页面底色上）、居中排布，
  * 无背景模糊、无文字阴影；点击跳转到仓库。
  */
 @Composable
@@ -814,17 +818,15 @@ private fun AboutHeroHeader(activity: ComponentActivity) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(colors.surfaceContainer)
             .clickable { openLink(activity, MiuiX.REPO_URL) }
-            .padding(top = 28.dp, bottom = 20.dp),
+            .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         SafeDrawableImage(
             resId = R.mipmap.ic_launcher,
             modifier = Modifier
-                .size(88.dp)
+                .size(96.dp)
                 .clip(RoundedCornerShape(24.dp)),
             contentScale = ContentScale.Fit,
         )
