@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -92,7 +91,6 @@ private fun HighlightSwitch(
     hl: String,
     onChanged: ((Boolean) -> Unit)? = null,
 ) {
-    val colors = MiuixTheme.colorScheme
     val shouldHighlight = hl == key
     val alpha = remember { Animatable(if (shouldHighlight) 0.6f else 0f) }
     LaunchedEffect(shouldHighlight) {
@@ -100,28 +98,23 @@ private fun HighlightSwitch(
             alpha.animateTo(0f, animationSpec = tween(durationMillis = 1200))
         }
     }
-    val cardShape = RoundedCornerShape(16.dp)
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = cardShape,
-        color = colors.surface,
-        contentColor = colors.onSurface,
+    // 去掉每行的独立 Surface 卡片，让整组开关共享外层 SettingsSection 的单张整体卡片
+    // （与主页「界面设置」分区一致）；仅保留按 key 高亮的蓝色闪烁，圆角裁剪避免溢出整体卡片边缘。
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF1976D2).copy(alpha = alpha.value))
     ) {
-        Box(
-            modifier = Modifier
-                .clip(cardShape)
-                .background(Color(0xFF1976D2).copy(alpha = alpha.value))
-        ) {
-            PrefSwitch(
-                activity = activity,
-                key = key,
-                title = title,
-                summary = summary,
-                default = true,
-                enabled = enabled,
-                onChanged = onChanged,
-            )
-        }
+        PrefSwitch(
+            activity = activity,
+            key = key,
+            title = title,
+            summary = summary,
+            default = true,
+            enabled = enabled,
+            onChanged = onChanged,
+        )
     }
 }
 

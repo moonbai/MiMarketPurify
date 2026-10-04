@@ -615,7 +615,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             // 顶部 Hero：图标/版本/描述（无背景卡片、无背景模糊、无文字阴影）
             AboutHeroHeader(activity = activity)
             // Hero 与「检查更新」按钮之间的间距；本轮在上一版(20dp)基础上再下移一些
-            Spacer(Modifier.height(heroBottomGap))
+            Spacer(Modifier.height(40.dp))
             // 检查更新：长条圆角矩形毛玻璃按钮，内联在 Hero 正下方
             AboutUpdateBar(
                 activity = activity,
