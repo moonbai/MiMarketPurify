@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>隐私政策 - Mi Market Purify</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "MiSans", "PingFang SC", "Helvetica Neue", sans-serif;
+    background: #f5f5f5;
+    color: #1a1a1a;
+    line-height: 1.7;
+    padding: 20px;
+    padding-bottom: 40px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .update {
+    text-align: center;
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-top: 20px;
+    margin-bottom: 10px;
+  }
+  p {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 12px;
+    text-align: justify;
+  }
+  ul {
+    padding-left: 20px;
+    margin-bottom: 12px;
+  }
+  li {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 6px;
+  }
+  .highlight {
+    background: #e8f5e9;
+    border-left: 3px solid #4caf50;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .highlight p { margin-bottom: 0; color: #2e7d32; font-weight: 500; }
+  a { color: #1976d2; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>隐私政策</h1>
+  <div class="update">最后更新：2026-10-04</div>
+
+  <div class="highlight">
+    <p>Mi Market Purify 不收集、不存储、不上报任何用户数据。</p>
+  </div>
+
+  <h2>1. 模块概述</h2>
+  <p>Mi Market Purify（以下简称"本模块"）是一个基于 LSPosed 框架的开源模块，仅对小米应用商店（com.xiaomi.market）进行界面净化与功能增强。本模块运行在应用商店进程内，不具有独立后台服务。</p>
+
+  <h2>2. 数据收集</h2>
+  <p><strong>本模块不收集任何用户数据。</strong>具体包括：</p>
+  <ul>
+    <li>不收集设备标识符（IMEI、Android ID、MAC 地址等）</li>
+    <li>不收集用户行为数据（浏览记录、搜索记录、下载记录等）</li>
+    <li>不收集应用安装列表</li>
+    <li>不收集位置信息</li>
+    <li>不收集任何个人信息</li>
+  </ul>
+
+  <h2>3. 网络访问</h2>
+  <p>本模块声明了 <code>INTERNET</code> 权限，但仅用于以下唯一场景：</p>
+  <ul>
+    <li>用户主动点击"检查更新"按钮时，向 GitHub Releases 接口发起请求以检查新版本</li>
+  </ul>
+  <p>此请求：</p>
+  <ul>
+    <li>仅在用户主动触发时发起，不存在任何自动联网行为</li>
+    <li>不携带任何用户设备信息或个人数据</li>
+    <li>不向任何第三方服务器上报数据</li>
+    <li>不记录或缓存网络请求结果用于分析</li>
+  </ul>
+
+  <h2>4. 配置存储</h2>
+  <p>本模块使用 LSPosed 框架的远程偏好（Remote Preferences）存储用户的功能开关设置。这些数据：</p>
+  <ul>
+    <li>仅存储在本地设备上</li>
+    <li>仅在模块 App 和应用商店进程之间同步</li>
+    <li>不会上传到任何服务器</li>
+    <li>卸载模块后数据自动清除</li>
+  </ul>
+
+  <h2>5. 第三方服务</h2>
+  <p>本模块不集成任何第三方分析 SDK、广告 SDK 或追踪服务。唯一依赖的外部服务是 GitHub（仅用于检查更新），由用户主动触发。</p>
+
+  <h2>6. 开源与透明</h2>
+  <p>本模块完全开源（GPL-3.0 许可），所有代码可在 GitHub 仓库中审查。任何用户或安全研究者均可验证本模块的行为是否与本隐私政策一致。</p>
+
+  <h2>7. 权限说明</h2>
+  <ul>
+    <li><code>INTERNET</code>：仅用于用户主动触发的检查更新</li>
+    <li><code>REQUEST_INSTALL_PACKAGES</code>：仅用于检查更新后下载并安装新版本 APK</li>
+  </ul>
+
+  <h2>8. 儿童隐私</h2>
+  <p>本模块不面向 13 岁以下儿童，不会有意收集儿童的个人信息。</p>
+
+  <h2>9. 隐私政策变更</h2>
+  <p>如本隐私政策发生变更，将在 GitHub 仓库的 README 中更新，并在模块"关于"页面的更新日志中说明。建议用户定期查看。</p>
+
+  <h2>10. 联系方式</h2>
+  <p>如有任何关于隐私政策的疑问，请通过 GitHub Issues 联系：</p>
+  <p><a href="https://github.com/moonbai/MiMarketPurify/issues">https://github.com/moonbai/MiMarketPurify/issues</a></p>
+</div>
+
+</body>
+</html>

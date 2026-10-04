@@ -46,6 +46,7 @@ import com.mars.mimarketpurify.R
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.SettingsBaseActivity
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
+import com.mars.mimarketpurify.PrivacyPolicyActivity
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -633,6 +634,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
             }
 
             SectionHeader("其他", "")
+
             GroupCard {
                 NavRow(
                     title = "检查更新",
@@ -655,6 +657,15 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                             }
                         }
                     }.start()
+                }
+                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                NavRow(
+                    title = "隐私政策",
+                    summary = "查看本模块隐私政策与数据说明",
+                    value = "",
+                    enabled = true,
+                ) {
+                    activity.startActivity(Intent(activity, PrivacyPolicyActivity::class.java))
                 }
             }
 

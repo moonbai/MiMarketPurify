@@ -138,7 +138,15 @@ private fun BottomNavBar(selected: Int, modifier: Modifier = Modifier, onSelect:
     DisposableEffect(activity) {
         val act = activity ?: return@DisposableEffect onDispose {}
         val source = act.findViewById<View>(android.R.id.content) ?: return@DisposableEffect onDispose {}
-        val s = runCatching { ViewBackdropSampler(source, null, act.window, { true }, { snapshot = it }) }.getOrNull()
+        val s = runCatching {
+            ViewBackdropSampler(
+                source = source,
+                excludedView = null,
+                pixelCopyWindow = act.window,
+                usePixelCopySampling = { true },
+                onSnapshotChanged = { snapshot = it },
+            )
+        }.getOrNull()
             ?: return@DisposableEffect onDispose {}
         sampler = s
         val choreographer = Choreographer.getInstance()
