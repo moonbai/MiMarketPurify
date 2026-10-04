@@ -31,6 +31,7 @@ import androidx.core.view.WindowCompat
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
+import kotlinx.coroutines.delay
 
 /**
  * 搜索页：顶部搜索栏 + 搜索结果 / 底部功能推荐网格。
@@ -70,8 +71,17 @@ private fun SearchScreen(activity: SearchActivity) {
     var query by remember { mutableStateOf("") }
     val results = remember(query) { FeatureRegistry.search(query) }
     val isSearching = query.isNotBlank()
-    val recommendations = remember {
-        FeatureRegistry.recommendByCategory(count = 6, seed = System.currentTimeMillis())
+
+    // 12 个推荐，每 5 秒自动刷新
+    var recommendSeed by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(5_000L)
+            recommendSeed = System.currentTimeMillis()
+        }
+    }
+    val recommendations = remember(recommendSeed) {
+        FeatureRegistry.recommendByCategory(count = 12, seed = recommendSeed)
     }
 
     Column(
@@ -177,44 +187,52 @@ private fun SearchTopBar(
                 .clickable { onBack() }
                 .padding(horizontal = 8.dp, vertical = 4.dp),
         )
-        // 搜索框
-        TextField(
-            value = query,
-            onValueChange = onQueryChange,
-            placeholder = {
+        // 修复：TextField 内部文字被 clip 掉，改为自定义外观
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(colors.surface)
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            if (query.isEmpty()) {
                 Text(
                     text = "搜索功能…",
                     fontSize = 15.sp,
                     color = colors.onSurfaceSecondary,
                 )
-            },
-            trailingIcon = {
-                if (query.isNotBlank()) {
-                    Text(
-                        text = "✕",
-                        fontSize = 16.sp,
-                        color = colors.onSurfaceSecondary,
-                        modifier = Modifier
-                            .clickable { onQueryChange("") }
-                            .padding(8.dp),
-                    )
-                }
-            },
-            singleLine = true,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = colors.surface,
-                unfocusedContainerColor = colors.surface,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                cursorColor = colors.primary,
-                focusedTextColor = colors.onSurface,
-                unfocusedTextColor = colors.onSurface,
-            ),
-            modifier = Modifier
-                .weight(1f)
-                .height(48.dp)
-                .clip(RoundedCornerShape(24.dp)),
-        )
+            }
+            // 实际输入用透明 TextField 覆盖，只显示光标和文字
+            TextField(
+                value = query,
+                onValueChange = onQueryChange,
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    cursorColor = colors.primary,
+                    focusedTextColor = colors.onSurface,
+                    unfocusedTextColor = colors.onSurface,
+                ),
+                trailingIcon = {
+                    if (query.isNotBlank()) {
+                        Text(
+                            text = "✕",
+                            fontSize = 16.sp,
+                            color = colors.onSurfaceSecondary,
+                            modifier = Modifier
+                                .clickable { onQueryChange("") }
+                                .padding(8.dp),
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
 }
 

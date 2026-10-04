@@ -19,12 +19,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Fontweight
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,8 +57,8 @@ fun MainScreen(activity: MainActivity) {
     val mineSummary by remember(tick) { mutableStateOf(activity.countText(activity.mineKeys)) }
     val miscSummary by remember(tick) { mutableStateOf(activity.countText(activity.miscKeys)) }
 
-    // 推荐开关（受总开关门控）
-    val recommendEnabled by remember(tick) {
+    // 推荐开关：用独立 mutableStateOf，toggle 时立刻更新，不等 tick
+    var recommendEnabled by remember(tick) {
         mutableStateOf(activity.readLocal(Settings.KEY_RECOMMENDATIONS_ENABLED, true))
     }
     val showRecommendations = masterOn.value && recommendEnabled
@@ -105,13 +105,14 @@ fun MainScreen(activity: MainActivity) {
             MiuiXSearchBar(
                 onClick = { context.startActivity(SearchActivity.intent(context)) },
             )
+            Spacer(Modifier.height(12.dp))  // 搜索栏与下方内容的间距
 
             StatusCard(service = service, night = activity.isNight())
             Spacer(Modifier.height(12.dp))
 
             // ═══════════ 发现好用（可开关 + 15s 自动刷新） ═══════════
             if (showRecommendations) {
-                SectionHeader("发现好用", "每 15 秒自动刷新")
+                SectionHeader("推荐功能", "每 15 秒自动刷新")
                 GroupCard {
                     recommendations.forEachIndexed { index, feature ->
                         RecommendRow(
@@ -186,6 +187,7 @@ fun MainScreen(activity: MainActivity) {
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 SwitchRow(title = "随机推荐", summary = "主页显示随机功能推荐（每 15 秒自动刷新）",
                     checked = recommendEnabled, enabled = masterOn.value) {
+                    recommendEnabled = it   // ← 立刻更新本地状态，不等 tick
                     activity.writeRemote(Settings.KEY_RECOMMENDATIONS_ENABLED, it)
                 }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
