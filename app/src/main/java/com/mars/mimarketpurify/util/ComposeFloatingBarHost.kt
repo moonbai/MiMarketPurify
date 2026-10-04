@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -602,7 +601,7 @@ private fun MarketNavigationContent(
                 // 撑满整个 decorView，把底栏顶到屏幕顶部。固定高度后不再受其影响。
                 .height(FloatingTabBarDefaults.Height)
                 .onGloballyPositioned { coords ->
-                    val pos = coords.positionInWindow()
+                    val pos = coords.positionInRoot()
                     onBackdropBoundsChanged(
                         ViewBackdropBounds(
                             left = pos.x.roundToInt(),

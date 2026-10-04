@@ -835,7 +835,7 @@ private fun AboutGlassCard(
     }
     Box(
         modifier = modifier.onGloballyPositioned { coords ->
-            val pos = coords.positionInWindow()
+            val pos = coords.positionInRoot()
             sampler?.setNavigationBounds(
                 ViewBackdropBounds(pos.x.roundToInt(), pos.y.roundToInt(), coords.size.width, coords.size.height),
             )
@@ -871,7 +871,7 @@ private fun AboutHeroHeader(activity: ComponentActivity) {
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = MiuiX.PAGE_H.dp, top = 12.dp, bottom = 12.dp),
+            .padding(start = MiuiX.PAGE_H.dp, end = MiuiX.PAGE_H.dp, top = 12.dp, bottom = 12.dp),
         onClick = { openLink(activity, MiuiX.REPO_URL) },
     ) {
         Column(

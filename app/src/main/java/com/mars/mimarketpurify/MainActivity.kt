@@ -31,7 +31,6 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
 import android.view.Choreographer
 import android.view.View
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.util.ViewBackdropBounds
@@ -173,7 +172,7 @@ private fun BottomNavBar(selected: Int, modifier: Modifier = Modifier, onSelect:
             contentSelectedColor = textSelected, contentNormalColor = textNormal,
             backdrop = if (snapshot != null) backdrop else null, expandWidth = false,
             modifier = Modifier.onGloballyPositioned { coords ->
-                val pos = coords.positionInWindow()
+                val pos = coords.positionInRoot()
                 sampler?.setNavigationBounds(ViewBackdropBounds(pos.x.roundToInt(), pos.y.roundToInt(), coords.size.width, coords.size.height))
             },
         )
