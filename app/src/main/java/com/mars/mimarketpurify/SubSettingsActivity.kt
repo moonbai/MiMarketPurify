@@ -201,18 +201,30 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
             .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
     ) {
-        keys.forEach { key ->
-            val label = Settings.TAB_ITEMS[key] ?: key
-            CheckboxRow(title = label, summary = key, checked = key in kept.value, enabled = masterOn) { on ->
-                val next = if (on) kept.value + key else kept.value - key
-                kept.value = next
-                activity.writeRemoteString(Settings.KEY_TAB_KEEP, next.joinToString(","))
+        SettingsSection(topLabel = "底栏标签") {
+            PrefSwitch(
+                activity = activity,
+                key = Settings.KEY_TAB_FILTER,
+                title = "筛选底部标签",
+                summary = "开启后按下方勾选隐藏不需要的底栏标签（关闭则恢复全部）",
+                default = true,
+                enabled = masterOn,
+            )
+            keys.forEach { key ->
+                val label = Settings.TAB_ITEMS[key] ?: key
+                CheckboxRow(title = label, summary = key, checked = key in kept.value, enabled = masterOn) { on ->
+                    val next = if (on) kept.value + key else kept.value - key
+                    kept.value = next
+                    activity.writeRemoteString(Settings.KEY_TAB_KEEP, next.joinToString(","))
+                }
             }
         }
         Spacer(Modifier.height(12.dp))
-        PrefSwitch(activity, Settings.KEY_UPDATE_TAB, "底栏更新入口", "在商店原生底栏注入「更新」入口", default = false, enabled = masterOn)
-        Spacer(Modifier.height(12.dp))
-        PrefSwitch(activity, Settings.KEY_TAB_DEEP_CLEAN, "顶栏标签深度清理", "清理首页/榜单等页面顶部的推广子标签", default = true, enabled = masterOn)
+        SettingsSection(topLabel = "增强") {
+            PrefSwitch(activity, Settings.KEY_UPDATE_TAB, "底栏更新入口", "在商店原生底栏注入「更新」入口", default = false, enabled = masterOn)
+            Spacer(Modifier.height(12.dp))
+            PrefSwitch(activity, Settings.KEY_TAB_DEEP_CLEAN, "顶栏标签深度清理", "清理首页/榜单等页面顶部的推广子标签", default = true, enabled = masterOn)
+        }
         Footer("选择需要展示的底栏标签，取消勾选后对应标签将被隐藏。")
     }
 }
