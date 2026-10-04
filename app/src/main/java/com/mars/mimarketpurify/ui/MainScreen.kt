@@ -44,7 +44,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun MainScreen(activity: MainActivity) {
     val colors = MiuixTheme.colorScheme
-    val service by rememberServiceState()
     val tick by activity.refreshSignal
     val masterOn = remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
     val adSummary by remember(tick) { mutableStateOf(activity.countText(activity.adKeys)) }
@@ -53,14 +52,24 @@ fun MainScreen(activity: MainActivity) {
     val mineSummary by remember(tick) { mutableStateOf(activity.countText(activity.mineKeys)) }
     val miscSummary by remember(tick) { mutableStateOf(activity.countText(activity.miscKeys)) }
 
-    // 搜索状态
     var searchQuery by remember { mutableStateOf("") }
     val searchResults = remember(searchQuery) { FeatureRegistry.search(searchQuery) }
     val isSearchActive = searchQuery.isNotBlank()
 
-    // 推荐状态：每次进入用当前时间作为 seed，确保每次不同
     val recommendations = remember {
         FeatureRegistry.recommend(count = 3, seed = System.currentTimeMillis())
+    }
+
+    // service 状态：用 remember + DisposableEffect 监听
+    var service by remember { mutableStateOf<XposedService?>(App.mService) }
+    DisposableEffect(Unit) {
+        val listener = object : App.ServiceStateListener {
+            override fun onServiceStateChanged(s: XposedService?) {
+                service = s
+            }
+        }
+        App.addServiceStateListener(listener, true)
+        onDispose { App.removeServiceStateListener(listener) }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
@@ -75,14 +84,12 @@ fun MainScreen(activity: MainActivity) {
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 6.dp)
                 .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
         ) {
-            // ═══════════ 搜索栏 ═══════════
             SearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
                 onClear = { searchQuery = "" },
             )
 
-            // ═══════════ 搜索结果 ═══════════
             AnimatedVisibility(visible = isSearchActive, enter = fadeIn(), exit = fadeOut()) {
                 Column {
                     Spacer(Modifier.height(8.dp))
@@ -116,12 +123,10 @@ fun MainScreen(activity: MainActivity) {
                 }
             }
 
-            // ═══════════ 搜索时隐藏常规内容 ═══════════
             if (!isSearchActive) {
                 StatusCard(service = service, night = activity.isNight())
                 Spacer(Modifier.height(12.dp))
 
-                // ═══════════ 发现好用 ═══════════
                 SectionHeader("发现好用", "随机推荐 3 个实用开关")
                 GroupCard {
                     recommendations.forEachIndexed { index, feature ->
@@ -140,7 +145,6 @@ fun MainScreen(activity: MainActivity) {
                     }
                 }
 
-                // ═══════════ 总开关 ═══════════
                 Spacer(Modifier.height(12.dp))
                 GroupCard {
                     SwitchRow(
@@ -154,7 +158,6 @@ fun MainScreen(activity: MainActivity) {
                     }
                 }
 
-                // ═══════════ 界面设置 ═══════════
                 SectionHeader("界面设置", "广告与界面内容清理")
                 GroupCard {
                     NavRow(
@@ -193,7 +196,6 @@ fun MainScreen(activity: MainActivity) {
                     ) { activity.openPage(SubSettingsActivity.PAGE_MISC) }
                 }
 
-                // ═══════════ 高级功能 ═══════════
                 SectionHeader("高级功能", "深度净化与功能增强")
                 GroupCard {
                     SwitchRow(
@@ -218,7 +220,6 @@ fun MainScreen(activity: MainActivity) {
                     ) { activity.writeRemote(Settings.KEY_UPDATE_DIALOG, it) }
                 }
 
-                // ═══════════ 模块功能 ═══════════
                 SectionHeader("模块功能", "仅影响本模块的显示方式与调试选项")
                 GroupCard {
                     SwitchRow(
@@ -247,8 +248,6 @@ fun MainScreen(activity: MainActivity) {
         }
     }
 }
-
-// ==================== 搜索栏 ====================
 
 @Composable
 private fun SearchBar(
@@ -297,8 +296,6 @@ private fun SearchBar(
     )
 }
 
-// ==================== 搜索结果行 ====================
-
 @Composable
 private fun SearchResultRow(
     feature: FeatureRegistry.Feature,
@@ -345,8 +342,6 @@ private fun SearchResultRow(
     }
 }
 
-// ==================== 推荐功能行 ====================
-
 @Composable
 private fun RecommendRow(
     feature: FeatureRegistry.Feature,
@@ -380,27 +375,6 @@ private fun RecommendRow(
     }
 }
 
-// ==================== 观察框架 service 连接状态 ====================
-
-
-@Composable
-private fun rememberServiceState(): State<XposedService?> {
-    val state = remember { mutableStateOf<App.ServiceStateListener?>(null) }
-    val serviceState = remember { mutableStateOf<XposedService?>(null) }
-    DisposableEffect(Unit) {
-        val listener = object : App.ServiceStateListener {
-            override fun onServiceStateChanged(service: XposedService?) {
-                serviceState.value = service
-            }
-        }
-        App.addServiceStateListener(listener, true)
-        onDispose { App.removeServiceStateListener(listener) }
-    }
-    return serviceState
-}
-
-// ==================== 顶栏 ====================
-
 @Composable
 private fun MainHeader(activity: MainActivity, modifier: Modifier = Modifier) {
     val colors = MiuixTheme.colorScheme
@@ -426,8 +400,6 @@ private fun MainHeader(activity: MainActivity, modifier: Modifier = Modifier) {
         }
     }
 }
-
-// ==================== 状态卡 ====================
 
 @Composable
 private fun StatusCard(service: XposedService?, night: Boolean) {
