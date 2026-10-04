@@ -168,9 +168,10 @@ object UpdateCardUi : BaseHook() {
                         liveUpdateView = WeakReference(view)
                         view.post {
                             runCatching {
+                           
                                 val expandOn = Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)
-                                // 修复：移除 orchardOn 依赖，仅需 expandOn 即可展开
-                                if (!expandOn) return@runCatching
+                                val cleanupOn = Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
+                                if (!expandOn || !cleanupOn) return@runCatching
 
                                 val header = MinePageClean.findViewByResName(view, "expand_collapse_header")
                                 val arrow = MinePageClean.findViewByResName(view, "expand_arrow")
