@@ -120,6 +120,10 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
         PrefSwitch(activity, Settings.KEY_DETAIL_EXTRAS, "详情页广告", "详情页拼装推荐、底部多按钮推广栏、浏览器下载弹窗广告", enabled = masterOn)
         Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
         PrefSwitch(activity, Settings.KEY_FLOATING_AD, "主页悬浮广告", "屏蔽主页底部/侧边弹出的悬浮广告图标", enabled = masterOn)
+        Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+        PrefSwitch(activity, Settings.KEY_AD_BACK_FLOAT, "返回浮窗广告", "屏蔽返回时弹出的「返回今日头条」等悬浮浮窗", enabled = masterOn)
+        Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+        PrefSwitch(activity, Settings.KEY_HOME_PAGE_DIALOG, "首页弹窗推广", "屏蔽进入首页时弹出的 Dialog 推广位", enabled = masterOn)
     }
     Footer("Tips：屏蔽后若页面空白，关掉对应页面开关即可恢复")
 }
@@ -210,6 +214,10 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean) {
         PrefSwitch(activity, Settings.KEY_HIDE_UPDATE_ALL, "更新界面全部升级按钮", "隐藏更新界面全部升级按钮", enabled = masterOn)
         Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
         PrefSwitch(activity, Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, "更新界面自动升级开关", "隐藏更新界面自动升级开关", enabled = masterOn)
+        Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+        PrefSwitch(activity, Settings.KEY_PUSH_FLOAT, "Push悬浮通知", "屏蔽 MiPush 推送的悬浮通知与游戏推广浮窗", enabled = masterOn)
+        Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+        PrefSwitch(activity, Settings.KEY_UPDATE_FLOAT_CARD, "升级浮窗卡片", "屏蔽检测到新版本时弹出的浮窗升级提示", enabled = masterOn)
     }
     Footer("Tips：隐藏的可能只是标题，不过眼不见为净嘛~")
 }

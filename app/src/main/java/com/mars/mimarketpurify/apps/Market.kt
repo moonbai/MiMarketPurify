@@ -32,6 +32,10 @@ import com.mars.mimarketpurify.init.AppPackage
 import com.mars.mimarketpurify.init.AppRegister
 import com.mars.mimarketpurify.hooks.market.UpdateTabEntry
 import com.mars.mimarketpurify.hooks.market.FloatingAdHook
+import com.mars.mimarketpurify.hooks.market.AdBackFloatBlocker
+import com.mars.mimarketpurify.hooks.market.HomePageDialogBlocker
+import com.mars.mimarketpurify.hooks.market.PushFloatNotificationBlocker
+import com.mars.mimarketpurify.hooks.market.UpdateFloatCardBlocker
 import io.github.libxposed.api.XposedModuleInterface
 
 object Market : AppRegister() {
@@ -71,7 +75,11 @@ object Market : AppRegister() {
             UpdateTabEntry,
             ConfigBackupRestore,
             FloatingAdHook,
-            ResourcesNotFoundGuard
+            ResourcesNotFoundGuard,
+            AdBackFloatBlocker,
+            HomePageDialogBlocker,
+            PushFloatNotificationBlocker,
+            UpdateFloatCardBlocker
         )
     }
 }
