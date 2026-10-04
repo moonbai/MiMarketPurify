@@ -60,8 +60,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
     }
 }
 
-private data class Feature(val key: String, val title: String, val summary: String)
-
 @Composable
 private fun SubSettingsScreen(page: String, activity: SubSettingsActivity, highlightKey: String) {
     val tick by activity.refreshSignal
@@ -98,9 +96,12 @@ private fun SubSettingsScreen(page: String, activity: SubSettingsActivity, highl
 private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
     GroupCard {
         listOf(
-            Settings.KEY_SPLASH to "开屏广告", Settings.KEY_MAIN_TAB to "前台广告/推荐",
-            Settings.KEY_HOME_FEED to "信息流广告", Settings.KEY_SEARCH to "搜索推荐",
-            Settings.KEY_UPDATE_DL to "升级/下载推荐", Settings.KEY_DETAIL to "详情页广告",
+            Settings.KEY_SPLASH to "开屏广告",
+            Settings.KEY_MAIN_TAB to "前台广告/推荐",
+            Settings.KEY_HOME_FEED to "信息流广告",
+            Settings.KEY_SEARCH to "搜索推荐",
+            Settings.KEY_UPDATE_DL to "升级/下载推荐",
+            Settings.KEY_DETAIL to "详情页广告",
             Settings.KEY_RANK to "榜单广告",
         ).forEach { (k, t) -> HighlightSwitch(activity, k, t, "", masterOn, hl) }
         HighlightSwitch(activity, Settings.KEY_FRUIT, "领水果入口", "", masterOn, hl)
@@ -202,7 +203,7 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean,
     }
 }
 
-// ═══════════ 高亮开关组件（闪烁两次 + 卡片圆角） ═══════════
+// ═══════════ 高亮开关组件 ═══════════
 
 @Composable
 private fun HighlightSwitch(
@@ -217,7 +218,7 @@ private fun HighlightSwitch(
 ) {
     val isHighlighted = highlightKey.isNotEmpty() && highlightKey == key
 
-    // 闪烁动画：0→0.35→0→0.35→0，两次
+    // 闪烁两次后消失
     val alpha = remember { Animatable(0f) }
     LaunchedEffect(isHighlighted) {
         if (isHighlighted) {
@@ -233,7 +234,7 @@ private fun HighlightSwitch(
         }
     }
 
-    // 遵守 GroupCard 的圆角（12dp 是 GroupCard 内部行的标准圆角）
+    // 遵守 GroupCard 圆角（12dp）
     val cardShape = RoundedCornerShape(12.dp)
     Box(
         modifier = if (alpha.value > 0f)
