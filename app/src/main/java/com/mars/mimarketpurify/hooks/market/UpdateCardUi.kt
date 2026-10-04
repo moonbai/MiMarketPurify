@@ -95,7 +95,6 @@ object UpdateCardUi : BaseHook() {
                 "mine_app_update_title", "update_empty_text", "mine_update_arrow"
             )
         ) {
-            val orchardOn = Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, true)
             if (!orchardOn) {
                 originalTextColor[rootView]?.let { rootView.setTextColor(it); originalTextColor.remove(rootView) }
             } else {
@@ -163,23 +162,22 @@ object UpdateCardUi : BaseHook() {
                 ?.filterByName("onFinishInflate")
                 ?.forEach { m ->
                     m.hooked {
-                    val result = proceed()
-                    (thisObject as? View)?.let { view ->
-                        liveUpdateView = WeakReference(view)
-                        view.post {
-                            runCatching {
-                           
-                                val expandOn = Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)
-                                val cleanupOn = Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
-                                if (!expandOn || !cleanupOn) return@runCatching
-
-                                val header = MinePageClean.findViewByResName(view, "expand_collapse_header")
-                                val arrow = MinePageClean.findViewByResName(view, "expand_arrow")
-                                (arrow ?: header)?.performClick()
-                                view.postDelayed({ flattenUpdateIcons(view) }, 120)
+                        val result = proceed()
+                        (thisObject as? View)?.let { view ->
+                            liveUpdateView = WeakReference(view)
+                            view.post {
+                                runCatching {
+                                    val expandOn = Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)
+                                    val cleanupOn = Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
+                                    if (!expandOn || !cleanupOn) return@runCatching
+                                    val header = MinePageClean.findViewByResName(view, "expand_collapse_header")
+                                    val arrow = MinePageClean.findViewByResName(view, "expand_arrow")
+                                    (arrow ?: header)?.performClick()
+                                    view.postDelayed({ flattenUpdateIcons(view) }, 120)
+                                }
                             }
+                            result
                         }
-                        result
                     }
                 }
         }.onFailure {
