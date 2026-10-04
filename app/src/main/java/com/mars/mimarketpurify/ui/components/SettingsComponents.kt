@@ -42,7 +42,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -206,7 +205,6 @@ fun Footer(text: String) {
 fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
     val context = LocalContext.current
     val colors = MiuixTheme.colorScheme
-    var showRestartConfirm by remember { mutableStateOf(false) }
     Column {
         Row(
             modifier = Modifier
@@ -238,12 +236,12 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                 color = colors.onSurface,
             )
             Spacer(Modifier.weight(1f))
-            // 重启按钮：圆角小药丸
+            // 重启按钮：圆角小药丸，点击直接重启（取消二次确认）
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .background(colors.surfaceContainer)
-                    .clickable { showRestartConfirm = true }
+                    .clickable { MarketRestarter.restart(context) }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
@@ -252,29 +250,6 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                     color = colors.onSurfaceVariantSummary,
                 )
             }
-        }
-        if (showRestartConfirm) {
-            AlertDialog(
-                onDismissRequest = { showRestartConfirm = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showRestartConfirm = false
-                        MarketRestarter.restart(context)
-                    }) { Text("重启", color = colors.primary) }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showRestartConfirm = false }) {
-                        Text("取消", color = colors.onSurfaceVariantSummary)
-                    }
-                },
-                title = { Text("重启应用商店", color = colors.onSurface) },
-                text = {
-                    Text(
-                        "将强制停止并重新打开应用商店（优先通过 root 强杀，未保存状态会丢失）。是否继续？",
-                        color = colors.onSurface,
-                    )
-                },
-            )
         }
         HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
     }
@@ -600,14 +575,12 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
         }.start()
     }
 
-    // LayerBackdrop 由页面内容提供；玻璃顶栏/底栏消费它，实现真正的高斯模糊。
+    // LayerBackdrop 由页面内容提供；底部检查更新胶囊消费它，实现真实的高斯模糊。
     val backdrop = rememberLayerBackdrop()
-    // 初始估计 Hero 高度（状态栏 + 内容 + 边距），首帧布局后立即修正
-    var heroHeightPx by remember { mutableStateOf(with(density) { 220.dp.roundToPx() }) }
-    val heroHeightDp = with(density) { heroHeightPx.toDp() }
 
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        // 滚动内容在底层，顶部留出 Hero 高度
+        // 滚动内容：顶部放置 Hero（图标/版本/描述），向下滚动自然让出空间，
+        // 「功能」等区块紧随其后，默认即可完整看到；Hero 为普通卡片，无模糊、无文字阴影。
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -615,9 +588,12 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                 .layerBackdrop(backdrop)
                 .navigationBarsPadding()
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
-                .padding(top = heroHeightDp)
                 .padding(bottom = FloatingTabBarDefaults.Height + floatingBarInset + 16.dp),
         ) {
+            // 顶部 Hero：图标/版本/描述（普通卡片，无背景模糊、无文字阴影）
+            AboutHeroHeader(activity = activity)
+            Spacer(Modifier.height(12.dp))
+
             SettingsSection(topLabel = "功能") {
                 val features = listOf(
                     "广告净化" to "开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口",
@@ -673,17 +649,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
         }
 
-        // 顶部固定玻璃 Hero：图标/版本/描述置顶，背景实时模糊下方滚动内容
-        AboutHeroHeader(
-            activity = activity,
-            backdrop = backdrop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .onGloballyPositioned { heroHeightPx = it.size.height }
-                .align(Alignment.TopCenter),
-        )
-
-        // 模糊底栏：检查更新（毛玻璃胶囊，参考 HyperModifier 的玻璃悬浮按钮）
+        // 模糊底栏：检查更新（毛玻璃胶囊）；向上滑动超过阈值后自动隐藏，避免遮挡内容
         AnimatedVisibility(
             visible = showUpdateBar,
             modifier = Modifier
@@ -839,53 +805,45 @@ internal fun AboutGlassCard(
 }
 
 /**
- * 关于页顶部模糊头图：玻璃材质卡片，内容置顶，无文字阴影/模糊。
- * 点击跳转到仓库；背景随下方内容滚动实时高斯模糊。
+ * 关于页顶部头图：普通卡片（surfaceContainer 背景），图标/版本/描述置顶，
+ * 无背景模糊、无文字阴影；点击跳转到仓库。
  */
 @Composable
-private fun AboutHeroHeader(
-    activity: ComponentActivity,
-    backdrop: LayerBackdrop?,
-    modifier: Modifier = Modifier,
-) {
-    AboutGlassCard(
-        backdrop = backdrop,
-        shape = RoundedCornerShape(24.dp),
-        modifier = modifier
+private fun AboutHeroHeader(activity: ComponentActivity) {
+    val colors = MiuixTheme.colorScheme
+    Column(
+        modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(start = MiuiX.PAGE_H.dp, end = MiuiX.PAGE_H.dp, top = 12.dp, bottom = 12.dp),
-        onClick = { openLink(activity, MiuiX.REPO_URL) },
+            .clip(RoundedCornerShape(24.dp))
+            .background(colors.surfaceContainer)
+            .clickable { openLink(activity, MiuiX.REPO_URL) }
+            .padding(top = 28.dp, bottom = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(top = 20.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            SafeDrawableImage(
-                resId = R.mipmap.ic_launcher,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(22.dp)),
-                contentScale = ContentScale.Fit,
-            )
-            Text(
-                text = "Mi Market Purify",
-                style = MiuixTheme.textStyles.title2,
-                textAlign = TextAlign.Center,
-                color = MiuixTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "v${BuildConfig.VERSION_NAME}",
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-            Text(
-                text = "小米应用商店净化与增强",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-        }
+        SafeDrawableImage(
+            resId = R.mipmap.ic_launcher,
+            modifier = Modifier
+                .size(88.dp)
+                .clip(RoundedCornerShape(24.dp)),
+            contentScale = ContentScale.Fit,
+        )
+        Text(
+            text = "Mi Market Purify",
+            style = MiuixTheme.textStyles.title2,
+            textAlign = TextAlign.Center,
+            color = colors.onSurface,
+        )
+        Text(
+            text = "v${BuildConfig.VERSION_NAME}",
+            style = MiuixTheme.textStyles.body2,
+            color = colors.onSurfaceVariantSummary,
+        )
+        Text(
+            text = "小米应用商店净化与增强",
+            style = MiuixTheme.textStyles.footnote1,
+            color = colors.onSurfaceVariantSummary,
+        )
     }
 }
 

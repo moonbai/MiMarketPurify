@@ -269,6 +269,16 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, masterOn) { "${it}dp" }
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, masterOn) { "${it}%" }
         }
+        Spacer(Modifier.height(12.dp))
+        SettingsSection(topLabel = "颜色自定义（留空即恢复主题默认色）") {
+            PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xFFF2F2F2.toInt())
+            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+            PrefColorRow(activity, "选中项背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, 0xFFDADADA.toInt())
+            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+            PrefColorRow(activity, "文字默认色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0xFF000000.toInt())
+            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+            PrefColorRow(activity, "文字选中色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFF000000.toInt())
+        }
         Footer("悬浮底栏替代原生贴底栏，实现 iOS 风格胶囊导航")
     }
 }

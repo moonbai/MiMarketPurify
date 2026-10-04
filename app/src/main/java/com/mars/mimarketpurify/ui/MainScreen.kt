@@ -11,10 +11,8 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -212,7 +210,6 @@ private fun BlurHeader(
     onHeightChanged: (Int) -> Unit = {},
 ) {
     val colors = MiuixTheme.colorScheme
-    var showRestartConfirm by remember { mutableStateOf(false) }
     AboutGlassCard(
         backdrop = backdrop,
         shape = RoundedCornerShape(0.dp),
@@ -229,40 +226,17 @@ private fun BlurHeader(
                 Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
                     color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
             }
-            // 重启按钮：圆角小药丸
+            // 重启按钮：圆角小药丸，点击直接重启（取消二次确认）
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .background(colors.surfaceContainer)
-                    .clickable { showRestartConfirm = true }
+                    .clickable { onRestartMarket() }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(text = "重启", fontSize = 13.sp, color = colors.onSurfaceVariantSummary)
             }
         }
-    }
-    if (showRestartConfirm) {
-        AlertDialog(
-            onDismissRequest = { showRestartConfirm = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    showRestartConfirm = false
-                    onRestartMarket()
-                }) { Text("重启", color = colors.primary) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRestartConfirm = false }) {
-                    Text("取消", color = colors.onSurfaceVariantSummary)
-                }
-            },
-            title = { Text("重启应用商店", color = colors.onSurface) },
-            text = {
-                Text(
-                    "将强制停止并重新打开应用商店（优先通过 root 强杀，未保存状态会丢失）。是否继续？",
-                    color = colors.onSurface,
-                )
-            },
-        )
     }
 }
 
