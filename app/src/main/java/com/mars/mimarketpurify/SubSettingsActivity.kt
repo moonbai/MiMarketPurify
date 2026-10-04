@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.ui.components.*
+import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -61,9 +62,8 @@ class SubSettingsActivity : SettingsBaseActivity() {
         }
         setContent {
             MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
-                val masterOn = remember(refreshSignal.value) {
-                    mutableStateOf(readLocal(Settings.KEY_MASTER, true))
-                }
+                val tick by refreshSignal
+                val masterOn = remember(tick) { mutableStateOf(readLocal(Settings.KEY_MASTER, true)) }
                 val hl = intent?.getStringExtra(EXTRA_HIGHLIGHT).orEmpty()
                 Column(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
                     SubTopBar(title = title, onBack = { finish() })
@@ -137,8 +137,8 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
 @Composable
 private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
     val keys = remember { Settings.TAB_ITEMS.keys.toList() }
-    val kept = remember(refreshSignal.value) { mutableStateOf(Settings.getKeptTabs()) }
-    val colors = MiuixTheme.colorScheme
+    val tick by activity.refreshSignal
+    val kept = remember(tick) { mutableStateOf(Settings.getKeptTabs()) }
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
@@ -189,7 +189,7 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
 
 @Composable
 private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean) {
-    val sliderMax = MiuiX.FLOATING_BAR_MAX
+    val sliderMax = 29 // MiuiX FLOATING_RADIUS_MAX / FLOATING_BOTTOM_MARGIN_MAX 共用
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
@@ -207,6 +207,6 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, masterOn) { "${it}dp" }
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, masterOn) { "${it}%" }
         }
-        Footer("悬浮底栏替代原生贴边底栏，实现 iOS 风格胶囊导航")
+        Footer("悬浮底栏替代原生贴底栏，实现 iOS 风格胶囊导航")
     }
 }

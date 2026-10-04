@@ -38,6 +38,8 @@ import com.mars.mimarketpurify.hooks.market.UpdateFloatCardBlocker
 import com.mars.mimarketpurify.hooks.market.TabDeepClean
 import com.mars.mimarketpurify.hooks.market.LongPressJumpToPlugin
 import com.mars.mimarketpurify.hooks.market.InstallRecommendBlocker
+import com.mars.mimarketpurify.init.AppPackage
+import com.mars.mimarketpurify.init.AppRegister
 import io.github.libxposed.api.XposedModuleInterface
 
 object Market : AppRegister() {
@@ -84,9 +86,8 @@ object Market : AppRegister() {
             UpdateFloatCardBlocker,
             BackgroundDownloadBlocker,
             TabDeepClean,
-            // ===== 新增 Hook =====
-            LongPressJumpToPlugin,     // 长按下载按钮跳转插件主页
-            InstallRecommendBlocker    // 拦截安装后推荐弹窗
+            LongPressJumpToPlugin,
+            InstallRecommendBlocker,
         )
     }
 }

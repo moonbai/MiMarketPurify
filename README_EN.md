@@ -30,6 +30,7 @@
 - Home page floating ads
 - **Back floating ads**: Block "Return to Toutiao" and similar floating windows that appear when pressing back
 - **Home page dialog promotions**: Block Dialog promotions shown when entering the home page
+- **Install-after recommendations**: Block "Users Also Liked" / "People Also Liked" recommendation popups that appear after clicking install (covers all recommendation scenarios: home page install, detail page install-then-back, search guide page, etc.)
 
 ### UI Cleanup
 - App security check view
@@ -43,6 +44,8 @@
 - Store "Upgrade Reminder" dialog (independently toggleable)
 - **Push floating notifications**: Block MiPush floating notifications and game promotion floating windows
 - **Upgrade floating card**: Block floating upgrade prompts shown when a new version is detected
+- **Block background silent download**: Prevents the store from automatically downloading app updates in the background, saving data and battery
+- **Long-press to open plugin**: Long-press the bottom download/check-in button (`DownloadWithCheckin`) to jump to the plugin's main page
 
 ### Feature Enhancements
 - **Floating bottom bar**: Replace the docked native bottom bar with a Compose-drawn floating rounded capsule, with page content extending beneath
@@ -53,8 +56,13 @@
 - **Force enable Super Island download** (ignores server-side grayscale, independently toggleable)
 - **Detail fixes**: Show non-genuine apps, unhide updates, etc.
 - **Tab injection**: Injects an "Update" entry into the native bottom bar that goes directly to the update page (independent of the floating bar, persists even when floating is off); pending update count displayed on the "Update" tab
-- **Block background silent download**: Prevents the store from automatically downloading app updates in the background, saving data and battery
 - **Tab deep cleanup**: Hidden tabs are not only hidden but also skip data loading, saving data and memory
+- **Restart App Store**: A "⟳" restart button on the top-right corner of the main page and all sub-pages, one-tap stop and restart of the store process
+
+### Dark Mode Support
+- Module UI (main page / settings / about / search) fully supports system dark mode
+- `SettingItem` title text explicitly uses `onSurface` color, ensuring white text in dark mode
+- Privacy policy WebView forced to follow system dark mode (`isAlgorithmicDarkeningAllowed` on API 33+, `FORCE_DARK_ON` on API 29-32)
 
 ### Stability (Protective safety net, not controlled by individual switches, only gated by the master switch)
 - Intercepts the store's self-destruct mechanism that deletes itself after consecutive crashes
@@ -69,12 +77,14 @@
 The module's main page, sub-settings pages, About page, **Search page**, and the **floating bottom bar** injected into the app store are all built with **Compose + MiuiX** (`top.yukonga.miuix.kmp`), visually aligned with HyperOS / MiuiX design language:
 
 - **Theme**: Unified `MiuixTheme` usage, dark/light follows system (`darkColorScheme()` / `lightColorScheme()`), colors from `MiuixTheme.colorScheme`, matching the native store's frosted glass;
+- **Dark mode**: All text uses explicit theme colors (`onSurface` / `onSurfaceVariantSummary`), no longer relying on XML theme defaults, ensuring text is clearly readable in dark mode; Privacy policy WebView automatically follows system dark mode;
 - **Grouped cards**: Controls in the same group are placed in one rounded container, **no divider lines within groups**, only whitespace separation;
 - **Full-row clickable**: Tap title or empty space to toggle switch / enter sub-page, touch target minimum 48dp;
 - **Status expression**: Module availability indicated by top status card (active green / inactive orange), not by dimming controls; when master switch is off, feature rows turn gray and become non-clickable;
 - **Entry summaries are computed**: The "N enabled / N hidden / filter off" text on the right side of main page and sub-page entry rows **auto-recalculates** when returning from sub-pages (subscribes to `refreshSignal`, refreshes on `onResume`);
-- **Search**: Search bar at the top of the main page, clicking opens a dedicated search page with real-time keyword filtering of all features, categorized recommendation grid at the bottom;
+- **Search**: Search bar at the top of the main page, clicking opens a dedicated search page with real-time keyword filtering of all features, categorized recommendation grid at the bottom (rotational recommendation per category, up to 10 cards);
 - **Discover**: Randomly recommends 3 feature switches from different categories on the main page, auto-refreshes every 15 seconds, independently toggleable;
+- **Restart button**: A "⟳" restart button on the top-right corner of the main page and all sub-pages, one-tap stop and restart of the store process;
 - Supports edge-to-edge, system bar insets fill the fixed header top and content area bottom; main / About pages reserve space for the floating bar in scroll content to avoid bottom blank bar and last item occlusion.
 
 > The app card on the About page links to the source repository; "Check for Updates" is available at the bottom.
@@ -92,12 +102,12 @@ The module's main page, sub-settings pages, About page, **Search page**, and the
 | Main · Advanced | Super Island download, detail fixes, upgrade reminder dialog |
 | Main · Module | Hide launcher icon, random recommendations (toggle), debug mode |
 | Search · Results | 2-column grid cards with category color bars, click to navigate to settings page |
-| Search · Recommendations | 6-category feature recommendation grid |
-| Sub · Ad Purification | Splash, foreground ads, feed, search, upgrade/download, detail, rankings, fruit entry, activity entry, detail extras, floating ad, back floating ad, home dialog |
+| Search · Recommendations | Feature recommendation grid (rotational per category, up to 10 cards) |
+| Sub · Ad Purification | Splash, foreground ads, feed, search, upgrade/download, detail, rankings, fruit entry, activity entry, detail extras, floating ad, back floating ad, home dialog, install-after recommendation |
 | Sub · "My" Page | App recommendations, official entry, cleanup & uninstall, personal info, security check, card background, card expand, tab badge |
 | Sub · Bottom Tabs | Tab filter (multi-select), deep cleanup (skip data loading for hidden tabs), update tab injection |
 | Sub · Floating Bar Config | Enable floating bar, liquid highlight, 3D liquid, show labels, colors, corner radius, bottom margin |
-| Sub · Other UI Cleanup | Detail "Featured", upgrade history, search "Also Watching", top bar promo, upgrade all button, auto-update switch, Push floating, upgrade float card, block background download |
+| Sub · Other UI Cleanup | Detail "Featured", upgrade history, search "Also Watching", top bar promo, upgrade all button, auto-update switch, Push floating, upgrade float card, block background download, long-press to open plugin |
 | About | App card (links to repo), feature summary, check for updates, license & credits |
 
 ---
@@ -130,6 +140,7 @@ Only disables the desktop launcher's `activity-alias` (`.LauncherAlias`). `MainA
   - Remote preferences fetched via cross-process binder, config written to target app SP, high-frequency hook paths use 500ms TTL cache to reduce overhead
 - **Config sync**: libxposed remote preferences, module writes, hook reads, fixed group `settings`; falls back to reading target app's SP file when remote preferences unavailable
 - **UI element hiding**: Uses **resource IDs** and **badge text** as anchors instead of hardcoded View layer/position; `View.onAttachedToWindow` full interception + main/detail page `onResume` tree rescan dual-path for reliable coverage
+- **Recommendation blocking**: Hooks `ClientAIAdReRankEngine.compute()` at the recommendation engine level to return an empty list from the source, covering all recommendation scenarios (home install, detail install-then-back, search guide); supplemented by text keyword matching as fallback
 - **Multi-version compatibility**: Hook logic is compatible across HyperOS / MIUI versions, avoiding hardcoded version numbers
 
 ### Directory Overview
@@ -142,6 +153,8 @@ app/src/main/java/com/mars/mimarketpurify/
 ├── FeatureRegistry.kt                # Feature registry (shared by search & recommendations)
 ├── ui/MainScreen.kt / ui/components/ # Main page & shared Compose components
 ├── hooks/market/                     # Purification / enhancement hooks
+│   ├── InstallRecommendBlocker.kt    # Block install-after recommendations
+│   └── LongPressJumpToPlugin.kt      # Long-press to open plugin main page
 ├── util/                             # Floating bar host, native TabBar positioning, download, update check
 └── init/                             # Xposed initialization, resource hiding, package registration
 ```
