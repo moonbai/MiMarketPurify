@@ -31,7 +31,18 @@ object SearchAds : BaseHook() {
         "的用户还喜欢",
         "大家还喜欢",
         "相关推荐",
-        "你可能还喜欢"
+        "你可能还喜欢",
+        // ===== 新增：下载/安装后弹出的推荐弹窗文案 =====
+        "安装后",
+        "可能还会喜欢",
+        "热门推荐",
+        "相似应用",
+        "同类型",
+        "大家都在用",
+        "大家都在装",
+        "你可能喜欢",
+        "安装了",
+        "也喜欢",
     )
 
     /** 推荐卡根容器的已知资源 id（新版本若更换 id，从调试日志定位后追加到这里） */
@@ -72,7 +83,6 @@ object SearchAds : BaseHook() {
         val sb = StringBuilder()
         var cur: View? = start
         var depth = 0
-        // 用 while 而非 repeat：lambda 捕获并修改 cur 会导致 smart cast 不可用（编译错误）
         while (cur != null && depth < 4) {
             if (sb.isNotEmpty()) sb.append(" → ")
             val idName = runCatching { cur.resources.getResourceEntryName(cur.id) }
@@ -93,7 +103,6 @@ object SearchAds : BaseHook() {
                 if (targetKeywords.any { text.contains(it) }) {
                     val targetRoot = findSuggestRootFromChild(view)
                     if (targetRoot == null) {
-                        // 命中文案但没找到根容器：说明 id 又漂移了，打印容器链便于补锚点
                         debugLog("命中推荐文案「${text.take(30)}」但未匹配根容器 id，容器链: ${debugAncestors(view)}")
                         return
                     }
@@ -116,9 +125,6 @@ object SearchAds : BaseHook() {
         return hit
     }
 
-    /**
-     * 无硬依赖 RV 子附着监听
-     */
     @Suppress("UNCHECKED_CAST")
     private fun attachScrollWatcher(viewRoot: ViewGroup) {
         fun traverse(parent: ViewGroup) {
@@ -215,11 +221,6 @@ object SearchAds : BaseHook() {
                     proceed()
                     val root = args.getOrNull(1) as? ViewGroup ?: return@hooked null
 
-                    // 持续监听布局变化 → 专门抓安装后异步新增的View。
-                    // 节流 + 智能上限：
-                    //  - 动画/滚动期间 onGlobalLayout 每帧触发，间隔 < 400ms 的扫描直接丢弃；
-                    //  - 命中过目标则保留监听（持续防恢复/防后续卡片）；从未命中且扫描满
-                    //    上限才移除监听，避免页面长时间停留时全树扫描空转。
                     root.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
                         private var lastScan = 0L
                         private var scanCount = 0
@@ -239,7 +240,6 @@ object SearchAds : BaseHook() {
                         }
                     })
 
-                    // 初始兜底扫描
                     Handler(Looper.getMainLooper()).postDelayed({ scanAndHide(root) }, 300)
                     attachScrollWatcher(root)
 

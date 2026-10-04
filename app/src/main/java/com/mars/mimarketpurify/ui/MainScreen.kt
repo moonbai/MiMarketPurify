@@ -1,6 +1,10 @@
 package com.mars.mimarketpurify.ui
 
 import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,12 +32,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import com.mars.mimarketpurify.App
 import com.mars.mimarketpurify.FeatureRegistry
 import com.mars.mimarketpurify.MainActivity
 import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.SearchActivity
-import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.SubSettingsActivity
 import com.mars.mimarketpurify.isNight
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
@@ -44,12 +48,32 @@ import io.github.libxposed.service.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.delay
 
+// ═══════════ 重启应用商店工具函数 ═══════════
+
+private const val MI_MARKET_PKG = "com.xiaomi.market"
+
+/** 强制停止应用商店并重新启动 */
+private fun restartMarket(context: Context) {
+    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+    // 强制停止
+    runCatching { am.killBackgroundProcesses(MI_MARKET_PKG) }
+    // 重新启动主 Activity
+    val launch = context.packageManager.getLaunchIntentForPackage(MI_MARKET_PKG)
+    if (launch != null) {
+        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        context.startActivity(launch)
+        Toast.makeText(context, "已重启应用商店", Toast.LENGTH_SHORT).show()
+    } else {
+        Toast.makeText(context, "未找到应用商店", Toast.LENGTH_SHORT).show()
+    }
+}
+
 @Composable
 fun MainScreen(activity: MainActivity) {
     val colors = MiuixTheme.colorScheme
     val context = LocalContext.current
     val tick by activity.refreshSignal
-    val masterOn = remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
+    val masterOn = remember(tick) { mutableStateOf(activity.readLocal(com.mars.mimarketpurify.Settings.KEY_MASTER, true)) }
     val adSummary by remember(tick) { mutableStateOf(activity.countText(activity.adKeys)) }
     val tabsSummary by remember(tick) { mutableStateOf(activity.tabsText()) }
     val tabbarSummary by remember(tick) { mutableStateOf(activity.tabbarText()) }
@@ -57,7 +81,7 @@ fun MainScreen(activity: MainActivity) {
     val miscSummary by remember(tick) { mutableStateOf(activity.countText(activity.miscKeys)) }
 
     var recommendEnabled by remember(tick) {
-        mutableStateOf(activity.readLocal(Settings.KEY_RECOMMENDATIONS_ENABLED, true))
+        mutableStateOf(activity.readLocal(com.mars.mimarketpurify.Settings.KEY_RECOMMENDATIONS_ENABLED, true))
     }
     val showRecommendations = masterOn.value && recommendEnabled
 
@@ -81,12 +105,12 @@ fun MainScreen(activity: MainActivity) {
     }
 
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        BlurHeader(activity = activity)
+        BlurHeader(activity = activity, onRestartMarket = { restartMarket(context) })
 
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding()
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 6.dp)
-                .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
+                .padding(bottom = FloatingTabBarDefaults.Height + com.mars.mimarketpurify.Settings.floatingBarBottomMarginDp().dp),
         ) {
             MiuiXSearchBar(onClick = { context.startActivity(SearchActivity.intent(context)) })
             Spacer(Modifier.height(12.dp))
@@ -114,7 +138,7 @@ fun MainScreen(activity: MainActivity) {
             SettingsSection {
                 SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
                     checked = masterOn.value, enabled = true) { on ->
-                    masterOn.value = on; activity.writeRemote(Settings.KEY_MASTER, on)
+                    masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
                 }
             }
 
@@ -133,16 +157,16 @@ fun MainScreen(activity: MainActivity) {
 
             SettingsSection(topLabel = "高级功能") {
                 SwitchRow(title = "下载超级岛", summary = "强制让下载进度进入小米超级岛",
-                    checked = activity.readLocal(Settings.KEY_ISLAND, true),
-                    enabled = masterOn.value) { activity.writeRemote(Settings.KEY_ISLAND, it) }
+                    checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_ISLAND, true),
+                    enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_ISLAND, it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 SwitchRow(title = "细节修正", summary = "显示非正版 APP、被隐藏更新等细节处理",
-                    checked = activity.readLocal(Settings.KEY_MISC, true),
-                    enabled = masterOn.value) { activity.writeRemote(Settings.KEY_MISC, it) }
+                    checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_MISC, true),
+                    enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MISC, it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 SwitchRow(title = "升级提醒弹窗", summary = "不再弹出应用商店的升级提醒对话框",
-                    checked = activity.readLocal(Settings.KEY_UPDATE_DIALOG, true),
-                    enabled = masterOn.value) { activity.writeRemote(Settings.KEY_UPDATE_DIALOG, it) }
+                    checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG, true),
+                    enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG, it) }
             }
 
             SettingsSection(topLabel = "模块功能") {
@@ -152,12 +176,12 @@ fun MainScreen(activity: MainActivity) {
                 SwitchRow(title = "随机推荐", summary = "主页显示随机功能推荐（每 15 秒自动刷新）",
                     checked = recommendEnabled, enabled = masterOn.value) {
                     recommendEnabled = it
-                    activity.writeRemote(Settings.KEY_RECOMMENDATIONS_ENABLED, it)
+                    activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RECOMMENDATIONS_ENABLED, it)
                 }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 SwitchRow(title = "调试模式", summary = "开启后将统一日志输出",
-                    checked = activity.readLocal(Settings.KEY_RANK_DEBUG, false),
-                    enabled = true) { activity.writeRemote(Settings.KEY_RANK_DEBUG, it) }
+                    checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, false),
+                    enabled = true) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, it) }
             }
 
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
@@ -168,8 +192,10 @@ fun MainScreen(activity: MainActivity) {
     }
 }
 
+// ═══════════ 顶栏（含重启按钮） ═══════════
+
 @Composable
-private fun BlurHeader(activity: MainActivity) {
+private fun BlurHeader(activity: MainActivity, onRestartMarket: () -> Unit) {
     val colors = MiuixTheme.colorScheme
     Row(modifier = Modifier.fillMaxWidth().statusBarsPadding()
         .padding(horizontal = MiuiX.PAGE_H.dp, vertical = MiuiX.PAGE_H.dp),
@@ -179,6 +205,17 @@ private fun BlurHeader(activity: MainActivity) {
                 fontWeight = FontWeight.Bold, color = colors.onSurface)
             Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
                 color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
+        }
+        // 重启应用商店按钮
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onRestartMarket() }
+                .padding(8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(text = "⟳", fontSize = 22.sp, color = colors.onSurface)
         }
     }
 }

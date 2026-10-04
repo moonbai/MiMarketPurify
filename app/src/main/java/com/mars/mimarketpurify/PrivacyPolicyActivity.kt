@@ -1,6 +1,8 @@
 package com.mars.mimarketpurify
 
+import android.os.Build
 import android.os.Bundle
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
@@ -79,7 +81,7 @@ private fun PrivacyPolicyScreen(onBack: () -> Unit) {
             )
         }
 
-        // WebView 内容
+        // WebView 内容（强制跟随系统深色模式）
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
@@ -88,6 +90,17 @@ private fun PrivacyPolicyScreen(onBack: () -> Unit) {
                     settings.loadWithOverviewMode = true
                     settings.useWideViewPort = true
                     settings.defaultTextEncodingName = "UTF-8"
+
+                    // ===== 深色模式适配 =====
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        // API 33+：使用算法暗化，由系统控制
+                        settings.isAlgorithmicDarkeningAllowed = true
+                    } else {
+                        // API 29-32：强制暗化
+                        @Suppress("DEPRECATION")
+                        settings.forceDark = WebSettings.FORCE_DARK_ON
+                    }
+
                     loadUrl("file:///android_asset/privacy_policy.html")
                 }
             },

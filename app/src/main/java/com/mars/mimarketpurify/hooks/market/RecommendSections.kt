@@ -65,7 +65,12 @@ object RecommendSections : BaseHook() {
      * 这些文案只出现在推荐卡标题上，命中即隐藏整卡，不依赖页面类名 / 容器 id，
      * 覆盖搜索结果页点击安装后插入的卡片、以及其他任何页面动态插入的同款卡片。
      */
-    private val globalTokens = listOf("的用户还喜欢", "大家还喜欢", "你可能还喜欢")
+    private val globalTokens = listOf(
+        "的用户还喜欢", "大家还喜欢", "你可能还喜欢",
+        // ===== 新增：下载/安装后弹出的推荐弹窗文案 =====
+        "安装后", "可能还会喜欢", "热门推荐", "相似应用", "同类型",
+        "大家都在用", "大家都在装", "你可能喜欢", "安装了", "也喜欢",
+    )
 
     /** 已隐藏过的板块标题，避免日志刷屏 */
     private val reported = Collections.synchronizedSet(mutableSetOf<String>())
@@ -79,9 +84,6 @@ object RecommendSections : BaseHook() {
     private const val GLOBAL_RESCAN_INTERVAL_MS = 500L
 
     override fun init() {
-        // 路径 A：任何视图一挂上来就检查，滚动加载的新卡片也能覆盖。
-        // 挂载的往往是整块卡片（ViewGroup 包着标题 TextView），所以对挂载视图做
-        // 2 层小树 DFS（深度 0 检查自身 + 子级），而不是只看 v 本身。
         runCatching {
             ClassUtil.loadClass("android.view.View")
                 .methodFinder()
@@ -96,14 +98,10 @@ object RecommendSections : BaseHook() {
             HookEnv.base.log(Log.ERROR, TAG, "$name: View.onAttachedToWindow 挂钩失败", it)
         }
 
-        // 路径 B：进入目标页面时整树补扫一遍，防止路径 A 在某些框架上挂不上
         hookRescan("com.xiaomi.market.ui.UpdateHistoryActivity")
         hookRescan("com.xiaomi.market.ui.SearchActivityPhone")
         hookRescan("com.xiaomi.market.ui.detail.AppDetailActivityInner")
 
-        // 路径 C：常驻防恢复——任何 Activity 布局变化就重扫全树。
-        // 商店隐藏后把卡片恢复（重新 bind / setVisibility(VISIBLE) / 滚动复用插入）都会
-        // 触发布局变化，监听从页面进入起常驻，恢复一次重扫一次，直到真正消失。
         runCatching {
             ClassUtil.loadClass("android.app.Activity")
                 .methodFinder()
@@ -168,7 +166,6 @@ object RecommendSections : BaseHook() {
         val host = v.context?.javaClass?.name.orEmpty()
         if (host.isEmpty()) return
         val hit = when {
-            // 安装后插入的关联推荐卡：文案足够特定，全局命中即隐藏（不依赖页面/容器 id）
             Settings.isEnabled(Settings.KEY_SEARCH, true) &&
                 globalTokens.any { text.contains(it) } -> true
 
@@ -189,16 +186,6 @@ object RecommendSections : BaseHook() {
         if (hit) hideSection(v, text)
     }
 
-    /**
-     * 从标题往上找整块卡片的根，然后隐藏它。
-     *
-     * 判断依据有两条，谁先命中用谁：
-     *  - 父容器是 RecyclerView → 当前节点就是列表里的一个 item（整块卡片）；
-     *  - 退而求其次，取「宽度接近满屏、且比标题高」的最近祖先。
-     *
-     * 另外挡了一道：高度超过屏幕 70% 的祖先一律不认，
-     * 免得一路找到 decorView 把整个页面干掉。
-     */
     private fun hideSection(title: View, text: String) {
         runCatching {
             val dm = title.resources.displayMetrics
@@ -208,7 +195,6 @@ object RecommendSections : BaseHook() {
             var best: View? = null
             repeat(7) {
                 val parent = cur.parent as? View ?: return@repeat
-                // 父容器是 RecyclerView → cur 就是列表里的整块卡片，直接用它
                 if (isRecycler(parent)) {
                     best = cur
                     return@repeat
@@ -227,7 +213,6 @@ object RecommendSections : BaseHook() {
             }
             if (reported.add(text)) {
                 HookEnv.base.log(Log.WARN, TAG, "$name: 已隐藏推荐板块「$text」", null)
-                // 复查 + 双保险：隐藏后 1 秒若被商店恢复，立即再隐藏并留证据
                 mainHandler.postDelayed({
                     runCatching {
                         if (target.visibility != View.GONE) {
@@ -246,7 +231,6 @@ object RecommendSections : BaseHook() {
         }
     }
 
-    /** 按类名判断 RecyclerView，避免为此引入 recyclerview 依赖 */
     private fun isRecycler(v: View): Boolean =
         v is ViewGroup && v::class.java.name.contains("RecyclerView")
 }

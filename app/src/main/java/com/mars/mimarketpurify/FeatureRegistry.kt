@@ -12,6 +12,7 @@ object FeatureRegistry {
     )
 
     val allFeatures: List<Feature> = listOf(
+        // ═══════════════ 广告净化（14项） ═══════════════
         Feature(Settings.KEY_SPLASH, "开屏广告", "屏蔽应用商店启动时的开屏广告",
             SubSettingsActivity.PAGE_ADS, listOf("开屏", "启动", "splash"), "广告净化"),
         Feature(Settings.KEY_MAIN_TAB, "前台广告/推荐", "屏蔽主页切换时的推荐与广告弹窗",
@@ -38,6 +39,10 @@ object FeatureRegistry {
             SubSettingsActivity.PAGE_ADS, listOf("返回", "浮窗", "跳转", "adback"), "广告净化"),
         Feature(Settings.KEY_HOME_PAGE_DIALOG, "首页弹窗推广", "屏蔽进入首页时弹出的 Dialog 推广位",
             SubSettingsActivity.PAGE_ADS, listOf("首页", "弹窗", "dialog", "推广"), "广告净化"),
+        Feature(Settings.KEY_INSTALL_RECOMMEND, "安装后推荐", "拦截点击安装后弹出的「用户还喜欢」推荐弹窗",
+            SubSettingsActivity.PAGE_ADS, listOf("安装后", "用户还喜欢", "推荐弹窗", "install"), "广告净化"),
+
+        // ═══════════════ 我的页精简（8项） ═══════════════
         Feature(Settings.KEY_MINE_RECOMMEND, "应用推荐与推广", "隐藏页面顶部推荐卡片与底部推广列表",
             SubSettingsActivity.PAGE_MINE, listOf("推荐", "推广", "我的", "mine"), "我的页精简"),
         Feature(Settings.KEY_MINE_OFFICIAL_TAB, "应用管理入口", "隐藏页面中间的官方应用管理功能入口",
@@ -54,10 +59,14 @@ object FeatureRegistry {
             SubSettingsActivity.PAGE_MINE, listOf("展开", "升级", "卡片", "expand"), "我的页精简"),
         Feature(Settings.KEY_TAB_BADGE, "底栏角标", "去掉底部标签页的数字角标与红点",
             SubSettingsActivity.PAGE_MINE, listOf("角标", "红点", "badge", "数字"), "我的页精简"),
+
+        // ═══════════════ 标签栏（2项） ═══════════════
         Feature(Settings.KEY_TAB_FILTER, "筛选底部标签", "选择需要展示的底栏标签",
             SubSettingsActivity.PAGE_TABS, listOf("标签", "筛选", "底部", "tab", "filter"), "标签栏"),
         Feature(Settings.KEY_UPDATE_TAB, "底栏更新入口", "在商店原生底栏注入「更新」入口",
             SubSettingsActivity.PAGE_TABS, listOf("更新", "入口", "底栏"), "标签栏"),
+
+        // ═══════════════ 界面精简（10项） ═══════════════
         Feature(Settings.KEY_DETAIL_FEATURED, "详情页「精选」", "按文案匹配，仅在应用详情页生效",
             SubSettingsActivity.PAGE_MISC, listOf("详情", "精选", "featured"), "界面精简"),
         Feature(Settings.KEY_UPDATE_HISTORY, "升级记录推荐", "隐藏升级记录底部的精选推荐",
@@ -76,6 +85,10 @@ object FeatureRegistry {
             SubSettingsActivity.PAGE_MISC, listOf("升级", "浮窗", "卡片", "立即安装"), "界面精简"),
         Feature(Settings.KEY_BLOCK_BG_DOWNLOAD, "屏蔽后台静默下载", "禁止商店在后台自动下载应用更新",
             SubSettingsActivity.PAGE_MISC, listOf("后台", "静默", "下载", "流量", "background"), "界面精简"),
+        Feature(Settings.KEY_LONG_PRESS_JUMP, "长按跳转插件", "长按下载按钮跳转到插件主页",
+            SubSettingsActivity.PAGE_MISC, listOf("长按", "跳转", "插件", "主页", "longpress"), "界面精简"),
+
+        // ═══════════════ 悬浮底栏（4项） ═══════════════
         Feature(Settings.KEY_FLOATING_BAR, "启用悬浮底栏", "在商店底部渲染胶囊风格Tab导航栏",
             SubSettingsActivity.PAGE_TAB_BAR, listOf("悬浮", "底栏", "胶囊", "导航栏", "floating_bar"), "悬浮底栏"),
         Feature(Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标",
@@ -103,11 +116,23 @@ object FeatureRegistry {
         return selectedPages.mapNotNull { page -> byPage[page]?.random(rng) }
     }
 
-    /** 按分类返回推荐：每个分类取一个，最多 [count] 个分类 */
-    fun recommendByCategory(count: Int = 6, seed: Long = System.currentTimeMillis()): List<Feature> {
+    /** 按分类返回推荐：轮询各分类，每个分类取一个，不重复，最多 [count] 个 */
+    fun recommendByCategory(count: Int = 10, seed: Long = System.currentTimeMillis()): List<Feature> {
         val rng = kotlin.random.Random(seed)
         val byCategory = allFeatures.groupBy { it.category }
-        val selectedCategories = byCategory.keys.shuffled(rng).take(count.coerceAtMost(byCategory.size))
-        return selectedCategories.mapNotNull { cat -> byCategory[cat]?.random(rng) }
+        val cats = byCategory.keys.shuffled(rng)
+        val result = mutableListOf<Feature>()
+        var idx = 0
+        while (result.size < count && cats.isNotEmpty()) {
+            val cat = cats[idx % cats.size]
+            val pool = byCategory[cat] ?: break
+            val remaining = pool.filter { it !in result }
+            if (remaining.isNotEmpty()) {
+                result.add(remaining.random(rng))
+            }
+            idx++
+            if (idx > count * cats.size) break
+        }
+        return result
     }
 }

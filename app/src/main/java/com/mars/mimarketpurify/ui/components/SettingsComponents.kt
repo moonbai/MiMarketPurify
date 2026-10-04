@@ -54,57 +54,8 @@ import com.mars.mimarketpurify.PrivacyPolicyActivity
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/**
- * 全局共享的 Compose 构件与页面片段。
- *
- * 把原先散落在 [com.mars.mimarketpurify.ui.MainScreen]（主页）与
- * [com.mars.mimarketpurify.SubSettingsActivity] / [com.mars.mimarketpurify.AboutActivity]
- * （原生 View 实现）里的「卡片 / 开关行 / 导航行 / 区块标题 / 顶栏」统一收口到这里，
- * 主页、二级设置页、关于页共用同一套，从根上消除「两套 UI 语汇」的重复，
- * 也确保配色全部来自 [MiuixTheme.colorScheme]，不再出现字面色被强制深色反色的问题。
- *
- * UI 语汇完全对齐 miuix 官方设计规范：
- * - Section 容器使用 [Surface] + `surfaceContainer` 色 + 24dp 圆角
- * - Section 标题使用 `primary` 色 + `footnote1` 样式
- * - 项内文字使用 `body1` / `footnote1` 文字样式
- * - 副文字使用 `onSurfaceVariantSummary` 色
- * - Section 内项与项之间无分隔线（与 HyperModifier 一致）
- */
+// ==================== SettingItem（深色模式修复：显式设 onSurface 色） ====================
 
-// ==================== Section 容器（miuix 标准） ====================
-
-/**
- * miuix 风格的设置区块容器：使用 [Surface] + `surfaceContainer` 色 + 24dp 圆角。
- * 可选 [topLabel] 以 `primary` 色显示区块标题（如"功能"、"作者"）。
- */
-@Composable
-fun SettingsSection(
-    modifier: Modifier = Modifier,
-    topLabel: String? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val sectionShape = MaterialTheme.shapes.large.copy(CornerSize(24.dp))
-    val container = MiuixTheme.colorScheme.surfaceContainer
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        topLabel?.let {
-            Text(
-                text = it,
-                color = MiuixTheme.colorScheme.primary,
-                style = MiuixTheme.textStyles.footnote1,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-            )
-        }
-        Surface(
-            shape = sectionShape,
-            color = container,
-        ) { Column(modifier = Modifier.fillMaxWidth(), content = content) }
-    }
-}
-
-/**
- * Section 内的设置项：标题 + 副标题 + 可选尾部组件。
- * 与 HyperModifier / miuix 示例完全一致的间距与样式。
- */
 @Composable
 fun SettingItem(
     headlineText: String,
@@ -139,7 +90,33 @@ fun SettingItem(
     }
 }
 
-// ==================== 兼容旧接口：卡片容器（保留供主页等使用） ====================
+// ==================== Section 容器 ====================
+
+@Composable
+fun SettingsSection(
+    modifier: Modifier = Modifier,
+    topLabel: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val sectionShape = MaterialTheme.shapes.large.copy(CornerSize(24.dp))
+    val container = MiuixTheme.colorScheme.surfaceContainer
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        topLabel?.let {
+            Text(
+                text = it,
+                color = MiuixTheme.colorScheme.primary,
+                style = MiuixTheme.textStyles.footnote1,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+            )
+        }
+        Surface(
+            shape = sectionShape,
+            color = container,
+        ) { Column(modifier = Modifier.fillMaxWidth(), content = content) }
+    }
+}
+
+// ==================== 兼容旧接口：卡片容器 ====================
 
 @Composable
 fun GroupCard(content: @Composable ColumnScope.() -> Unit) {
@@ -173,12 +150,6 @@ fun SectionHeader(title: String, subtitle: String) {
     }
 }
 
-/**
- * 安全加载 drawable 为 Image：用 [ContextCompat] 取 Drawable 后转 [BitmapPainter]，
- * 避免 [androidx.compose.ui.res.painterResource] 在 release(R8) 下对自适应启动图标 /
- * 缺失资源直接抛异常、导致整页 Compose 崩溃（点击「关于」闪退的根因之一）。
- * 加载失败时回退为占位方块，而不是让整页崩溃。
- */
 @Composable
 private fun SafeDrawableImage(
     resId: Int,
@@ -213,15 +184,12 @@ fun Footer(text: String) {
     )
 }
 
-// ==================== 子页顶栏（返回 + 标题） ====================
+// ==================== 子页顶栏 ====================
 
-/**
- * 子页顶栏。`showBack` 控制是否显示左侧返回按钮：
- * - 二级设置页默认显示（[SubSettingsActivity] 需要返回上一级）；
- * - 关于页传 `false`，只保留标题，与主页顶栏（无返回键）保持一致。
- */
+
 @Composable
 fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
+    val context = LocalContext.current
     val colors = MiuixTheme.colorScheme
     Column {
         Row(
@@ -253,12 +221,40 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                 style = MiuixTheme.textStyles.title3,
                 color = colors.onSurface,
             )
+            Spacer(Modifier.weight(1f))
+            // 重启应用商店按钮
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable {
+                        val am = context.getSystemService(android.content.Context.ACTIVITY_SERVICE)
+                                as android.app.ActivityManager
+                        runCatching { am.killBackgroundProcesses("com.xiaomi.market") }
+                        val launch = context.packageManager.getLaunchIntentForPackage("com.xiaomi.market")
+                        if (launch != null) {
+                            launch.addFlags(
+                                android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                        or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            )
+                            context.startActivity(launch)
+                            android.widget.Toast.makeText(context, "已重启应用商店", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            android.widget.Toast.makeText(context, "未找到应用商店", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = "⟳", fontSize = 22.sp, color = colors.onSurface)
+            }
         }
         HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
     }
 }
 
-// ==================== 开关行 ====================
+
+// ==================== 开关行（拇指色恢复白色，通用性最佳） ====================
 
 @Composable
 fun SwitchRow(
@@ -296,16 +292,16 @@ fun SwitchRow(
             onCheckedChange = { isChecked = it; onCheckedChange(it) },
             enabled = enabled,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = colors.onSurface,       // ← 修复：用 onSurface 替代 Color.White
+                checkedThumbColor = Color.White,       // 白色拇指：浅色轨道/深色轨道上都清晰
                 checkedTrackColor = colors.primary,
-                uncheckedThumbColor = colors.onSurface,     // ← 修复：用 onSurface 替代 Color.White
+                uncheckedThumbColor = Color.White,
                 uncheckedTrackColor = Color(MiuiX.SWITCH_TRACK_OFF),
             ),
         )
     }
 }
 
-// ==================== 勾选行（底部标签筛选） ====================
+// ==================== 勾选行 ====================
 
 @Composable
 fun CheckboxRow(
@@ -470,7 +466,7 @@ fun PrefSlider(
     }
 }
 
-// ==================== 偏好绑定：颜色选择（miuix ColorPicker） ====================
+// ==================== 偏好绑定：颜色选择 ====================
 
 @Composable
 fun PrefColorRow(
@@ -541,7 +537,7 @@ fun PrefColorRow(
     }
 }
 
-// ==================== 关于页内容（主页「关于」标签页与独立 AboutActivity 共用） ====================
+// ==================== 关于页内容 ====================
 
 private data class RefProject(val repoName: String, val url: String, val label: String)
 
@@ -563,7 +559,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
                 .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
         ) {
-            // ── 应用卡片（居中大图标 + 标题 + 版本，无背景卡片色，参考 miuix/HyperModifier 关于页） ──
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -598,7 +593,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 )
             }
 
-            // ── 功能区块 ──
             SettingsSection(topLabel = "功能") {
                 val features = listOf(
                     "广告净化" to "开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口",
@@ -610,7 +604,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 }
             }
 
-            // ── 作者区块 ──
             SettingsSection(topLabel = "作者") {
                 SettingItem(
                     headlineText = "Mars",
@@ -628,7 +621,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 )
             }
 
-            // ── 参考项目区块（无分隔线） ──
             SettingsSection(topLabel = "参考项目") {
                 val references = listOf(
                     RefProject("callng/NewFuckMarketAds", "https://github.com/callng/NewFuckMarketAds", "GPL-3.0"),
@@ -645,7 +637,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 }
             }
 
-            // ── 其他区块 ──
             SettingsSection(topLabel = "其他") {
                 SettingItem(
                     headlineText = "检查更新",
@@ -678,7 +669,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
             Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
         }
 
-        // ── 检查更新结果弹窗（MiuiX 风格） ──
         if (showUpdate && updateInfo != null) {
             val info = updateInfo!!
             AlertDialog(
@@ -749,7 +739,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
             )
         }
 
-        // ── 下载进度弹窗（MiuiX 风格） ──
         if (downloading) {
             AlertDialog(
                 onDismissRequest = {},

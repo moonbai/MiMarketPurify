@@ -1,9 +1,11 @@
 package com.mars.mimarketpurify.apps
 
 import com.mars.mimarketpurify.hooks.market.AntiSelfDestruct
+import com.mars.mimarketpurify.hooks.market.BackgroundDownloadBlocker
 import com.mars.mimarketpurify.hooks.market.ConfigBackupRestore
 import com.mars.mimarketpurify.hooks.market.DetailAds
 import com.mars.mimarketpurify.hooks.market.EnableSuperIsland
+import com.mars.mimarketpurify.hooks.market.FloatingAdHook
 import com.mars.mimarketpurify.hooks.market.HideSecurityView
 import com.mars.mimarketpurify.hooks.market.HideUpdateAll
 import com.mars.mimarketpurify.hooks.market.HideFruitEntry
@@ -28,16 +30,14 @@ import com.mars.mimarketpurify.hooks.market.MinePageClean
 import com.mars.mimarketpurify.hooks.market.UpdateCardUi
 import com.mars.mimarketpurify.hooks.market.UpdateDownloadAds
 import com.mars.mimarketpurify.hooks.market.ResourcesNotFoundGuard
-import com.mars.mimarketpurify.init.AppPackage
-import com.mars.mimarketpurify.init.AppRegister
 import com.mars.mimarketpurify.hooks.market.UpdateTabEntry
-import com.mars.mimarketpurify.hooks.market.FloatingAdHook
 import com.mars.mimarketpurify.hooks.market.AdBackFloatBlocker
 import com.mars.mimarketpurify.hooks.market.HomePageDialogBlocker
 import com.mars.mimarketpurify.hooks.market.PushFloatNotificationBlocker
 import com.mars.mimarketpurify.hooks.market.UpdateFloatCardBlocker
-import com.mars.mimarketpurify.hooks.market.BackgroundDownloadBlocker
 import com.mars.mimarketpurify.hooks.market.TabDeepClean
+import com.mars.mimarketpurify.hooks.market.LongPressJumpToPlugin
+import com.mars.mimarketpurify.hooks.market.InstallRecommendBlocker
 import io.github.libxposed.api.XposedModuleInterface
 
 object Market : AppRegister() {
@@ -83,7 +83,10 @@ object Market : AppRegister() {
             PushFloatNotificationBlocker,
             UpdateFloatCardBlocker,
             BackgroundDownloadBlocker,
-            TabDeepClean
+            TabDeepClean,
+            // ===== 新增 Hook =====
+            LongPressJumpToPlugin,     // 长按下载按钮跳转插件主页
+            InstallRecommendBlocker    // 拦截安装后推荐弹窗
         )
     }
 }

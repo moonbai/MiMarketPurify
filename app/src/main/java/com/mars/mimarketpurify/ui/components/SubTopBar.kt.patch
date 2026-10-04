@@ -1,0 +1,70 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// SubTopBar 组件补丁：在右上角添加「重启应用商店」按钮
+// 使用方式：替换 SettingsComponents.kt 中的 SubTopBar 函数
+// ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
+    val context = LocalContext.current
+    val colors = MiuixTheme.colorScheme
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (showBack) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(50))
+                        .clickable { onBack() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "‹",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+            }
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.title3,
+                color = colors.onSurface,
+            )
+            Spacer(Modifier.weight(1f))
+            // 重启应用商店按钮
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable {
+                        val am = context.getSystemService(android.content.Context.ACTIVITY_SERVICE)
+                                as android.app.ActivityManager
+                        runCatching { am.killBackgroundProcesses("com.xiaomi.market") }
+                        val launch = context.packageManager.getLaunchIntentForPackage("com.xiaomi.market")
+                        if (launch != null) {
+                            launch.addFlags(
+                                android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                        or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            )
+                            context.startActivity(launch)
+                            android.widget.Toast.makeText(context, "已重启应用商店", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            android.widget.Toast.makeText(context, "未找到应用商店", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = "⟳", fontSize = 22.sp, color = colors.onSurface)
+            }
+        }
+        HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
+    }
+}
