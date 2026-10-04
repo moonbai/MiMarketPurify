@@ -9,7 +9,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -99,7 +101,7 @@ private fun SubSettingsScreen(page: String, activity: SubSettingsActivity, highl
     }
 }
 
-// ==================== 广告净化 ====================
+// ═══════════ 广告净化 ═══════════
 
 @Composable
 private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
@@ -113,9 +115,7 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Stri
         Feature(Settings.KEY_RANK, "榜单广告", "榜单界面的广告 / 推广卡片"),
     )
     GroupCard {
-        adFeatures.forEach { f ->
-            HighlightSwitch(activity, f.key, f.title, f.summary, masterOn, hl)
-        }
+        adFeatures.forEach { f -> HighlightSwitch(activity, f.key, f.title, f.summary, masterOn, hl) }
         HighlightSwitch(activity, Settings.KEY_FRUIT, "领水果入口", "隐藏福利活动 gif 动图入口", masterOn, hl)
         HighlightSwitch(activity, Settings.KEY_ENTRANCE, "首页活动入口", "隐藏搜索框左侧云控下发的活动小图标", masterOn, hl)
         HighlightSwitch(activity, Settings.KEY_DETAIL_EXTRAS, "详情页附加推荐", "详情页拼装推荐、底部多按钮推广栏", masterOn, hl)
@@ -126,7 +126,7 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Stri
     Footer("Tips：屏蔽后若页面空白，关掉对应页面开关即可恢复")
 }
 
-// ==================== 我的页 ====================
+// ═══════════ 我的页 ═══════════
 
 @Composable
 private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
@@ -142,15 +142,13 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
         HighlightSwitch(activity, Settings.KEY_MINE_SUMMARY, "个人信息区", "隐藏头像、昵称、消息、收藏", masterOn, hl)
         HighlightSwitch(activity, Settings.KEY_MINE_SECURITY, "安全检测", "隐藏应用安全检测卡片", masterOn, hl)
         HighlightSwitch(activity, Settings.KEY_ORCHARD_SKIN, "更新卡片背景", "清除升级卡片的果园背景", masterOn, hl) { orchardOn = it }
-        if (eligible) {
-            HighlightSwitch(activity, Settings.KEY_CARD_EXPAND, "升级卡片横向展开", "需清理与卸载+更新卡片背景同时开启", masterOn, hl)
-        }
+        if (eligible) HighlightSwitch(activity, Settings.KEY_CARD_EXPAND, "升级卡片横向展开", "需清理与卸载+更新卡片背景同时开启", masterOn, hl)
         HighlightSwitch(activity, Settings.KEY_TAB_BADGE, "底栏角标", "去掉底部标签页的数字角标与红点", masterOn, hl)
     }
     Footer("Tips：改动一般在下次进入界面时生效，不过重启会立刻生效。")
 }
 
-// ==================== 标签栏 ====================
+// ═══════════ 标签栏 ═══════════
 
 @Composable
 private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
@@ -182,7 +180,7 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
     Footer("Tips：隐藏标签后需重启一次应用商店才会生效。")
 }
 
-// ==================== 其他界面精简 ====================
+// ═══════════ 其他界面精简 ═══════════
 
 @Composable
 private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
@@ -200,7 +198,7 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
     Footer("Tips：隐藏的可能只是标题，不过眼不见为净嘛~")
 }
 
-// ==================== 悬浮底栏配置 ====================
+// ═══════════ 悬浮底栏配置 ═══════════
 
 @Composable
 private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
@@ -242,7 +240,7 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean,
     }
 }
 
-// ==================== 高亮开关组件 ====================
+// ═══════════ 高亮开关组件 ═══════════
 
 @Composable
 private fun HighlightSwitch(
@@ -268,7 +266,6 @@ private fun HighlightSwitch(
             key = key,
             title = title,
             summary = summary,
-
             checked = activity.readLocal(key, default),
             enabled = enabled,
             default = default,
