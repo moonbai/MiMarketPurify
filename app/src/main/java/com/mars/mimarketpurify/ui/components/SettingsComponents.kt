@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -835,7 +836,7 @@ private fun AboutGlassCard(
     }
     Box(
         modifier = modifier.onGloballyPositioned { coords ->
-            val pos = coords.positionInRoot()
+            val pos = coords.positionInWindow()
             sampler?.setNavigationBounds(
                 ViewBackdropBounds(pos.x.roundToInt(), pos.y.roundToInt(), coords.size.width, coords.size.height),
             )
