@@ -34,6 +34,7 @@ import com.mars.mimarketpurify.App
 import com.mars.mimarketpurify.FeatureRegistry
 import com.mars.mimarketpurify.MainActivity
 import com.mars.mimarketpurify.MiuiX
+import com.mars.mimarketpurify.useDarkTheme
 import com.mars.mimarketpurify.SearchActivity
 import com.mars.mimarketpurify.SubSettingsActivity
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
