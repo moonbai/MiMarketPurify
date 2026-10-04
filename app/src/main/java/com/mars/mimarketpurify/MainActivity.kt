@@ -6,6 +6,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import kotlin.math.roundToInt
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -43,7 +46,7 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
 class MainActivity : SettingsBaseActivity() {
 
-    private val KEY_FIRST_LAUNCH_CHECKED = "first_launch_update_checked"
+    private val KEY_LAST_UPDATE_CHECK_DAY = "last_update_check_day"
 
     internal val adKeys = listOf(
         Settings.KEY_SPLASH, Settings.KEY_MAIN_TAB, Settings.KEY_HOME_FEED,
@@ -86,7 +89,7 @@ class MainActivity : SettingsBaseActivity() {
                 }
             }
         }
-        maybeCheckUpdateOnFirstLaunch()
+        maybeCheckUpdateDaily()
     }
 
     override fun onResume() {
@@ -94,10 +97,15 @@ class MainActivity : SettingsBaseActivity() {
         refreshAll()
     }
 
-    private fun maybeCheckUpdateOnFirstLaunch() {
+    /**
+     * 启动后自动检查更新：每天最多一次（以本地日期 yyyyMMdd 去重，写入 SharedPreferences）。
+     * 后台线程静默检查，仅当发现新版本时用 Toast 轻提示，失败/已是最新都不打扰用户。
+     */
+    private fun maybeCheckUpdateDaily() {
         val prefs = getPreferences(MODE_PRIVATE)
-        if (prefs.getBoolean(KEY_FIRST_LAUNCH_CHECKED, false)) return
-        prefs.edit().putBoolean(KEY_FIRST_LAUNCH_CHECKED, true).apply()
+        val today = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+        if (prefs.getString(KEY_LAST_UPDATE_CHECK_DAY, null) == today) return
+        prefs.edit().putString(KEY_LAST_UPDATE_CHECK_DAY, today).apply()
         Thread {
             val result = UpdateChecker.check()
             runOnUiThread {

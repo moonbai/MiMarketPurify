@@ -18,9 +18,6 @@ import java.net.URL
 import com.mars.mimarketpurify.util.UpdateChecker
 import com.mars.mimarketpurify.util.UpdateCheckResult
 import com.mars.mimarketpurify.util.MarketRestarter
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,7 +41,6 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
@@ -248,18 +244,18 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                 color = colors.onSurface,
             )
             Spacer(Modifier.weight(1f))
-            // 重启按钮：圆角小药丸，点击直接重启（取消二次确认）
+            // 重启按钮：浅色底胶囊，点击直接重启（取消二次确认）
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(colors.surfaceContainer)
+                    .background(colors.primary.copy(alpha = 0.12f))
                     .clickable { MarketRestarter.restart(context) }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
-                    text = "重启",
+                    text = "重启商店",
                     fontSize = 13.sp,
-                    color = colors.onSurfaceVariantSummary,
+                    color = colors.primary,
                 )
             }
         }
@@ -564,10 +560,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
     var downloading by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableStateOf(0f) }
     val scrollState = rememberScrollState()
-    val density = LocalDensity.current
-    // 向上滑动超过 80dp 后隐藏检查更新按钮
-    val hideUpdateThresholdPx = with(density) { 80.dp.toPx() }
-    val showUpdateBar by remember { derivedStateOf { scrollState.value < hideUpdateThresholdPx } }
 
     // 系统返回键：关于页内统一返回（独立 Activity 关闭自身；主页内回到首页标签）
     BackHandler(onBack = onBack)
@@ -587,15 +579,15 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
         }.start()
     }
 
-    // LayerBackdrop 捕获「动态光晕背景」；底部检查更新按钮消费它，实现真实的高斯模糊。
+    // LayerBackdrop 捕获「动态光晕背景」；内联「检查更新」按钮消费它，实现真实的高斯模糊。
     val backdrop = rememberLayerBackdrop()
 
-    // 「向上滑动」进度 0→1（滚动 320px 封顶）：动态光晕背景与检查更新按钮共用。
+    // 「向上滑动」进度 0→1（滚动 320px 封顶）：动态光晕背景随之上滑淡出。
     val scrollProgress by remember { derivedStateOf { (scrollState.value / 320f).coerceIn(0f, 1f) } }
 
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
         // MiuiX 风格「高斯模糊动态背景」：主题色柔和光晕，缓慢漂移；上滑时淡出。
-        // 该层被 layerBackdrop 捕获，供底部检查更新毛玻璃按钮做真实高斯模糊采样。
+        // 该层被 layerBackdrop 捕获，供内联「检查更新」毛玻璃按钮做真实高斯模糊采样。
         AboutFloatingBackground(
             modifier = Modifier
                 .fillMaxSize()
@@ -603,11 +595,11 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             alpha = 1f - scrollProgress,
         )
 
-        // 首屏留白：Hero 较上一版整体上移；向下滚动后 Hero 自然上移，
-        // 露出「功能/作者/参考项目/其他」等区块。
+        // 首屏留白：Hero 保持在上部；「检查更新」按钮内联在 Hero 正下方，
+        // 向下滚动后整体自然上移，露出「功能/作者/参考项目/其他」等区块。
         val screenHeight = LocalConfiguration.current.screenHeightDp.dp
         val heroTopGap = screenHeight * 0.28f
-        val heroBottomGap = screenHeight * 0.14f
+        val heroBottomGap = screenHeight * 0.10f
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -619,6 +611,14 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             Spacer(Modifier.height(heroTopGap))
             // 顶部 Hero：图标/版本/描述（无背景卡片、无背景模糊、无文字阴影）
             AboutHeroHeader(activity = activity)
+            Spacer(Modifier.height(20.dp))
+            // 检查更新：长条圆角矩形毛玻璃按钮，置于 Hero 正下方（即画框位置）
+            AboutUpdateBar(
+                activity = activity,
+                onClick = doCheckUpdate,
+                backdrop = backdrop,
+                modifier = Modifier.fillMaxWidth(),
+            )
             Spacer(Modifier.height(heroBottomGap))
 
             SettingsSection(topLabel = "功能") {
@@ -674,19 +674,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             }
 
             Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
-        }
-
-        // 检查更新：长条圆角矩形毛玻璃按钮；向上滑动超过阈值后自动隐藏，避免遮挡内容
-        AnimatedVisibility(
-            visible = showUpdateBar,
-            modifier = Modifier
-                .navigationBarsPadding()
-                .padding(start = 32.dp, end = 32.dp, bottom = 16.dp + floatingBarInset)
-                .align(Alignment.BottomCenter),
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            AboutUpdateBar(activity = activity, onClick = doCheckUpdate, backdrop = backdrop)
         }
 
         if (showUpdate && updateInfo != null) {
@@ -976,11 +963,11 @@ private fun vividGlowColor(color: Color, hueShift: Float): Color {
     return Color(ColorUtils.HSLToColor(hsl))
 }
 
-// ==================== 关于页：模糊底栏（检查更新） ====================
+// ==================== 关于页：检查更新按钮（长条毛玻璃） ====================
 
 /**
- * 关于页底部毛玻璃操作栏（参考 HyperModifier 的 SoftGlassFloatingActionButton）：
- * 居中胶囊按钮，文字主色高亮，点击触发检查更新。毛玻璃不可用时回退半透明纯色胶囊。
+ * 关于页「检查更新」长条圆角矩形毛玻璃按钮，内联在 Hero 正下方：
+ * 文字主色高亮，点击触发检查更新。毛玻璃不可用时回退半透明纯色。
  */
 @Composable
 private fun AboutUpdateBar(

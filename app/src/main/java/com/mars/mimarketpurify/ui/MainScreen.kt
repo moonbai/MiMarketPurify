@@ -226,15 +226,15 @@ private fun BlurHeader(
                 Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
                     color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
             }
-            // 重启按钮：圆角小药丸，点击直接重启（取消二次确认）
+            // 重启按钮：浅色底胶囊，点击直接重启（取消二次确认）
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(colors.surfaceContainer)
+                    .background(colors.primary.copy(alpha = 0.12f))
                     .clickable { onRestartMarket() }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
-                Text(text = "重启", fontSize = 13.sp, color = colors.onSurfaceVariantSummary)
+                Text(text = "重启商店", fontSize = 13.sp, color = colors.primary)
             }
         }
     }
