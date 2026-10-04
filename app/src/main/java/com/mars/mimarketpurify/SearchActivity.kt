@@ -6,8 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -69,6 +67,7 @@ private fun SearchScreen(activity: SearchActivity) {
     val results = remember(query) { FeatureRegistry.search(query) }
     val isSearching = query.isNotBlank()
 
+    // 10 个推荐，每 5 秒自动刷新
     var recommendSeed by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -86,43 +85,64 @@ private fun SearchScreen(activity: SearchActivity) {
             .background(colors.background)
             .statusBarsPadding()
     ) {
-        SearchTopBar(query = query, onQueryChange = { query = it }, onBack = { activity.finish() })
+        // 搜索栏（固定在顶部）
+        SearchTopBar(
+            query = query,
+            onQueryChange = { query = it },
+            onBack = { activity.finish() },
+        )
 
-        if (isSearching) {
-            AnimatedVisibility(visible = true, enter = fadeIn() + slideInVertically { it / 4 }, exit = fadeOut()) {
-                if (results.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = "未找到相关功能", fontSize = 15.sp, color = colors.onSurfaceSecondary)
-                    }
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        items(results) { feature ->
-                            FeatureSearchCard(feature = feature) {
-                                activity.startActivity(SubSettingsActivity.intent(activity, feature.page, feature.key))
+        // 内容区（固定高度，LazyVerticalGrid 自带滚动）
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (isSearching) {
+                // 搜索结果
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn() + slideInVertically { it / 4 },
+                    exit = fadeOut(),
+                ) {
+                    if (results.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(text = "未找到相关功能", fontSize = 15.sp, color = colors.onSurfaceSecondary)
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxSize(),  // ← 关键：给固定高度
+                        ) {
+                            items(results) { feature ->
+                                FeatureSearchCard(feature = feature) {
+                                    activity.startActivity(SubSettingsActivity.intent(activity, feature.page, feature.key))
+                                }
                             }
                         }
                     }
                 }
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                item(span = { GridCells.Fixed(2) }) {
-                    Text(text = "功能推荐", fontSize = 18.sp, fontWeight = FontWeight.Bold,
-                        color = colors.onSurface, modifier = Modifier.padding(bottom = 4.dp))
-                }
-                items(recommendations) { feature ->
-                    FeatureSearchCard(feature = feature) {
-                        activity.startActivity(SubSettingsActivity.intent(activity, feature.page, feature.key))
+            } else {
+                // 功能推荐（10 个，GridCells.Fixed(2) = 5 行）
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxSize(),  // ← 关键：给固定高度，否则只显示一半
+                ) {
+                    item(span = { GridCells.Fixed(2) }) {
+                        Text(
+                            text = "功能推荐",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface,
+                            modifier = Modifier.padding(bottom = 4.dp),
+                        )
+                    }
+                    items(recommendations) { feature ->
+                        FeatureSearchCard(feature = feature) {
+                            activity.startActivity(SubSettingsActivity.intent(activity, feature.page, feature.key))
+                        }
                     }
                 }
             }
@@ -137,8 +157,12 @@ private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onBack:
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = "‹", fontSize = 28.sp, color = colors.onSurface,
-            modifier = Modifier.clickable { onBack() }.padding(horizontal = 8.dp, vertical = 4.dp))
+        Text(
+            text = "‹",
+            fontSize = 28.sp,
+            color = colors.onSurface,
+            modifier = Modifier.clickable { onBack() }.padding(horizontal = 8.dp, vertical = 4.dp),
+        )
         Box(
             modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(24.dp))
                 .background(colors.surface).padding(horizontal = 16.dp),
@@ -153,8 +177,10 @@ private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onBack:
                     cursorColor = colors.primary, focusedTextColor = colors.onSurface, unfocusedTextColor = colors.onSurface,
                 ),
                 trailingIcon = {
-                    if (query.isNotBlank()) Text(text = "✕", fontSize = 16.sp, color = colors.onSurfaceSecondary,
-                        modifier = Modifier.clickable { onQueryChange("") }.padding(8.dp))
+                    if (query.isNotBlank()) Text(
+                        text = "✕", fontSize = 16.sp, color = colors.onSurfaceSecondary,
+                        modifier = Modifier.clickable { onQueryChange("") }.padding(8.dp),
+                    )
                 },
                 modifier = Modifier.fillMaxSize(),
             )
