@@ -251,7 +251,7 @@ private fun HighlightSwitch(
     enabled: Boolean,
     highlightKey: String,
     default: Boolean = true,
-    onCheckedChange: ((Boolean) -> Unit)? = null,
+    onChanged: ((Boolean) -> Unit)? = null,
 ) {
     val isHighlighted = highlightKey.isNotEmpty() && highlightKey == key
     val bgColor by animateColorAsState(
@@ -266,10 +266,9 @@ private fun HighlightSwitch(
             key = key,
             title = title,
             summary = summary,
-            checked = activity.readLocal(key, default),
-            enabled = enabled,
             default = default,
-            onCheckedChange = onCheckedChange,
+            enabled = enabled,
+            onChanged = onChanged,
         )
     }
 }
