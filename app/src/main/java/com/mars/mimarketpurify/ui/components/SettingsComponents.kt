@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.mars.mimarketpurify.BuildConfig
 import com.mars.mimarketpurify.MiuiX
@@ -570,7 +571,7 @@ fun PrefColorRow(
 private data class RefProject(val repoName: String, val url: String, val label: String)
 
 @Composable
-fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
+fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarInset: Dp = 0.dp) {
     val colors = MiuixTheme.colorScheme
     var updateInfo by remember { mutableStateOf<UpdateCheckResult.Available?>(null) }
     var showUpdate by remember { mutableStateOf(false) }
@@ -667,7 +668,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
             onClick = doCheckUpdate,
             modifier = Modifier
                 .navigationBarsPadding()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp + floatingBarInset)
                 .align(Alignment.BottomCenter),
         )
 
@@ -796,7 +797,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
  * （这正是上一版「模糊没效果」的根因）。底栏 [MainActivity] 即用同款写法。
  */
 @Composable
-private fun AboutGlassCard(
+internal fun AboutGlassCard(
     activity: ComponentActivity,
     shape: Shape,
     modifier: Modifier,
@@ -824,7 +825,10 @@ private fun AboutGlassCard(
         val choreographer = Choreographer.getInstance()
         val cb = object : Choreographer.FrameCallback {
             override fun doFrame(frameTimeNanos: Long) {
-                runCatching { s.requestCaptureBurst(300); s.onFrame() }
+                // 仅在本采样器仍处活跃采样窗口（滚动/布局变化后）时补抓一帧；
+                // 不再每帧强制 requestCaptureBurst(300)，否则会持续对整窗做 PixelCopy，
+                // 导致关于页滚动掉帧。初始布局由 setNavigationBounds 触发突发采样。
+                runCatching { s.onFrame() }
                 choreographer.postFrameCallback(this)
             }
         }

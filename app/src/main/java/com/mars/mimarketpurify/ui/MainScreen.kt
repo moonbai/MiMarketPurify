@@ -43,6 +43,7 @@ import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.ui.components.SettingsSection
 import com.mars.mimarketpurify.ui.components.SettingItem
 import com.mars.mimarketpurify.ui.components.SwitchRow
+import com.mars.mimarketpurify.ui.components.AboutGlassCard
 import com.mars.mimarketpurify.util.MarketRestarter
 import io.github.libxposed.service.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -185,24 +186,30 @@ fun MainScreen(activity: MainActivity) {
 private fun BlurHeader(activity: MainActivity, onRestartMarket: () -> Unit) {
     val colors = MiuixTheme.colorScheme
     var showRestartConfirm by remember { mutableStateOf(false) }
-    Row(modifier = Modifier.fillMaxWidth().statusBarsPadding()
-        .padding(horizontal = MiuiX.PAGE_H.dp, vertical = MiuiX.PAGE_H.dp),
-        verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = "Mi Market Purify", style = MiuixTheme.textStyles.title2,
-                fontWeight = FontWeight.Bold, color = colors.onSurface)
-            Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
-                color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
-        }
-        // 重启按钮：圆角小药丸
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
-                .background(colors.surfaceContainer)
-                .clickable { showRestartConfirm = true }
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-        ) {
-            Text(text = "重启", fontSize = 13.sp, color = colors.onSurfaceVariantSummary)
+    AboutGlassCard(
+        activity = activity,
+        shape = RoundedCornerShape(0.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().statusBarsPadding()
+            .padding(horizontal = MiuiX.PAGE_H.dp, vertical = MiuiX.PAGE_H.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = "Mi Market Purify", style = MiuixTheme.textStyles.title2,
+                    fontWeight = FontWeight.Bold, color = colors.onSurface)
+                Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
+                    color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
+            }
+            // 重启按钮：圆角小药丸
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(colors.surfaceContainer)
+                    .clickable { showRestartConfirm = true }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            ) {
+                Text(text = "重启", fontSize = 13.sp, color = colors.onSurfaceVariantSummary)
+            }
         }
     }
     if (showRestartConfirm) {

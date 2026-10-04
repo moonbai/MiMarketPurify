@@ -76,7 +76,11 @@ class MainActivity : SettingsBaseActivity() {
                 Box(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
                     when (tab) {
                         0 -> MainScreen(activity = this@MainActivity)
-                        else -> AboutContent(activity = this@MainActivity, onBack = { tab = 0 })
+                        else -> AboutContent(
+                            activity = this@MainActivity,
+                            onBack = { tab = 0 },
+                            floatingBarInset = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp,
+                        )
                     }
                     BottomNavBar(selected = tab, modifier = Modifier.align(Alignment.BottomCenter)) { tab = it }
                 }
@@ -154,7 +158,9 @@ private fun BottomNavBar(selected: Int, modifier: Modifier = Modifier, onSelect:
         val choreographer = Choreographer.getInstance()
         val cb = object : Choreographer.FrameCallback {
             override fun doFrame(frameTimeNanos: Long) {
-                runCatching { s.requestCaptureBurst(300); s.onFrame() }
+                // 同 AboutGlassCard：不再每帧强制 requestCaptureBurst(300)，避免整窗 PixelCopy 常驻；
+                // 初始布局由 setNavigationBounds 触发突发采样，滚动由 OnScrollChangedListener 驱动。
+                runCatching { s.onFrame() }
                 choreographer.postFrameCallback(this)
             }
         }
