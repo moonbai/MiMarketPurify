@@ -128,7 +128,8 @@ fun SettingsSection(
                 text = it,
                 color = MiuixTheme.colorScheme.primary,
                 style = MiuixTheme.textStyles.footnote1,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                // 左内边距与卡片内行内容(20dp)一致，使分区标题与各功能标题左边缘对齐
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
         }
         Surface(
@@ -282,7 +283,7 @@ fun SwitchRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable(enabled = enabled) { isChecked = !isChecked; onCheckedChange(isChecked) }
-            .padding(vertical = MiuiX.ROW_PAD_V.dp),
+            .padding(horizontal = 20.dp, vertical = MiuiX.ROW_PAD_V.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
@@ -374,7 +375,7 @@ fun NavRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = MiuiX.ROW_PAD_V.dp),
+            .padding(horizontal = 20.dp, vertical = MiuiX.ROW_PAD_V.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
@@ -595,8 +596,10 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             alpha = 1f - scrollProgress,
         )
 
-        // 首屏留白：Hero 保持在上部；「检查更新」按钮内联在 Hero 正下方，
-        // 向下滚动后整体自然上移，露出「功能/作者/参考项目/其他」等区块。
+        // 首屏留白说明：
+        //  - heroTopGap：图标距页面顶部的留白（首屏大留白、近似垂直居中）
+        //  - heroBottomGap：检查更新按钮距下方「功能」区块的留白（随屏幕高度缩放）
+        //  - 三者配合让 Hero 居上、检查更新按钮内联其下方，滚动后整体自然上移露出后续区块
         val screenHeight = LocalConfiguration.current.screenHeightDp.dp
         val heroTopGap = screenHeight * 0.28f
         val heroBottomGap = screenHeight * 0.10f
@@ -611,14 +614,16 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             Spacer(Modifier.height(heroTopGap))
             // 顶部 Hero：图标/版本/描述（无背景卡片、无背景模糊、无文字阴影）
             AboutHeroHeader(activity = activity)
-            Spacer(Modifier.height(20.dp))
-            // 检查更新：长条圆角矩形毛玻璃按钮，置于 Hero 正下方（即画框位置）
+            // Hero 与「检查更新」按钮之间的间距；本轮在上一版(20dp)基础上再下移一些
+            Spacer(Modifier.height(40.dp))
+            // 检查更新：长条圆角矩形毛玻璃按钮，内联在 Hero 正下方
             AboutUpdateBar(
                 activity = activity,
                 onClick = doCheckUpdate,
                 backdrop = backdrop,
                 modifier = Modifier.fillMaxWidth(),
             )
+            // 按钮与下方「功能」区块之间的间距（随屏幕高度缩放）
             Spacer(Modifier.height(heroBottomGap))
 
             SettingsSection(topLabel = "功能") {

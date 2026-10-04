@@ -90,7 +90,8 @@ object MiuiX {
     const val SECTION_TOP = 18
     /** 组内行高：遵循 HyperOS 行高，通透但不松散 */
     const val ROW_MIN_HEIGHT = 52
-    const val ROW_PAD_H = 16
+    /** 组内行水平内边距：与 SettingItem(20dp)、分区标题(20dp) 对齐，统一各页标题左边缘 */
+    const val ROW_PAD_H = 20
     const val ROW_PAD_V = 12
     /** 组内行间距：不画分隔线，改用少量留白区分相邻两行 */
     const val ROW_GAP = 4

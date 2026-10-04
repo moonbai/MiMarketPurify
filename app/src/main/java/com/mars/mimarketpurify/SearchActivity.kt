@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
@@ -145,6 +146,8 @@ private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onBack:
             if (query.isEmpty()) Text(text = "搜索功能…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
             TextField(
                 value = query, onValueChange = onQueryChange, singleLine = true,
+                // 显式左对齐：避免 MiuiX body1 默认居中导致光标落在「搜/索」之间
+                textStyle = MiuixTheme.textStyles.body1.copy(textAlign = TextAlign.Start),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,

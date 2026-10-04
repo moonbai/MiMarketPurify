@@ -118,31 +118,33 @@ fun MainScreen(activity: MainActivity) {
             StatusCard(service = service, night = activity.isNight())
             Spacer(Modifier.height(12.dp))
 
-            if (showRecommendations) {
-                SettingsSection(topLabel = "推荐功能（每 15 秒自动刷新）") {
-                    recommendations.forEach { feature ->
-                        SettingItem(
-                            headlineText = feature.title,
-                            supportingText = feature.summary,
-                            onClick = {
-                                activity.startActivity(
-                                    SubSettingsActivity.intent(activity, feature.page, feature.key)
-                                )
-                            },
-                        )
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
+        // 总开关：作为全局总控，置于「推荐功能」上方，方便优先决定是否启用
+        SettingsSection {
+            SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
+                checked = masterOn.value, enabled = true) { on ->
+                masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
             }
+        }
 
-            SettingsSection {
-                SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
-                    checked = masterOn.value, enabled = true) { on ->
-                    masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
+        if (showRecommendations) {
+            Spacer(Modifier.height(12.dp))
+            SettingsSection(topLabel = "推荐功能（每 15 秒自动刷新）") {
+                recommendations.forEach { feature ->
+                    SettingItem(
+                        headlineText = feature.title,
+                        supportingText = feature.summary,
+                        onClick = {
+                            activity.startActivity(
+                                SubSettingsActivity.intent(activity, feature.page, feature.key)
+                            )
+                        },
+                    )
                 }
             }
+            Spacer(Modifier.height(12.dp))
+        }
 
-            SettingsSection(topLabel = "界面设置") {
+        SettingsSection(topLabel = "界面设置") {
                 SettingItem(headlineText = "广告净化", supportingText = adSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_ADS) })
                 SettingItem(headlineText = "底栏自定义", supportingText = tabsSummary,
