@@ -114,17 +114,22 @@ fun SettingItem(
     trailingContent: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
+    val colors = MiuixTheme.colorScheme
     val itemModifier = if (enabled && onClick != null) modifier.clickable(onClick = onClick) else modifier
     Row(
         modifier = itemModifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(text = headlineText, style = MiuixTheme.textStyles.body1)
+            Text(
+                text = headlineText,
+                style = MiuixTheme.textStyles.body1,
+                color = colors.onSurface,  // ← 修复：显式设色，深色模式下为白色
+            )
             if (supportingText.isNotEmpty()) {
                 Text(
                     text = supportingText,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    color = colors.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                     modifier = Modifier.padding(top = 3.dp),
                 )
@@ -291,9 +296,9 @@ fun SwitchRow(
             onCheckedChange = { isChecked = it; onCheckedChange(it) },
             enabled = enabled,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
+                checkedThumbColor = colors.onSurface,       // ← 修复：用 onSurface 替代 Color.White
                 checkedTrackColor = colors.primary,
-                uncheckedThumbColor = Color.White,
+                uncheckedThumbColor = colors.onSurface,     // ← 修复：用 onSurface 替代 Color.White
                 uncheckedTrackColor = Color(MiuiX.SWITCH_TRACK_OFF),
             ),
         )
