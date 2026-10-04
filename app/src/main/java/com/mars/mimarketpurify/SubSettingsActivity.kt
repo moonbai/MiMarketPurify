@@ -11,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -66,7 +65,6 @@ private fun SubSettingsScreen(page: String, activity: SubSettingsActivity, highl
     val masterOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
     val colors = MiuixTheme.colorScheme
 
-    // 高亮 key：进入时有效，3 秒后自动淡出
     var activeHighlight by remember { mutableStateOf(highlightKey) }
     LaunchedEffect(highlightKey) {
         if (highlightKey.isNotEmpty()) {
@@ -77,11 +75,11 @@ private fun SubSettingsScreen(page: String, activity: SubSettingsActivity, highl
 
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
         val title = when (page) {
-            PAGE_ADS -> "广告净化"
-            PAGE_MINE -> "「我的」页精简"
-            PAGE_TABS -> "底部标签栏"
-            PAGE_MISC -> "其他界面精简"
-            PAGE_TAB_BAR -> "悬浮底栏配置"
+            SubSettingsActivity.PAGE_ADS -> "广告净化"
+            SubSettingsActivity.PAGE_MINE -> "「我的」页精简"
+            SubSettingsActivity.PAGE_TABS -> "底部标签栏"
+            SubSettingsActivity.PAGE_MISC -> "其他界面精简"
+            SubSettingsActivity.PAGE_TAB_BAR -> "悬浮底栏配置"
             else -> "设置"
         }
         SubTopBar(title = title, onBack = { activity.finish() })
@@ -90,11 +88,11 @@ private fun SubSettingsScreen(page: String, activity: SubSettingsActivity, highl
                 .navigationBarsPadding().padding(horizontal = MiuiX.PAGE_H.dp, vertical = 6.dp),
         ) {
             when (page) {
-                PAGE_ADS -> AdsScreen(activity, masterOn, activeHighlight)
-                PAGE_MINE -> MineScreen(activity, masterOn, activeHighlight)
-                PAGE_TABS -> TabsScreen(activity, masterOn, activeHighlight)
-                PAGE_MISC -> MiscScreen(activity, masterOn, activeHighlight)
-                PAGE_TAB_BAR -> TabBarConfigScreen(activity, masterOn, activeHighlight)
+                SubSettingsActivity.PAGE_ADS -> AdsScreen(activity, masterOn, activeHighlight)
+                SubSettingsActivity.PAGE_MINE -> MineScreen(activity, masterOn, activeHighlight)
+                SubSettingsActivity.PAGE_TABS -> TabsScreen(activity, masterOn, activeHighlight)
+                SubSettingsActivity.PAGE_MISC -> MiscScreen(activity, masterOn, activeHighlight)
+                SubSettingsActivity.PAGE_TAB_BAR -> TabBarConfigScreen(activity, masterOn, activeHighlight)
                 else -> Text("未知页面", color = colors.onSurface)
             }
         }
