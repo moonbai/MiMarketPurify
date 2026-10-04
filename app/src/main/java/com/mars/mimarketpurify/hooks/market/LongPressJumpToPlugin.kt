@@ -20,7 +20,8 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
  */
 object LongPressJumpToPlugin : BaseHook() {
 
-    override val prefKey: String? = null
+    override val prefKey: String? = Settings.KEY_LONG_PRESS_JUMP
+    override val defaultEnabled: Boolean = true
     override val name: String = "长按跳转插件主页"
 
     override fun init() {
@@ -33,6 +34,8 @@ object LongPressJumpToPlugin : BaseHook() {
                     proceed()
                     val view = thisObject as? View ?: return@hooked null
                     view.setOnLongClickListener {
+                        // 按下时复检开关：即使监听器已在开关开启时挂载，关闭后也应立即失效
+                        if (!enabled()) return@setOnLongClickListener false
                         runCatching {
                             val pkg = HookEnv.base.javaClass.packageName
                             val intent = Intent().apply {

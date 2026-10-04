@@ -178,7 +178,11 @@ object RecommendSections : BaseHook() {
         val host = v.context?.javaClass?.name.orEmpty()
         if (host.isEmpty()) return
         val hit = when {
+            // 更新列表页（UpdateListActivity）属于功能性页面，其关联推荐容器（如 R.id.info_view）
+            // 文案常含「安装了」等 globalTokens 片段，若在此命中会把整段更新列表一起隐藏。
+            // 该页没有独立的推荐屏蔽开关，故将其排除在全局匹配之外，避免误伤更新列表。
             Settings.isEnabled(Settings.KEY_SEARCH, true) &&
+                !host.contains("UpdateListActivity") &&
                 globalTokens.any { text.contains(it) } -> true
 
             host.contains(HISTORY_HOST) &&

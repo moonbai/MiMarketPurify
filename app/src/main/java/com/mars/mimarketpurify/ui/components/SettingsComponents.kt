@@ -16,6 +16,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import com.mars.mimarketpurify.util.UpdateChecker
 import com.mars.mimarketpurify.util.UpdateCheckResult
+import com.mars.mimarketpurify.util.MarketRestarter
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -191,6 +192,7 @@ fun Footer(text: String) {
 fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
     val context = LocalContext.current
     val colors = MiuixTheme.colorScheme
+    var showRestartConfirm by remember { mutableStateOf(false) }
     Column {
         Row(
             modifier = Modifier
@@ -227,22 +229,7 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .background(colors.surfaceContainer)
-                    .clickable {
-                        val am = context.getSystemService(android.content.Context.ACTIVITY_SERVICE)
-                                as android.app.ActivityManager
-                        runCatching { am.killBackgroundProcesses("com.xiaomi.market") }
-                        val launch = context.packageManager.getLaunchIntentForPackage("com.xiaomi.market")
-                        if (launch != null) {
-                            launch.addFlags(
-                                android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-                                        or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
-                            )
-                            context.startActivity(launch)
-                            android.widget.Toast.makeText(context, "已重启应用商店", android.widget.Toast.LENGTH_SHORT).show()
-                        } else {
-                            android.widget.Toast.makeText(context, "未找到应用商店", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                    .clickable { showRestartConfirm = true }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
@@ -251,6 +238,29 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                     color = colors.onSurfaceVariantSummary,
                 )
             }
+        }
+        if (showRestartConfirm) {
+            AlertDialog(
+                onDismissRequest = { showRestartConfirm = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showRestartConfirm = false
+                        MarketRestarter.restart(context)
+                    }) { Text("重启", color = colors.primary) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRestartConfirm = false }) {
+                        Text("取消", color = colors.onSurfaceVariantSummary)
+                    }
+                },
+                title = { Text("重启应用商店", color = colors.onSurface) },
+                text = {
+                    Text(
+                        "将强制停止并重新打开应用商店（优先通过 root 强杀，未保存状态会丢失）。是否继续？",
+                        color = colors.onSurface,
+                    )
+                },
+            )
         }
         HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
     }

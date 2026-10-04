@@ -2,8 +2,6 @@ package com.mars.mimarketpurify.ui
 
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -15,8 +13,10 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -32,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.widget.Toast
 import com.mars.mimarketpurify.App
 import com.mars.mimarketpurify.FeatureRegistry
 import com.mars.mimarketpurify.MainActivity
@@ -44,26 +43,16 @@ import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.ui.components.SettingsSection
 import com.mars.mimarketpurify.ui.components.SettingItem
 import com.mars.mimarketpurify.ui.components.SwitchRow
+import com.mars.mimarketpurify.util.MarketRestarter
 import io.github.libxposed.service.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.delay
 
 // ═══════════ 重启应用商店工具函数 ═══════════
 
-private const val MI_MARKET_PKG = "com.xiaomi.market"
-
-/** 强制停止应用商店并重新启动 */
+/** 强制停止应用商店并重新启动（优先 root force-stop，无 root 回退 killBackgroundProcesses） */
 private fun restartMarket(context: Context) {
-    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-    runCatching { am.killBackgroundProcesses(MI_MARKET_PKG) }
-    val launch = context.packageManager.getLaunchIntentForPackage(MI_MARKET_PKG)
-    if (launch != null) {
-        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        context.startActivity(launch)
-        Toast.makeText(context, "已重启应用商店", Toast.LENGTH_SHORT).show()
-    } else {
-        Toast.makeText(context, "未找到应用商店", Toast.LENGTH_SHORT).show()
-    }
+    MarketRestarter.restart(context)
 }
 
 @Composable
@@ -195,6 +184,7 @@ fun MainScreen(activity: MainActivity) {
 @Composable
 private fun BlurHeader(activity: MainActivity, onRestartMarket: () -> Unit) {
     val colors = MiuixTheme.colorScheme
+    var showRestartConfirm by remember { mutableStateOf(false) }
     Row(modifier = Modifier.fillMaxWidth().statusBarsPadding()
         .padding(horizontal = MiuiX.PAGE_H.dp, vertical = MiuiX.PAGE_H.dp),
         verticalAlignment = Alignment.CenterVertically) {
@@ -209,11 +199,34 @@ private fun BlurHeader(activity: MainActivity, onRestartMarket: () -> Unit) {
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
                 .background(colors.surfaceContainer)
-                .clickable { onRestartMarket() }
+                .clickable { showRestartConfirm = true }
                 .padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
             Text(text = "重启", fontSize = 13.sp, color = colors.onSurfaceVariantSummary)
         }
+    }
+    if (showRestartConfirm) {
+        AlertDialog(
+            onDismissRequest = { showRestartConfirm = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRestartConfirm = false
+                    onRestartMarket()
+                }) { Text("重启", color = colors.primary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestartConfirm = false }) {
+                    Text("取消", color = colors.onSurfaceVariantSummary)
+                }
+            },
+            title = { Text("重启应用商店", color = colors.onSurface) },
+            text = {
+                Text(
+                    "将强制停止并重新打开应用商店（优先通过 root 强杀，未保存状态会丢失）。是否继续？",
+                    color = colors.onSurface,
+                )
+            },
+        )
     }
 }
 
