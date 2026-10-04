@@ -126,7 +126,7 @@ private fun SearchScreen(activity: SearchActivity) {
                         items(results) { feature ->
                             FeatureSearchCard(feature = feature) {
                                 activity.startActivity(
-                                    SubSettingsActivity.intent(activity, feature.page)
+                                    SubSettingsActivity.intent(activity, feature.page, feature.key)
                                 )
                             }
                         }
@@ -155,7 +155,7 @@ private fun SearchScreen(activity: SearchActivity) {
                     items(recommendations) { feature ->
                         FeatureSearchCard(feature = feature) {
                             activity.startActivity(
-                                SubSettingsActivity.intent(activity, feature.page)
+                                SubSettingsActivity.intent(activity, feature.page, feature.key)
                             )
                         }
                     }
