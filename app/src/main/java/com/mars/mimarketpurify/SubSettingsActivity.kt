@@ -158,6 +158,10 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Stri
 
 @Composable
 private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
+    val tick by activity.refreshSignal
+    // 升级卡片展开依赖「清理与卸载」开关（见 UpdateCardUi.hookCardExpand：cleanupOn 为前置条件）。
+    // 清理关闭时该功能实际不生效，故仅在前置条件满足时才显示该开关，避免误导。
+    val cleanupOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MINE_CLEANUP, true)) }
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
@@ -171,15 +175,17 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
             HighlightSwitch(activity, Settings.KEY_MINE_SECURITY, "安全检测", "隐藏应用安全检测卡片", masterOn, hl)
             HighlightSwitch(activity, Settings.KEY_ORCHARD_SKIN, "更新卡片背景", "清除升级卡片的果园背景", masterOn, hl)
         }
-        SettingsSection(topLabel = "升级卡片") {
-            PrefSwitch(
-                activity = activity,
-                key = Settings.KEY_CARD_EXPAND,
-                title = "升级卡片横向展开",
-                summary = "升级卡片展开显示更多应用更新（独立于「更新卡片背景」开关）",
-                default = false,
-                enabled = masterOn,
-            )
+        if (cleanupOn) {
+            SettingsSection(topLabel = "升级卡片") {
+                PrefSwitch(
+                    activity = activity,
+                    key = Settings.KEY_CARD_EXPAND,
+                    title = "升级卡片横向展开",
+                    summary = "升级卡片展开显示更多应用更新（独立于「更新卡片背景」开关）",
+                    default = false,
+                    enabled = masterOn,
+                )
+            }
         }
         SettingsSection {
             HighlightSwitch(activity, Settings.KEY_TAB_BADGE, "底栏角标", "去掉底部标签页的数字角标与红点", masterOn, hl)

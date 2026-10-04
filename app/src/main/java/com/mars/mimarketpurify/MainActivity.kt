@@ -49,7 +49,8 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_SPLASH, Settings.KEY_MAIN_TAB, Settings.KEY_HOME_FEED,
         Settings.KEY_SEARCH, Settings.KEY_UPDATE_DL, Settings.KEY_DETAIL, Settings.KEY_RANK,
         Settings.KEY_FRUIT, Settings.KEY_ENTRANCE, Settings.KEY_DETAIL_EXTRAS,
-        Settings.KEY_FLOATING_AD, Settings.KEY_AD_BACK_FLOAT, Settings.KEY_HOME_PAGE_DIALOG
+        Settings.KEY_FLOATING_AD, Settings.KEY_AD_BACK_FLOAT, Settings.KEY_HOME_PAGE_DIALOG,
+        Settings.KEY_INSTALL_RECOMMEND
     )
     internal val mineKeys = listOf(
         Settings.KEY_MINE_RECOMMEND, Settings.KEY_MINE_OFFICIAL_TAB, Settings.KEY_MINE_CLEANUP,
@@ -59,7 +60,8 @@ class MainActivity : SettingsBaseActivity() {
     internal val miscKeys = listOf(
         Settings.KEY_DETAIL_FEATURED, Settings.KEY_UPDATE_HISTORY, Settings.KEY_SEARCH_ALSO_VIEW,
         Settings.KEY_SUB_TAB_FILTER, Settings.KEY_HIDE_UPDATE_ALL, Settings.KEY_HIDE_AUTO_UPDATE_SWITCH,
-        Settings.KEY_PUSH_FLOAT, Settings.KEY_UPDATE_FLOAT_CARD, Settings.KEY_BLOCK_BG_DOWNLOAD
+        Settings.KEY_PUSH_FLOAT, Settings.KEY_UPDATE_FLOAT_CARD, Settings.KEY_BLOCK_BG_DOWNLOAD,
+        Settings.KEY_LONG_PRESS_JUMP
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {

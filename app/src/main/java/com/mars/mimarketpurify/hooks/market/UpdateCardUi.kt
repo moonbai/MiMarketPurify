@@ -82,6 +82,7 @@ object UpdateCardUi : BaseHook() {
 
     private fun refreshAllUpdateButton(rootView: View?) {
         rootView ?: return
+        val orchardOn = Settings.isEnabled(Settings.KEY_ORCHARD_SKIN, true)
         val resName = MinePageClean.getResourceName(rootView)
 
         if (resName == "update_button_layout") {

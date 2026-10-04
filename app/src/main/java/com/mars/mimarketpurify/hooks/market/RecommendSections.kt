@@ -72,6 +72,16 @@ object RecommendSections : BaseHook() {
         "大家都在用", "大家都在装", "你可能喜欢", "安装了", "也喜欢",
     )
 
+    /**
+     * 更新/升级板块标题白名单——命中后**不**当作推荐位隐藏。
+     *
+     * 例如「升级[招商银行]的用户也安装了这些应用」是「我的→升级记录」页里的升级关联板块，
+     * 标题含「升级」二字，会被 [globalTokens] 里的「安装了」通配符误伤。
+     * 升级/更新类板块与推荐位的语义不同，必须保留可见，故在此显式排除。
+     * 仅用内容语义关键词，不绑定系统/App 版本号。
+     */
+    private val updateSectionTokens = listOf("升级", "更新")
+
     /** 已隐藏过的板块标题，避免日志刷屏 */
     private val reported = Collections.synchronizedSet(mutableSetOf<String>())
 
@@ -163,6 +173,8 @@ object RecommendSections : BaseHook() {
         if (v.visibility != View.VISIBLE) return
         val text = v.text?.toString()?.trim() ?: return
         if (text.isEmpty()) return
+        // 升级/更新板块标题不视为推荐位，避免误隐藏「我的→升级记录」相关板块
+        if (updateSectionTokens.any { text.contains(it) }) return
         val host = v.context?.javaClass?.name.orEmpty()
         if (host.isEmpty()) return
         val hit = when {
