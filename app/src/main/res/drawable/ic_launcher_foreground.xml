@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
@@ -5,52 +6,127 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- 背景：蓝→青渐变圆角方形 -->
+    <!-- ===== Layer 1: 圆角方形背景 ===== -->
     <path
         android:pathData="M18,0 L90,0 A18,18 0 0,1 108,18 L108,90 A18,18 0 0,1 90,108 L18,108 A18,18 0 0,1 0,90 L0,18 A18,18 0 0,1 18,0 Z"
         android:fillType="evenOdd">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:type="linear"
-                android:startColor="#1A73E8"
-                android:endColor="#00BFA5"
                 android:startX="0"
                 android:startY="0"
                 android:endX="108"
-                android:endY="108"/>
+                android:endY="108"
+                android:startColor="#1565C0"
+                android:endColor="#00897B"/>
         </aapt:attr>
     </path>
 
-    <!-- 盾牌轮廓：白色 -->
+    <!-- ===== Layer 2: App 页面卡片（圆角矩形，下半部） ===== -->
     <path
-        android:pathData="M54,20 L84,32 L84,56 C84,74 70,90 54,96 C38,90 24,74 24,56 L24,32 Z"
+        android:pathData="M24,40 L84,40 A8,8 0 0,1 92,48 L92,96 A8,8 0 0,1 84,104 L24,104 A8,8 0 0,1 16,96 L16,48 A8,8 0 0,1 24,40 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.22"/>
+
+    <!-- ===== Layer 3: 盾牌穹顶弧线（白色描边） ===== -->
+    <path
+        android:pathData="M34,40 L34,28 A20,20 0 0,1 74,28 L74,40"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="4.5"
-        android:fillColor="@android:color/transparent"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
         android:strokeLineJoin="round"/>
 
-    <!-- 盾牌填充：半透明白 -->
+    <!-- ===== Layer 4: 盾牌穹顶填充（半透明白） ===== -->
     <path
-        android:pathData="M54,22 L83,33 L83,56 C83,73 69,88 54,94 C39,88 25,73 25,56 L25,33 Z"
+        android:pathData="M34,40 L34,28 A20,20 0 0,1 74,28 L74,40 Z"
         android:fillColor="#33FFFFFF"/>
 
-    <!-- 勾号：白色实线 -->
+    <!-- ===== Layer 5: 过滤圆环 ===== -->
     <path
-        android:pathData="M38,55 L50,67 L72,40"
+        android:pathData="M54,68 m-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"/>
+
+    <!-- ===== Layer 6: 圆内过滤斜线（禁止/拦截符号） ===== -->
+    <path
+        android:pathData="M40,58 L68,78"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:fillColor="@android:color/transparent"/>
+        android:strokeAlpha="0.95"/>
 
-    <!-- 闪光点1：右上小星 -->
+    <!-- ===== Layer 7: 被拦截的广告粒子（红色小点，在圆环外） ===== -->
+    <!-- 粒子1：左上方 -->
     <path
-        android:pathData="M80,24 L82,20 L84,24 L88,26 L84,28 L82,32 L80,28 L76,26 Z"
-        android:fillColor="#FFFFFF"/>
+        android:pathData="M22,52 A2.2,2.2 0 1,1 26.4,52 A2.2,2.2 0 1,1 22,52 Z"
+        android:fillColor="#FF5252"
+        android:fillAlpha="0.75"/>
+    <!-- 粒子2：右上方 -->
+    <path
+        android:pathData="M82,50 A1.8,1.8 0 1,1 85.6,50 A1.8,1.8 0 1,1 82,50 Z"
+        android:fillColor="#FF5252"
+        android:fillAlpha="0.6"/>
+    <!-- 粒子3：左侧中间 -->
+    <path
+        android:pathData="M20,72 A1.5,1.5 0 1,1 23,72 A1.5,1.5 0 1,1 20,72 Z"
+        android:fillColor="#FF5252"
+        android:fillAlpha="0.5"/>
+    <!-- 粒子4：右下方 -->
+    <path
+        android:pathData="M84,78 A1.6,1.6 0 1,1 87.2,78 A1.6,1.6 0 1,1 84,78 Z"
+        android:fillColor="#FF5252"
+        android:fillAlpha="0.45"/>
 
-    <!-- 闪光点2：左下小星 -->
+    <!-- ===== Layer 8: 盾牌内小三角箭头（过滤器方向指示） ===== -->
+    <!-- 左三角 -->
     <path
-        android:pathData="M18,76 L19.5,73.5 L21,76 L23.5,77.5 L21,79 L19.5,81.5 L18,79 L15.5,77.5 Z"
-        android:fillColor="#FFFFFFAA"/>
+        android:pathData="M46,63 L49,58 L52,63 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85"/>
+    <!-- 右三角 -->
+    <path
+        android:pathData="M56,63 L59,58 L62,63 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85"/>
+    <!-- 中间横条（过滤器栅格） -->
+    <path
+        android:pathData="M46,67 L62,67"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.7"/>
+
+    <!-- ===== Layer 9: 右侧半圆弧（扫描/保护状态） ===== -->
+    <path
+        android:pathData="M58,56 A7,7 0 0,1 58,70"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.65"/>
+    <!-- 弧线内竖线 -->
+    <path
+        android:pathData="M58,56 L58,70"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.65"/>
+
+    <!-- ===== Layer 10: 闪光星点装饰 ===== -->
+    <!-- 星点1：右上 -->
+    <path
+        android:pathData="M86,16 L88,12 L90,16 L94,18 L90,20 L88,24 L86,20 L82,18 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.9"/>
+    <!-- 星点2：左下（小） -->
+    <path
+        android:pathData="M14,84 L15.5,81 L17,84 L20,85.5 L17,87 L15.5,90 L14,87 L11,85.5 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.6"/>
+    <!-- 星点3：右下（微小） -->
+    <path
+        android:pathData="M90,88 L91,86.5 L92,88 L93.5,89 L92,90 L91,91.5 L90,90 L88.5,89 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.45"/>
 
 </vector>

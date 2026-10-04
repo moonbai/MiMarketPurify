@@ -567,6 +567,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable { openLink(activity, "https://weibo.com/u/3963594403") }
                         .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -608,6 +609,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { openLink(activity, item.url) }
                             .padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
