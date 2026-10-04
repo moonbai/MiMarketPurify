@@ -36,6 +36,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.unit.dp
@@ -495,45 +496,40 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 // 与主页一致：在滚动内容里为悬浮底栏预留高度，避免底部出现空白栏、末项被遮。
                 .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
         ) {
-            // 应用卡片
-            GroupCard {
-                Row(
+            // ── 应用卡片（居中大图标 + 标题 + 版本，无背景卡片色，参考 miuix/HyperModifier 关于页风格）──
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .clickable { openLink(activity, MiuiX.REPO_URL) }
+                    .padding(top = 24.dp, bottom = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SafeDrawableImage(
+                    resId = R.mipmap.ic_launcher,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { openLink(activity, MiuiX.REPO_URL) }
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SafeDrawableImage(
-                        resId = R.mipmap.ic_launcher,
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop,
-                    )
-                    Column(modifier = Modifier.weight(1f).padding(start = 12.dp, end = 8.dp)) {
-                        Text(
-                            text = "Mi Market Purify",
-                            fontSize = MiuiX.ROW_TITLE.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.onSurface,
-                        )
-                        Text(
-                            text = "v${BuildConfig.VERSION_NAME}",
-                            fontSize = MiuiX.ROW_SUMMARY.sp,
-                            color = colors.onSurfaceSecondary,
-                            modifier = Modifier.padding(top = 3.dp),
-                        )
-                        Text(
-                            text = "小米应用商店净化与增强",
-                            fontSize = MiuiX.MICRO.sp,
-                            color = colors.onSurfaceSecondary,
-                            modifier = Modifier.padding(top = 3.dp),
-                        )
-                    }
-                    Text(text = "›", fontSize = 20.sp, color = colors.outline)
-                }
+                        .size(88.dp)
+                        .clip(RoundedCornerShape(24.dp)),
+                    contentScale = ContentScale.Fit,
+                )
+                Text(
+                    text = "Mi Market Purify",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = colors.onSurface,
+                )
+                Text(
+                    text = "v${BuildConfig.VERSION_NAME}",
+                    fontSize = 14.sp,
+                    color = colors.onSurfaceSecondary,
+                )
+                Text(
+                    text = "小米应用商店净化与增强",
+                    fontSize = 12.sp,
+                    color = colors.onSurfaceSecondary,
+                )
             }
 
             SectionHeader("功能", "本模块提供的核心能力")
