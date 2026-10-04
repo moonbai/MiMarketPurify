@@ -2,7 +2,6 @@
 
 > LSPosed module for Xiaomi App Store purification and enhancement, built with AI-assisted refactoring based on `callng/NewFuckMarketAds`.
 
-
 <p align="center">
   <a href="./README.md">简体中文</a> ·
   <a href="./README_EN.md">English</a>
@@ -24,7 +23,7 @@
 - App upgrade page and download page recommendations
 - App detail page ads, comment section and recommendation slots, packed recommendations, bottom multi-button promo bar, ad lists in browser download dialogs
 - Ranking page ads / promotional cards
-- Home top bar cloud-controlled promo slots ("Watch Drama", "Short Drama", etc.)
+- Home top bar cloud-controlled promo slots ("Watch Drama", "Short Drama", etc., including newly added promo slots under different names)
 - Cloud-controlled activity entry to the left of the search box
 - "Claim Fruit" welfare activity entry
 - Home page floating ads
@@ -45,7 +44,7 @@
 - **Push floating notifications**: Block MiPush floating notifications and game promotion floating windows
 - **Upgrade floating card**: Block floating upgrade prompts shown when a new version is detected
 - **Block background silent download**: Prevents the store from automatically downloading app updates in the background, saving data and battery
-- **Long-press to open plugin**: Long-press the bottom download/check-in button (`DownloadWithCheckin`) to jump to the plugin's main page
+- **Long-press to open plugin**: Long-press the top download button (`DownloadWithCheckin`) to jump to the plugin's main page
 
 ### Feature Enhancements
 - **Floating bottom bar**: Replace the docked native bottom bar with a Compose-drawn floating rounded capsule, with page content extending beneath
@@ -103,12 +102,21 @@ The module's main page, sub-settings pages, About page, **Search page**, and the
 | Main · Module | Hide launcher icon, random recommendations (toggle), debug mode |
 | Search · Results | 2-column grid cards with category color bars, click to navigate to settings page |
 | Search · Recommendations | Feature recommendation grid (rotational per category, up to 10 cards) |
-| Sub · Ad Purification | Splash, foreground ads, feed, search, upgrade/download, detail, rankings, fruit entry, activity entry, detail extras, floating ad, back floating ad, home dialog, install-after recommendation |
+| Sub · Ad Purification | Splash, foreground ads/recommendations, feed, search, upgrade/download, detail, rankings, fruit entry, activity entry, detail extras (promo bar), floating ad, back floating ad, home dialog, install-after recommendation |
 | Sub · "My" Page | App recommendations, official entry, cleanup & uninstall, personal info, security check, card background, card expand, tab badge |
 | Sub · Bottom Tabs | Tab filter (multi-select), deep cleanup (skip data loading for hidden tabs), update tab injection |
 | Sub · Floating Bar Config | Enable floating bar, liquid highlight, 3D liquid, show labels, colors, corner radius, bottom margin |
 | Sub · Other UI Cleanup | Detail "Featured", upgrade history, search "Also Watching", top bar promo, upgrade all button, auto-update switch, Push floating, upgrade float card, block background download, long-press to open plugin |
 | About | App card (links to repo), feature summary, check for updates, license & credits |
+
+- The multi-select for "Which tabs to keep" is placed directly below the "Filter bottom tabs" switch within the same card; the entire multi-select block is hidden when the switch is off;
+- Main page and all sub-pages, About page share `SettingsBaseActivity` and `ui/components` component set (grouped cards, switch rows, nav rows, section headers, sliders, color pickers, checkbox rows), avoiding duplicate style drift.
+
+### Check for Updates (About page)
+- Clicking "Check for Updates" requests GitHub Releases on a background thread, results shown on the main thread in a **MiuiX-style dialog** (Material3 `AlertDialog` wrapped with `MiuixTheme`);
+- New version found: Displays version number, size, and release notes. "Download and Install" uses in-app download; "Go to Release Page" opens the Release page as a fallback;
+- During download, a **MiuiX progress dialog** appears: shows a ring + linear progress bar with percentage when `Content-Length` is known; degrades to indeterminate ("Fetching download info…") when the server doesn't return `Content-Length`. After download completes, automatically invokes the system installer via FileProvider;
+- Already up-to-date or request failed: Lightweight Toast notification.
 
 ---
 

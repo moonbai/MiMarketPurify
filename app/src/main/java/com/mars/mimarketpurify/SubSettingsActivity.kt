@@ -149,7 +149,7 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             CheckboxRow(title = label, summary = key, checked = key in kept.value, enabled = masterOn) { on ->
                 val next = if (on) kept.value + key else kept.value - key
                 kept.value = next
-                activity.writeRemote(Settings.KEY_TAB_KEEP, next.joinToString(","))
+                activity.writeRemoteString(Settings.KEY_TAB_KEEP, next.joinToString(","))
             }
         }
         Spacer(Modifier.height(12.dp))

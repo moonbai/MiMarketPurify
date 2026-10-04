@@ -118,8 +118,15 @@ fun MainScreen(activity: MainActivity) {
             StatusCard(service = service, night = activity.isNight())
             Spacer(Modifier.height(12.dp))
 
+
+            SettingsSection {
+                SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
+                    checked = masterOn.value, enabled = true) { on ->
+                    masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
+                }
+            }
             if (showRecommendations) {
-                SettingsSection(topLabel = "推荐功能（每 15 秒自动刷新）") {
+                SettingsSection(topLabel = "功能推荐") {
                     recommendations.forEach { feature ->
                         SettingItem(
                             headlineText = feature.title,
@@ -133,13 +140,6 @@ fun MainScreen(activity: MainActivity) {
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-            }
-
-            SettingsSection {
-                SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
-                    checked = masterOn.value, enabled = true) { on ->
-                    masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
-                }
             }
 
             SettingsSection(topLabel = "界面设置") {
