@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,7 +71,7 @@ private fun SearchScreen(activity: SearchActivity) {
         }
     }
     val recommendations = remember(recommendSeed) {
-        FeatureRegistry.recommendByCategory(count = 5, seed = recommendSeed)
+        FeatureRegistry.recommendByCategory(count = 10, seed = recommendSeed)
     }
 
     Column(
@@ -109,7 +110,7 @@ private fun SearchScreen(activity: SearchActivity) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxSize(),
             ) {
-                item {
+                item(span = { GridItemSpan(2) }) {
                     Text(
                         text = "功能推荐",
                         style = MiuixTheme.textStyles.title3,
