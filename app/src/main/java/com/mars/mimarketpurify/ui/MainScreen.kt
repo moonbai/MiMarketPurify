@@ -128,7 +128,7 @@ fun MainScreen(activity: MainActivity) {
 
         if (showRecommendations) {
             Spacer(Modifier.height(12.dp))
-            SettingsSection(topLabel = "推荐功能（每 15 秒自动刷新）") {
+            SettingsSection(topLabel = "推荐功能") {
                 recommendations.forEach { feature ->
                     SettingItem(
                         headlineText = feature.title,
@@ -175,7 +175,7 @@ fun MainScreen(activity: MainActivity) {
                 SwitchRow(title = "隐藏桌面图标", summary = "仅移除桌面抽屉中的图标",
                     checked = activity.isLauncherIconHidden(), enabled = true) { activity.applyHideIcon(it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = "随机推荐", summary = "主页显示随机功能推荐（每 15 秒自动刷新）",
+                SwitchRow(title = "随机推荐", summary = "主页显示3条随机功能推荐",
                     checked = recommendEnabled, enabled = masterOn.value) {
                     recommendEnabled = it
                     activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RECOMMENDATIONS_ENABLED, it)

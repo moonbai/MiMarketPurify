@@ -153,8 +153,9 @@ object UpdateCardUi : BaseHook() {
     /**
      * 升级卡片横向展开。
      *
-     * 修复：移除对 KEY_ORCHARD_SKIN 的依赖，展开功能应独立于卡片背景开关。
-     * 仅需 KEY_CARD_EXPAND 开启即可展开。
+     * 展开功能仅依赖 [Settings.KEY_CARD_EXPAND] 开关本身，独立于「清理与卸载」与「更新卡片背景」。
+     * 是否显示并允许开启该开关，由 UI 层（SubSettingsActivity）按双前置条件 gate；
+     * 这里只校验展开开关，不再重复校验前置，避免前置状态变化（如仅关闭其一）时误判导致展开失效。
      */
     private fun hookCardExpand() {
         runCatching {
@@ -169,8 +170,7 @@ object UpdateCardUi : BaseHook() {
                             view.post {
                                 runCatching {
                                     val expandOn = Settings.isEnabled(Settings.KEY_CARD_EXPAND, false)
-                                    val cleanupOn = Settings.isEnabled(Settings.KEY_MINE_CLEANUP, true)
-                                    if (!expandOn || !cleanupOn) return@runCatching
+                                    if (!expandOn) return@runCatching
                                     val header = MinePageClean.findViewByResName(view, "expand_collapse_header")
                                     val arrow = MinePageClean.findViewByResName(view, "expand_arrow")
                                     (arrow ?: header)?.performClick()

@@ -54,7 +54,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         val title = when (page) {
             PAGE_ADS -> "广告净化"
             PAGE_MINE -> "「我的」页精简"
-            PAGE_TABS -> "底部标签栏"
+            PAGE_TABS -> "底部自定义"
             PAGE_MISC -> "其他界面精简"
             PAGE_TAB_BAR -> "悬浮底栏配置"
             else -> page
@@ -152,9 +152,11 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Stri
 @Composable
 private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
     val tick by activity.refreshSignal
-    // 升级卡片展开依赖「清理与卸载」开关（见 UpdateCardUi.hookCardExpand：cleanupOn 为前置条件）。
-    // 清理关闭时该功能实际不生效，故仅在前置条件满足时才显示该开关，避免误导。
+    // 「升级卡片横向展开」开关的显示前置：须同时开启「清理与卸载」与「更新卡片背景」。
+    // 两个前置任一关闭时隐藏该开关（原始设计要求，见 UpdateCardUi.hookCardExpand）；
+    // 展开行为本身仅依赖 KEY_CARD_EXPAND，此处不再重复校验前置。
     val cleanupOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MINE_CLEANUP, true)) }
+    val orchardOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_ORCHARD_SKIN, true)) }
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
@@ -174,7 +176,7 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
                     activity = activity,
                     key = Settings.KEY_CARD_EXPAND,
                     title = "升级卡片横向展开",
-                    summary = "升级卡片展开显示更多应用更新（独立于「更新卡片背景」开关）",
+                    summary = "升级卡片展开显示更多应用更新（需同时开启「清理与卸载」与「更新卡片背景」）",
                     default = false,
                     enabled = masterOn,
                 )
@@ -257,13 +259,13 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_MONOCHROME, "单色图标", "图标抽成单色描边、随主题着色", default = false, enabled = masterOn)
         }
         Spacer(Modifier.height(12.dp))
-        SettingsSection(topLabel = "尺寸微调") {
+        {
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部外边距", "悬浮底栏到屏幕底部的间距（dp）", 0, sliderMax, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, masterOn) { "${it}dp" }
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, masterOn) { "${it}dp" }
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, masterOn) { "${it}%" }
         }
         Spacer(Modifier.height(12.dp))
-        SettingsSection(topLabel = "颜色自定义（留空即恢复主题默认色）") {
+        {
             PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xFFF2F2F2.toInt())
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
             PrefColorRow(activity, "选中项背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, 0xFFDADADA.toInt())

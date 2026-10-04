@@ -630,7 +630,8 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                 val features = listOf(
                     "广告净化" to "开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口",
                     "界面精简" to "「我的」页推荐/清理/安全检测/个人信息、详情页精选、底栏角标、升级记录、搜索也在看",
-                    "功能增强" to "下载超级岛、非正版APP显示、被隐藏更新显示、升级弹窗拦截、悬浮底栏",
+                    "功能增强" to "下载超级岛、非正版APP显示、被隐藏更新显示、升级弹窗拦截",
+                    "底栏自定义" to "自定义底栏显示，添加更新入口，悬浮底栏设置",
                 )
                 features.forEach { (title, desc) ->
                     SettingItem(headlineText = title, supportingText = desc)
