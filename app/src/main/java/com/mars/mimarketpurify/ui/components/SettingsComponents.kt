@@ -62,7 +62,19 @@ import com.mars.mimarketpurify.PrivacyPolicyActivity
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.activity.compose.BackHandler
-import com.kyant.shapes.Capsule
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.luminance
+import androidx.core.graphics.ColorUtils
 import com.mars.mimarketpurify.util.floatingGlassSurface
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -575,20 +587,31 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
         }.start()
     }
 
-    // LayerBackdrop 由页面内容提供；底部检查更新胶囊消费它，实现真实的高斯模糊。
+    // LayerBackdrop 捕获「动态光晕背景」；底部检查更新按钮消费它，实现真实的高斯模糊。
     val backdrop = rememberLayerBackdrop()
 
+    // 「向上滑动」进度 0→1（滚动 320px 封顶）：动态光晕背景与检查更新按钮共用。
+    val scrollProgress by remember { derivedStateOf { (scrollState.value / 320f).coerceIn(0f, 1f) } }
+
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        // 首屏留白（沿用关于页设计稿）：Hero 近似垂直居中于首屏，上方保留大片空白，
-        // 向下滚动后 Hero 自然上移，露出「功能/作者/参考项目/其他」等区块。
+        // MiuiX 风格「高斯模糊动态背景」：主题色柔和光晕，缓慢漂移；上滑时淡出。
+        // 该层被 layerBackdrop 捕获，供底部检查更新毛玻璃按钮做真实高斯模糊采样。
+        AboutFloatingBackground(
+            modifier = Modifier
+                .fillMaxSize()
+                .layerBackdrop(backdrop),
+            alpha = 1f - scrollProgress,
+        )
+
+        // 首屏留白：Hero 较上一版整体上移；向下滚动后 Hero 自然上移，
+        // 露出「功能/作者/参考项目/其他」等区块。
         val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-        val heroTopGap = screenHeight * 0.40f
-        val heroBottomGap = screenHeight * 0.20f
+        val heroTopGap = screenHeight * 0.28f
+        val heroBottomGap = screenHeight * 0.14f
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .layerBackdrop(backdrop)
                 .navigationBarsPadding()
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
                 .padding(bottom = FloatingTabBarDefaults.Height + floatingBarInset + 16.dp),
@@ -653,12 +676,12 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
         }
 
-        // 模糊底栏：检查更新（毛玻璃胶囊）；向上滑动超过阈值后自动隐藏，避免遮挡内容
+        // 检查更新：长条圆角矩形毛玻璃按钮；向上滑动超过阈值后自动隐藏，避免遮挡内容
         AnimatedVisibility(
             visible = showUpdateBar,
             modifier = Modifier
                 .navigationBarsPadding()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp + floatingBarInset)
+                .padding(start = 32.dp, end = 32.dp, bottom = 16.dp + floatingBarInset)
                 .align(Alignment.BottomCenter),
             enter = fadeIn(),
             exit = fadeOut(),
@@ -794,13 +817,29 @@ internal fun AboutGlassCard(
     shape: Shape,
     modifier: Modifier,
     tint: Color? = null,
+    border: Brush? = null,
+    shadowElevation: Dp = 0.dp,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val glassTint = tint ?: MiuixTheme.colorScheme.surfaceContainer.copy(alpha = FloatingTabBarDefaults.GlassTintAlpha)
     Box(
         modifier = modifier
+            .then(
+                if (shadowElevation > 0.dp) {
+                    Modifier.shadow(
+                        elevation = shadowElevation,
+                        shape = shape,
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.16f),
+                        spotColor = Color.Black.copy(alpha = 0.20f),
+                    )
+                } else {
+                    Modifier
+                },
+            )
             .floatingGlassSurface(backdrop = backdrop, shape = shape, tint = glassTint)
+            .then(if (border != null) Modifier.border(width = 1.dp, brush = border, shape = shape) else Modifier)
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .clip(shape),
         contentAlignment = Alignment.Center,
@@ -849,6 +888,94 @@ private fun AboutHeroHeader(activity: ComponentActivity) {
     }
 }
 
+// ==================== 关于页：MiuiX 风格动态光晕背景 ====================
+
+/**
+ * 「高斯模糊动态背景」：以主题色派生的柔和高光色，绘制 3 个缓慢漂移的径向光晕铺满整页，
+ * 作为关于页底图（参考 HyperModifier 的 AboutFloatingBackground / Deadliner 浮动光晕）。
+ *
+ * 该层被 [layerBackdrop] 捕获，底部「检查更新」毛玻璃按钮据此做真实高斯模糊采样；
+ * [alpha] 随滚动进度衰减（上滑淡出），让内容区回归纯净底色。
+ */
+@Composable
+private fun AboutFloatingBackground(modifier: Modifier = Modifier, alpha: Float) {
+    val transition = rememberInfiniteTransition(label = "aboutFloatingBackground")
+    val horizontalOffset by transition.animateFloat(
+        initialValue = -0.12f,
+        targetValue = 0.12f,
+        animationSpec = infiniteRepeatable(tween(7_500, easing = LinearEasing), RepeatMode.Reverse),
+        label = "aboutBgHorizontalOffset",
+    )
+    val verticalOffset by transition.animateFloat(
+        initialValue = 0.08f,
+        targetValue = -0.08f,
+        animationSpec = infiniteRepeatable(tween(5_600, easing = LinearEasing), RepeatMode.Reverse),
+        label = "aboutBgVerticalOffset",
+    )
+    val accentOffset by transition.animateFloat(
+        initialValue = -0.08f,
+        targetValue = 0.10f,
+        animationSpec = infiniteRepeatable(tween(6_400, easing = LinearEasing), RepeatMode.Reverse),
+        label = "aboutBgAccentOffset",
+    )
+    val scheme = MiuixTheme.colorScheme
+    val firstColor = vividGlowColor(scheme.primary, 0f)
+    val secondColor = vividGlowColor(scheme.primary, 42f)
+    val thirdColor = vividGlowColor(scheme.primary, -48f)
+    val surfaceColor = scheme.background
+
+    Canvas(modifier) {
+        drawRect(surfaceColor)
+        if (alpha <= 0f) return@Canvas
+        val radius = maxOf(size.width, size.height) * 0.9f
+        fun center(x: Float, y: Float) = Offset(size.width * x, size.height * y)
+        val first = center(0.18f + horizontalOffset, 0.22f + verticalOffset)
+        val second = center(0.86f - horizontalOffset, 0.66f - verticalOffset)
+        val third = center(0.52f + accentOffset, 0.96f - accentOffset)
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(firstColor.copy(alpha = 0.22f * alpha), Color.Transparent),
+                center = first,
+                radius = radius,
+            ),
+            radius = radius,
+            center = first,
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(secondColor.copy(alpha = 0.18f * alpha), Color.Transparent),
+                center = second,
+                radius = radius * 0.86f,
+            ),
+            radius = radius * 0.86f,
+            center = second,
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(thirdColor.copy(alpha = 0.16f * alpha), Color.Transparent),
+                center = third,
+                radius = radius * 0.7f,
+            ),
+            radius = radius * 0.72f,
+            center = third,
+        )
+    }
+}
+
+/** 由主题色派生高饱和、明亮度适中的高光色；[hueShift] 生成邻近色相，避免多色光晕发灰。 */
+private fun vividGlowColor(color: Color, hueShift: Float): Color {
+    val hsl = FloatArray(3)
+    ColorUtils.colorToHSL(color.toArgb(), hsl)
+    hsl[0] = (hsl[0] + hueShift + 360f) % 360f
+    hsl[1] = (hsl[1] * 1.55f).coerceIn(0.56f, 0.92f)
+    hsl[2] = if (hsl[2] < 0.5f) {
+        (hsl[2] + 0.14f).coerceAtMost(0.68f)
+    } else {
+        (hsl[2] - 0.06f).coerceAtLeast(0.36f)
+    }
+    return Color(ColorUtils.HSLToColor(hsl))
+}
+
 // ==================== 关于页：模糊底栏（检查更新） ====================
 
 /**
@@ -862,12 +989,31 @@ private fun AboutUpdateBar(
     backdrop: LayerBackdrop?,
     modifier: Modifier = Modifier,
 ) {
+    val isDark = MiuixTheme.colorScheme.onSurface.luminance() > 0.5f
+    // 长条圆角矩形（半径小于半高，区别于全圆角胶囊）
+    val barShape = RoundedCornerShape(20.dp)
+    // 毛玻璃着色：亮色近白、暗色用 surfaceContainer，保证在动态光晕上清晰可见
+    val glassTint = if (isDark) {
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.62f)
+    } else {
+        Color.White.copy(alpha = 0.58f)
+    }
+    // 边缘高光：顶部亮、底部弱，模拟玻璃反光
+    val edgeBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = if (isDark) 0.22f else 0.72f),
+            Color.White.copy(alpha = if (isDark) 0.05f else 0.14f),
+        ),
+    )
     AboutGlassCard(
         backdrop = backdrop,
-        shape = Capsule(),
+        shape = barShape,
+        tint = glassTint,
+        border = edgeBrush,
+        shadowElevation = 10.dp,
         modifier = modifier
-            .widthIn(max = 300.dp)
-            .height(FloatingTabBarDefaults.Height),
+            .fillMaxWidth()
+            .height(56.dp),
         onClick = onClick,
     ) {
         Text(

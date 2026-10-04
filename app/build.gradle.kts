@@ -38,7 +38,7 @@ android {
         // （Mi Market 实际运行于 HyperOS / Android 14+，即 API 34+，无功能影响）。
         minSdk = 33
         targetSdk = 36
-        versionCode = 27
+        versionCode = 28
         versionName = "1.2.2"
         buildConfigField("String", "APP_NAME", "\"Mi Market Purify\"")
         // 只打包用到的语言资源，丢弃 Compose / Miuix 等库自带的其余 locale，进一步压缩体积
