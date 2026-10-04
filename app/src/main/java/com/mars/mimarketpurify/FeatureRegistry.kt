@@ -121,7 +121,7 @@ object FeatureRegistry {
      * 传入 [seed] 可控制随机结果（默认每次调用不同）。
      */
     fun recommend(count: Int = 3, seed: Long = System.currentTimeMillis()): List<Feature> {
-        val rng = java.util.Random(seed)
+        val rng = kotlin.random.Random(seed)
         // 按页面分组，每组随机取一个
         val byPage = allFeatures.groupBy { it.page }
         val selectedPages = byPage.keys.shuffled(rng).take(count.coerceAtMost(byPage.size))

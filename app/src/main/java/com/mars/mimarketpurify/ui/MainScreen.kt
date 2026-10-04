@@ -44,7 +44,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun MainScreen(activity: MainActivity) {
     val colors = MiuixTheme.colorScheme
-    val service = rememberServiceState()
+    val service by rememberServiceState()
     val tick by activity.refreshSignal
     val masterOn = remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
     val adSummary by remember(tick) { mutableStateOf(activity.countText(activity.adKeys)) }
@@ -383,18 +383,18 @@ private fun RecommendRow(
 // ==================== 观察框架 service 连接状态 ====================
 
 @Composable
-private fun rememberServiceState(): XposedService? {
+private fun rememberServiceState(): State<Any?> {
     val state = remember { mutableStateOf(App.mService) }
     DisposableEffect(Unit) {
         val listener = object : App.ServiceStateListener {
-            override fun onServiceStateChanged(service: XposedService?) {
+            override fun onServiceStateChanged(service: Any?) {
                 state.value = service
             }
         }
         App.addServiceStateListener(listener, true)
         onDispose { App.removeServiceStateListener(listener) }
     }
-    return state.value
+    return state
 }
 
 // ==================== 顶栏 ====================
