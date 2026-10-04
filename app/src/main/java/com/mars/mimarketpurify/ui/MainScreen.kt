@@ -36,12 +36,12 @@ import com.mars.mimarketpurify.MainActivity
 import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.SearchActivity
 import com.mars.mimarketpurify.SubSettingsActivity
-import com.mars.mimarketpurify.isNight
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.ui.components.SettingsSection
 import com.mars.mimarketpurify.ui.components.SettingItem
 import com.mars.mimarketpurify.ui.components.SwitchRow
 import com.mars.mimarketpurify.ui.components.AboutGlassCard
+import com.mars.mimarketpurify.ui.components.PrefThemeMode
 import com.mars.mimarketpurify.util.MarketRestarter
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -115,7 +115,7 @@ fun MainScreen(activity: MainActivity) {
             MiuiXSearchBar(onClick = { context.startActivity(SearchActivity.intent(context)) })
             Spacer(Modifier.height(12.dp))
 
-            StatusCard(service = service, night = activity.isNight())
+            StatusCard(service = service, night = activity.useDarkTheme())
             Spacer(Modifier.height(12.dp))
 
         // 总开关：作为全局总控，置于「推荐功能」上方，方便优先决定是否启用
@@ -156,6 +156,9 @@ fun MainScreen(activity: MainActivity) {
                 SettingItem(headlineText = "其他界面精简", supportingText = miscSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MISC) })
             }
+
+            Spacer(Modifier.height(12.dp))
+            PrefThemeMode(activity = activity)
 
             SettingsSection(topLabel = "高级功能") {
                 SwitchRow(title = "下载超级岛", summary = "强制让下载进度进入小米超级岛",

@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
-import com.mars.mimarketpurify.isNight
+import com.mars.mimarketpurify.useDarkTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -35,11 +35,13 @@ class PrivacyPolicyActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val dark = useDarkTheme()
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(MiuiX.bg(dark)))
         WindowCompat.getInsetsController(window, window.decorView)
-            ?.isAppearanceLightStatusBars = !isNight()
+            ?.isAppearanceLightStatusBars = !dark
 
         setContent {
-            MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
+            MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
                 PrivacyPolicyScreen(onBack = { finish() })
             }
         }

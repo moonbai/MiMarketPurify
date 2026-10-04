@@ -54,13 +54,15 @@ class SubSettingsActivity : SettingsBaseActivity() {
         val title = when (page) {
             PAGE_ADS -> "广告净化"
             PAGE_MINE -> "「我的」页精简"
-            PAGE_TABS -> "底部自定义"
+            PAGE_TABS -> "底部标签栏"
             PAGE_MISC -> "其他界面精简"
             PAGE_TAB_BAR -> "悬浮底栏配置"
             else -> page
         }
+        val dark = useDarkTheme()
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(MiuiX.bg(dark)))
         setContent {
-            MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
+            MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
                 val tick by refreshSignal
                 val masterOn = remember(tick) { mutableStateOf(readLocal(Settings.KEY_MASTER, true)) }
                 val hl = intent?.getStringExtra(EXTRA_HIGHLIGHT).orEmpty()
@@ -170,7 +172,7 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
             HighlightSwitch(activity, Settings.KEY_MINE_SECURITY, "安全检测", "隐藏应用安全检测卡片", masterOn, hl)
             HighlightSwitch(activity, Settings.KEY_ORCHARD_SKIN, "更新卡片背景", "清除升级卡片的果园背景", masterOn, hl)
         }
-        if (cleanupOn) {
+        if (cleanupOn && orchardOn) {
             SettingsSection(topLabel = "升级卡片") {
                 PrefSwitch(
                     activity = activity,
@@ -271,13 +273,13 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_MONOCHROME, "单色图标", "图标抽成单色描边、随主题着色", default = false, enabled = masterOn)
         }
         Spacer(Modifier.height(12.dp))
-        {
+        SettingsSection {
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部外边距", "悬浮底栏到屏幕底部的间距（dp）", 0, sliderMax, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, masterOn) { "${it}dp" }
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, masterOn) { "${it}dp" }
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, masterOn) { "${it}%" }
         }
         Spacer(Modifier.height(12.dp))
-        {
+        SettingsSection {
             PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xFFF2F2F2.toInt())
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
             PrefColorRow(activity, "选中项背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, 0xFFDADADA.toInt())

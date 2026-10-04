@@ -122,6 +122,9 @@ object Settings {
     /** 拦截安装后推荐弹窗（复用 KEY_SEARCH 开关控制） */
     const val KEY_INSTALL_RECOMMEND = "install_recommend"
 
+    /** 主题模式：0=跟随系统，1=浅色，2=深色（模块自身 SP，不经目标 App） */
+    const val KEY_THEME_MODE = "theme_mode"
+
     // ═══════════════ 读取缓存 ═══════════════
     private const val CACHE_TTL_MS = 500L
 

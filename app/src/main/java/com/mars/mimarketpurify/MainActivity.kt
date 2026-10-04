@@ -70,11 +70,13 @@ class MainActivity : SettingsBaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         EntryGuardReceiver.ensureEntryEnabled(this)
+        val dark = useDarkTheme()
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(MiuiX.bg(dark)))
         WindowCompat.getInsetsController(window, window.decorView)
-            ?.isAppearanceLightStatusBars = !isNight()
+            ?.isAppearanceLightStatusBars = !dark
 
         setContent {
-            MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
+            MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
                 var tab by remember { mutableStateOf(0) }
                 Box(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
                     when (tab) {

@@ -418,6 +418,41 @@ fun PrefSwitch(
     }
 }
 
+// ==================== 偏好绑定：主题模式（三选一） ====================
+
+@Composable
+fun PrefThemeMode(activity: SettingsBaseActivity) {
+    val tick by activity.refreshSignal
+    var mode by remember(tick) {
+        mutableStateOf(
+            activity.readLocalInt(
+                com.mars.mimarketpurify.Settings.KEY_THEME_MODE,
+                com.mars.mimarketpurify.THEME_FOLLOW,
+            )
+        )
+    }
+    SettingsSection(topLabel = "主题模式") {
+        listOf(
+            com.mars.mimarketpurify.THEME_FOLLOW to ("跟随系统" to "跟随系统设置自动切换浅色 / 深色"),
+            com.mars.mimarketpurify.THEME_LIGHT to ("浅色" to "始终使用浅色主题"),
+            com.mars.mimarketpurify.THEME_DARK to ("深色" to "始终使用深色主题"),
+        ).forEach { (value, label) ->
+            val (title, summary) = label
+            SwitchRow(
+                title = title,
+                summary = summary,
+                checked = mode == value,
+                enabled = true,
+            ) { on ->
+                if (on) {
+                    mode = value
+                    activity.writeRemoteInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, value)
+                }
+            }
+        }
+    }
+}
+
 // ==================== 偏好绑定：数值滑杆 ====================
 
 @Composable

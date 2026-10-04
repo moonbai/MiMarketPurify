@@ -137,3 +137,31 @@ fun Context.dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
 /** dp -> px（浮点）：给 cornerRadius 这类需要 float 的场合用 */
 fun Context.dpf(v: Float): Float = v * resources.displayMetrics.density
+
+// ═══════════════ 主题模式 ═══════════════
+/** 主题模式取值：0=跟随系统，1=浅色，2=深色 */
+const val THEME_FOLLOW = 0
+const val THEME_LIGHT = 1
+const val THEME_DARK = 2
+
+/**
+ * 读取模块自身 SP（与设置页 [writeRemote][SettingsBaseActivity.writeRemote] 同一文件）中的主题模式。
+ * 模块进程内直接读 [Settings.PREFS_GROUP]，无需经 XposedService。
+ */
+fun Context.themeModeValue(): Int {
+    return getSharedPreferences(Settings.PREFS_GROUP, Context.MODE_PRIVATE)
+        .getInt(Settings.KEY_THEME_MODE, THEME_FOLLOW)
+}
+
+/**
+ * 当前是否应使用暗色主题：依据主题模式与系统深色状态。
+ * 取代设置页各入口的 [isNight]，使「主题模式」选项生效；
+ * [isNight] 在 Hook（小米商店）中保持不变，不受此影响。
+ */
+fun Context.useDarkTheme(): Boolean {
+    return when (themeModeValue()) {
+        THEME_DARK -> true
+        THEME_LIGHT -> false
+        else -> isNight()
+    }
+}

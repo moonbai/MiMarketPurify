@@ -38,11 +38,13 @@ class SearchActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val dark = useDarkTheme()
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(MiuiX.bg(dark)))
         WindowCompat.getInsetsController(window, window.decorView)
-            ?.isAppearanceLightStatusBars = !isNight()
+            ?.isAppearanceLightStatusBars = !dark
 
         setContent {
-            MiuixTheme(colors = if (isNight()) darkColorScheme() else lightColorScheme()) {
+            MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
                 SearchScreen(activity = this@SearchActivity)
             }
         }
