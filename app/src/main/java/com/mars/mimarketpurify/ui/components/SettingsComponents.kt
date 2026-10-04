@@ -1,6 +1,7 @@
 package com.mars.mimarketpurify.ui.components
 
 import android.content.Context
+import kotlin.math.roundToInt
 import android.content.Intent
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
