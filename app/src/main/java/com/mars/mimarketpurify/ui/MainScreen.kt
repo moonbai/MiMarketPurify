@@ -55,9 +55,7 @@ private const val MI_MARKET_PKG = "com.xiaomi.market"
 /** 强制停止应用商店并重新启动 */
 private fun restartMarket(context: Context) {
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-    // 强制停止
     runCatching { am.killBackgroundProcesses(MI_MARKET_PKG) }
-    // 重新启动主 Activity
     val launch = context.packageManager.getLaunchIntentForPackage(MI_MARKET_PKG)
     if (launch != null) {
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -118,15 +116,8 @@ fun MainScreen(activity: MainActivity) {
             StatusCard(service = service, night = activity.isNight())
             Spacer(Modifier.height(12.dp))
 
-
-            SettingsSection {
-                SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
-                    checked = masterOn.value, enabled = true) { on ->
-                    masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
-                }
-            }
             if (showRecommendations) {
-                SettingsSection(topLabel = "功能推荐") {
+                SettingsSection(topLabel = "推荐功能（每 15 秒自动刷新）") {
                     recommendations.forEach { feature ->
                         SettingItem(
                             headlineText = feature.title,
@@ -140,6 +131,13 @@ fun MainScreen(activity: MainActivity) {
                     }
                 }
                 Spacer(Modifier.height(12.dp))
+            }
+
+            SettingsSection {
+                SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
+                    checked = masterOn.value, enabled = true) { on ->
+                    masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
+                }
             }
 
             SettingsSection(topLabel = "界面设置") {
@@ -206,16 +204,15 @@ private fun BlurHeader(activity: MainActivity, onRestartMarket: () -> Unit) {
             Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
                 color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
         }
-        // 重启应用商店按钮
+        // 重启按钮：圆角小药丸
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(20.dp))
+                .background(colors.surfaceContainer)
                 .clickable { onRestartMarket() }
-                .padding(8.dp),
-            contentAlignment = Alignment.Center,
+                .padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
-            Text(text = "⟳", fontSize = 22.sp, color = colors.onSurface)
+            Text(text = "重启", fontSize = 13.sp, color = colors.onSurfaceVariantSummary)
         }
     }
 }

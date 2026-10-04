@@ -13,6 +13,9 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 /**
  * 给 download_with_checkin 按钮添加长按跳转到插件主页。
  *
+ * hook onFinishInflate()：XML inflate 完成后挂载 OnLongClickListener，
+ * 保证 downloadView / checkin 子 View 已就位。
+ *
  * 长按应用商店底部的下载/签到按钮 → 打开 MiMarketPurify 主页。
  */
 object LongPressJumpToPlugin : BaseHook() {
@@ -24,11 +27,10 @@ object LongPressJumpToPlugin : BaseHook() {
         runCatching {
             val clz = ClassUtil.loadClass("com.xiaomi.market.widget.DownloadWithCheckin")
             clz.methodFinder()
-                .filterByName("initView")
+                .filterByName("onFinishInflate")
                 .first()
                 .hooked {
                     proceed()
-                    // thisObject 就是 DownloadWithCheckin 实例（LinearLayout）
                     val view = thisObject as? View ?: return@hooked null
                     view.setOnLongClickListener {
                         runCatching {
@@ -43,9 +45,9 @@ object LongPressJumpToPlugin : BaseHook() {
                         }.onFailure { e ->
                             HookEnv.base.log(Log.ERROR, TAG, "$name: 跳转失败", e)
                         }
-                        true  // 消费事件
+                        true
                     }
-                    HookEnv.base.log(Log.INFO, TAG, "$name: 已挂载长按监听到 download_with_checkin")
+                    HookEnv.base.log(Log.INFO, TAG, "$name: 已挂载长按监听到 download_with_checkin (onFinishInflate)")
                 }
         }.onFailure {
             HookEnv.base.log(Log.ERROR, TAG, "$name: 挂钩失败", it)

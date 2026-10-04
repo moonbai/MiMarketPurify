@@ -80,6 +80,51 @@ class SubSettingsActivity : SettingsBaseActivity() {
     }
 }
 
+// ═══════════════ 带闪烁动画的开关行 ═══════════════
+
+@Composable
+private fun HighlightSwitch(
+    activity: SubSettingsActivity,
+    key: String,
+    title: String,
+    summary: String,
+    enabled: Boolean,
+    hl: String,
+    onChanged: ((Boolean) -> Unit)? = null,
+) {
+    val colors = MiuixTheme.colorScheme
+    val shouldHighlight = hl == key
+    val alpha = remember { Animatable(if (shouldHighlight) 0.6f else 0f) }
+    LaunchedEffect(shouldHighlight) {
+        if (shouldHighlight) {
+            alpha.animateTo(0f, animationSpec = tween(durationMillis = 1200))
+        }
+    }
+    val cardShape = RoundedCornerShape(16.dp)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = cardShape,
+        color = colors.surface,
+        contentColor = colors.onSurface,
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(cardShape)
+                .background(Color(0xFF1976D2).copy(alpha = alpha.value))
+        ) {
+            PrefSwitch(
+                activity = activity,
+                key = key,
+                title = title,
+                summary = summary,
+                default = true,
+                enabled = enabled,
+                onChanged = onChanged,
+            )
+        }
+    }
+}
+
 // ═══════════════ 广告净化 ═══════════════
 
 @Composable
@@ -90,20 +135,20 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Stri
             .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
     ) {
         SettingsSection {
-            PrefSwitch(activity, Settings.KEY_SPLASH, "开屏广告", "屏蔽应用商店启动时的开屏广告", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_MAIN_TAB, "前台广告/推荐", "屏蔽主页切换时的推荐与广告弹窗", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_HOME_FEED, "信息流广告", "隐藏主页底部视频/应用推荐与热词栏", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_SEARCH, "搜索推荐", "搜索建议、搜索页、搜索结果的软件推荐", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_UPDATE_DL, "升级/下载推荐", "应用升级页与下载页的软件推荐", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_DETAIL, "详情页广告", "应用详情页的广告、评论与推荐位", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_DETAIL_EXTRAS, "详情页附加推荐", "详情页拼装推荐、底部多按钮推广栏", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_RANK, "榜单广告", "榜单界面的广告 / 推广卡片", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_FLOATING_AD, "主页悬浮广告", "屏蔽主页底部/侧边弹出的悬浮广告", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_AD_BACK_FLOAT, "返回浮窗广告", "屏蔽返回时弹出的「返回今日头条」等浮窗", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_HOME_PAGE_DIALOG, "首页弹窗推广", "屏蔽进入首页时弹出的 Dialog 推广位", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_ENTRANCE, "首页活动入口", "隐藏搜索框左侧云控下发的活动小图标", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_FRUIT, "领水果入口", "隐藏福利活动 gif 动图入口", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_INSTALL_RECOMMEND, "安装后推荐", "拦截点击安装后弹出的「用户还喜欢」推荐弹窗", default = true, enabled = masterOn)
+            HighlightSwitch(activity, Settings.KEY_SPLASH, "开屏广告", "屏蔽应用商店启动时的开屏广告", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_MAIN_TAB, "前台广告/推荐", "屏蔽主页切换时的推荐与广告弹窗", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_HOME_FEED, "信息流广告", "隐藏主页底部视频/应用推荐与热词栏", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_SEARCH, "搜索推荐", "搜索建议、搜索页、搜索结果的软件推荐", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_UPDATE_DL, "升级/下载推荐", "应用升级页与下载页的软件推荐", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_DETAIL, "详情页广告", "应用详情页的广告、评论与推荐位", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_DETAIL_EXTRAS, "详情页附加推荐", "详情页拼装推荐、底部多按钮推广栏", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_RANK, "榜单广告", "榜单界面的广告 / 推广卡片", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_FLOATING_AD, "主页悬浮广告", "屏蔽主页底部/侧边弹出的悬浮广告", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_AD_BACK_FLOAT, "返回浮窗广告", "屏蔽返回时弹出的「返回今日头条」等浮窗", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_HOME_PAGE_DIALOG, "首页弹窗推广", "屏蔽进入首页时弹出的 Dialog 推广位", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_ENTRANCE, "首页活动入口", "隐藏搜索框左侧云控下发的活动小图标", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_FRUIT, "领水果入口", "隐藏福利活动 gif 动图入口", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_INSTALL_RECOMMEND, "安装后推荐", "拦截点击安装后弹出的「用户还喜欢」推荐弹窗", masterOn, hl)
         }
         Footer("广告净化模块负责开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口")
     }
@@ -119,14 +164,14 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
             .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
     ) {
         SettingsSection {
-            PrefSwitch(activity, Settings.KEY_MINE_RECOMMEND, "应用推荐与推广", "隐藏页面顶部推荐卡片与底部推广列表", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_MINE_OFFICIAL_TAB, "应用管理入口", "隐藏页面中间的官方应用管理功能入口", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_MINE_CLEANUP, "清理与卸载", "隐藏手机清理与应用卸载入口", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_MINE_SUMMARY, "个人信息区", "隐藏头像、昵称、消息、收藏", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_MINE_SECURITY, "安全检测", "隐藏应用安全检测卡片", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_ORCHARD_SKIN, "更新卡片背景", "清除升级卡片的果园背景", default = true, enabled = masterOn)
+            HighlightSwitch(activity, Settings.KEY_MINE_RECOMMEND, "应用推荐与推广", "隐藏页面顶部推荐卡片与底部推广列表", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_MINE_OFFICIAL_TAB, "应用管理入口", "隐藏页面中间的官方应用管理功能入口", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_MINE_CLEANUP, "清理与卸载", "隐藏手机清理与应用卸载入口", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_MINE_SUMMARY, "个人信息区", "隐藏头像、昵称、消息、收藏", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_MINE_SECURITY, "安全检测", "隐藏应用安全检测卡片", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_ORCHARD_SKIN, "更新卡片背景", "清除升级卡片的果园背景", masterOn, hl)
             PrefSwitch(activity, Settings.KEY_CARD_EXPAND, "升级卡片横向展开", "升级卡片展开显示更多应用更新", default = false, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_TAB_BADGE, "底栏角标", "去掉底部标签页的数字角标与红点", default = true, enabled = masterOn)
+            HighlightSwitch(activity, Settings.KEY_TAB_BADGE, "底栏角标", "去掉底部标签页的数字角标与红点", masterOn, hl)
         }
         Footer("「我的」页精简负责隐藏推荐、清理、安全检测、个人信息等内容")
     }
@@ -170,16 +215,16 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
             .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
     ) {
         SettingsSection(topLabel = "界面精简") {
-            PrefSwitch(activity, Settings.KEY_DETAIL_FEATURED, "详情页「精选」", "按文案匹配，仅在应用详情页生效", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_UPDATE_HISTORY, "升级记录推荐", "隐藏升级记录底部的精选推荐", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_SEARCH_ALSO_VIEW, "搜索页「也在看」", "隐藏搜索结果底部的推荐", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_SUB_TAB_FILTER, "顶栏推广位", "清理首页/榜单等页面顶部的推广子标签", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_HIDE_UPDATE_ALL, "全部升级按钮", "隐藏更新界面全部升级按钮", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, "自动升级开关", "隐藏更新界面自动升级开关", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_PUSH_FLOAT, "Push悬浮通知", "屏蔽 MiPush 推送的悬浮通知", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_UPDATE_FLOAT_CARD, "升级浮窗卡片", "屏蔽检测到新版本时弹出的浮窗升级提示", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_BLOCK_BG_DOWNLOAD, "屏蔽后台静默下载", "禁止商店在后台自动下载应用更新", default = true, enabled = masterOn)
-            PrefSwitch(activity, Settings.KEY_LONG_PRESS_JUMP, "长按跳转插件", "长按下载按钮跳转到插件主页", default = true, enabled = masterOn)
+            HighlightSwitch(activity, Settings.KEY_DETAIL_FEATURED, "详情页「精选」", "按文案匹配，仅在应用详情页生效", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_UPDATE_HISTORY, "升级记录推荐", "隐藏升级记录底部的精选推荐", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_SEARCH_ALSO_VIEW, "搜索页「也在看」", "隐藏搜索结果底部的推荐", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_SUB_TAB_FILTER, "顶栏推广位", "清理首页/榜单等页面顶部的推广子标签", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_HIDE_UPDATE_ALL, "全部升级按钮", "隐藏更新界面全部升级按钮", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_HIDE_AUTO_UPDATE_SWITCH, "自动升级开关", "隐藏更新界面自动升级开关", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_PUSH_FLOAT, "Push悬浮通知", "屏蔽 MiPush 推送的悬浮通知", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_UPDATE_FLOAT_CARD, "升级浮窗卡片", "屏蔽检测到新版本时弹出的浮窗升级提示", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_BLOCK_BG_DOWNLOAD, "屏蔽后台静默下载", "禁止商店在后台自动下载应用更新", masterOn, hl)
+            HighlightSwitch(activity, Settings.KEY_LONG_PRESS_JUMP, "长按跳转插件", "长按下载按钮跳转到插件主页", masterOn, hl)
         }
         Footer("其他界面精简负责详情页精选、升级记录、搜索也在看、顶栏推广位等")
     }
@@ -189,7 +234,7 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
 
 @Composable
 private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean) {
-    val sliderMax = 29 // MiuiX FLOATING_RADIUS_MAX / FLOATING_BOTTOM_MARGIN_MAX 共用
+    val sliderMax = 29
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)

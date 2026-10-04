@@ -222,11 +222,11 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                 color = colors.onSurface,
             )
             Spacer(Modifier.weight(1f))
-            // 重启应用商店按钮
+            // 重启按钮：圆角小药丸
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(colors.surfaceContainer)
                     .clickable {
                         val am = context.getSystemService(android.content.Context.ACTIVITY_SERVICE)
                                 as android.app.ActivityManager
@@ -243,15 +243,19 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                             android.widget.Toast.makeText(context, "未找到应用商店", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }
-                    .padding(8.dp),
-                contentAlignment = Alignment.Center,
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
-                Text(text = "⟳", fontSize = 22.sp, color = colors.onSurface)
+                Text(
+                    text = "重启",
+                    fontSize = 13.sp,
+                    color = colors.onSurfaceVariantSummary,
+                )
             }
         }
         HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
     }
 }
+
 
 
 // ==================== 开关行（拇指色恢复白色，通用性最佳） ====================
