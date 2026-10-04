@@ -158,6 +158,7 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Stri
 
 @Composable
 private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
+    val colors = MiuixTheme.colorScheme
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
@@ -170,7 +171,19 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
             HighlightSwitch(activity, Settings.KEY_MINE_SUMMARY, "个人信息区", "隐藏头像、昵称、消息、收藏", masterOn, hl)
             HighlightSwitch(activity, Settings.KEY_MINE_SECURITY, "安全检测", "隐藏应用安全检测卡片", masterOn, hl)
             HighlightSwitch(activity, Settings.KEY_ORCHARD_SKIN, "更新卡片背景", "清除升级卡片的果园背景", masterOn, hl)
-            PrefSwitch(activity, Settings.KEY_CARD_EXPAND, "升级卡片横向展开", "升级卡片展开显示更多应用更新", default = false, enabled = masterOn)
+        }
+        // 升级卡片横向展开：独立于卡片背景，无需依赖 orchardOn
+        SettingsSection(topLabel = "升级卡片") {
+            PrefSwitch(
+                activity = activity,
+                key = Settings.KEY_CARD_EXPAND,
+                title = "升级卡片横向展开",
+                summary = "升级卡片展开显示更多应用更新（独立于「更新卡片背景」开关）",
+                default = false,
+                enabled = masterOn,
+            )
+        }
+        SettingsSection {
             HighlightSwitch(activity, Settings.KEY_TAB_BADGE, "底栏角标", "去掉底部标签页的数字角标与红点", masterOn, hl)
         }
         Footer("「我的」页精简负责隐藏推荐、清理、安全检测、个人信息等内容")
