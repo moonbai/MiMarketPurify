@@ -131,6 +131,7 @@ object Settings {
     const val KEY_HIDE_UPDATE_ALL = "hide_update_all"
     const val KEY_HIDE_AUTO_UPDATE_SWITCH = "hide_auto_update_switch"
     const val KEY_DETAIL_RECOMMEND = "hide_detail_recommend"
+    const val KEY_RECOMMENDATIONS_ENABLED = "recommendations_enabled"
 
 
     // ═══════════════ 移花接木 ═══════════════
@@ -168,23 +169,17 @@ object Settings {
 
     private fun readFromTargetSp(key: String): String? {
         return runCatching {
-            val spFile = File(
-                "/data/data/$TARGET_PKG/shared_prefs/com.xiaomi.market_preferences.xml")
-            if (!spFile.exists()) {
-                // 文件不存在：置空缓存，避免每次 stat 都重复解析
-                spFileCache = SpFileCache(0L, null)
-                return@runCatching null
-            }
+            val spFile = File("/data/data/$TARGET_PKG/shared_prefs/com.xiaomi.market_preferences.xml")
+            if (!spFile.exists()) { spFileCache = SpFileCache(0L, null); return@runCatching null }
             val mtime = spFile.lastModified()
             val cache = spFileCache
             if (cache == null || cache.mtime != mtime || cache.values == null) {
                 spFileCache = SpFileCache(mtime, parseSpFile(spFile))
             }
             spFileCache?.values?.get(key)
-        }.onFailure {
-            Log.w(TAG, "读取目标 app SP 失败: ${it.message}")
-        }.getOrNull()
+        }.onFailure { Log.w(TAG, "读取目标 app SP 失败: ${it.message}") }.getOrNull()
     }
+
 
     /** 一次性解析 SP XML 为 Map，供缓存复用 */
     private fun parseSpFile(spFile: File): Map<String, String> {
@@ -197,8 +192,7 @@ object Settings {
                 val name = parser.getAttributeValue(null, "name")
                 if (name != null) {
                     when (parser.name) {
-                        "boolean", "int", "long", "float" ->
-                            result[name] = parser.getAttributeValue(null, "value")
+                        "boolean", "int", "long", "float" -> result[name] = parser.getAttributeValue(null, "value")
                         "string" -> result[name] = parser.nextText()
                     }
                 }
@@ -211,22 +205,13 @@ object Settings {
     private fun getRemotePrefs(): android.content.SharedPreferences? {
         val now = System.currentTimeMillis()
         val cached = remotePrefsCache
-        if (cached != null && now - remotePrefsCachedAt < CACHE_TTL_MS) {
-            return cached
-        }
+        if (cached != null && now - remotePrefsCachedAt < CACHE_TTL_MS) return cached
         val fresh = runCatching {
-            // 模块自身 App：走 XposedService（随 libxposed.service 打包，始终可用）
-            App.mService?.getRemotePreferences(PREFS_GROUP)
-                // 被 LSPosed 注入的目标 App：走 hook 侧注入的 provider（内部访问 XposedModule，
-                // 仅注入进程可用；App 侧此 provider 为 null，不会触发 XposedModule 加载）
-                ?: remotePrefsProvider?.invoke(PREFS_GROUP)
-        }.onFailure { e ->
-            Log.w(TAG, "远程偏好不可用: ${e.message}")
-        }.getOrNull()
-        if (fresh != null) {
-            remotePrefsCache = fresh
-            remotePrefsCachedAt = now
-        }
+            App.mService?.getRemotePreferences(PREFS_GROUP) ?: remotePrefsProvider?.invoke(PREFS_GROUP)
+        }.onFailure { Log.w(TAG, "远程偏好不可用: ${it.message}") }.getOrNull()
+        if (fresh != null) { remotePrefsCache = fresh; remotePrefsCachedAt = now }
+        return fresh
+    }
         return fresh
     }
 
@@ -279,6 +264,7 @@ object Settings {
     fun floatingBarRadiusDp(): Int =
         getInt(KEY_FLOATING_BAR_RADIUS, FLOATING_RADIUS_DEFAULT)
             .coerceIn(FLOATING_RADIUS_MIN, FLOATING_RADIUS_MAX)
+    fun floatingBarBottomMarginDp(): Int = getInt(KEY_FLOATING_BAR_BOTTOM_MARGIN, FLOATING_BOTTOM_MARGIN_DEFAULT).coerceIn(FLOATING_BOTTOM_MARGIN_MIN, FLOATING_BOTTOM_MARGIN_MAX)
 
     /** 悬浮底栏到底部外边距 dp 值（越界收敛）。 */
     fun floatingBarBottomMarginDp(): Int =

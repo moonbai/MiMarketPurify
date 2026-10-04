@@ -53,6 +53,11 @@
             android:label="@string/about_title"
             android:exported="false" />
 
+        <activity
+            android:name=".SearchActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MiMarketPurify"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
         <!--
             二级设置页：主页只留高频开关，「我的」页 / 底部标签栏 / 其他净化 / 模块自身
             各自收在这里。用同一个 Activity，具体显示哪一组由 EXTRA_PAGE 决定，
