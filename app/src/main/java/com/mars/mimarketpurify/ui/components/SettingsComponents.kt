@@ -20,9 +20,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,7 +38,6 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -59,9 +61,79 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * （原生 View 实现）里的「卡片 / 开关行 / 导航行 / 区块标题 / 顶栏」统一收口到这里，
  * 主页、二级设置页、关于页共用同一套，从根上消除「两套 UI 语汇」的重复，
  * 也确保配色全部来自 [MiuixTheme.colorScheme]，不再出现字面色被强制深色反色的问题。
+ *
+ * UI 语汇完全对齐 miuix 官方设计规范：
+ * - Section 容器使用 [Surface] + `surfaceContainer` 色 + 24dp 圆角
+ * - Section 标题使用 `primary` 色 + `footnote1` 样式
+ * - 项内文字使用 `body1` / `footnote1` 文字样式
+ * - 副文字使用 `onSurfaceVariantSummary` 色
+ * - Section 内项与项之间无分隔线（与 HyperModifier 一致）
  */
 
-// ==================== 卡片容器 ====================
+// ==================== Section 容器（miuix 标准） ====================
+
+/**
+ * miuix 风格的设置区块容器：使用 [Surface] + `surfaceContainer` 色 + 24dp 圆角。
+ * 可选 [topLabel] 以 `primary` 色显示区块标题（如"功能"、"作者"）。
+ */
+@Composable
+fun SettingsSection(
+    modifier: Modifier = Modifier,
+    topLabel: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val sectionShape = MaterialTheme.shapes.large.copy(CornerSize(24.dp))
+    val container = MiuixTheme.colorScheme.surfaceContainer
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        topLabel?.let {
+            Text(
+                text = it,
+                color = MiuixTheme.colorScheme.primary,
+                style = MiuixTheme.textStyles.footnote1,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+            )
+        }
+        Surface(
+            shape = sectionShape,
+            color = container,
+        ) { Column(modifier = Modifier.fillMaxWidth(), content = content) }
+    }
+}
+
+/**
+ * Section 内的设置项：标题 + 副标题 + 可选尾部组件。
+ * 与 HyperModifier / miuix 示例完全一致的间距与样式。
+ */
+@Composable
+fun SettingItem(
+    headlineText: String,
+    supportingText: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    trailingContent: @Composable (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    val itemModifier = if (enabled && onClick != null) modifier.clickable(onClick = onClick) else modifier
+    Row(
+        modifier = itemModifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(text = headlineText, style = MiuixTheme.textStyles.body1)
+            if (supportingText.isNotEmpty()) {
+                Text(
+                    text = supportingText,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    style = MiuixTheme.textStyles.footnote1,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
+            }
+        }
+        trailingContent?.invoke()
+    }
+}
+
+// ==================== 兼容旧接口：卡片容器（保留供主页等使用） ====================
 
 @Composable
 fun GroupCard(content: @Composable ColumnScope.() -> Unit) {
@@ -129,8 +201,8 @@ private fun SafeDrawableImage(
 fun Footer(text: String) {
     Text(
         text = text,
-        fontSize = MiuiX.MICRO.sp,
-        color = MiuixTheme.colorScheme.onSurfaceSecondary,
+        style = MiuixTheme.textStyles.footnote2,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 16.dp),
     )
 }
@@ -172,8 +244,7 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
             }
             Text(
                 text = title,
-                fontSize = MiuiX.PAGE_TITLE.sp,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.title3,
                 color = colors.onSurface,
             )
         }
@@ -192,7 +263,6 @@ fun SwitchRow(
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val colors = MiuixTheme.colorScheme
-    // 内部持有显示态：手动拨动后保持视觉状态；`checked` 变化（如 service 重连重读）时重新对齐。
     var isChecked by remember(checked) { mutableStateOf(checked) }
     Row(
         modifier = Modifier
@@ -205,15 +275,14 @@ fun SwitchRow(
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
             Text(
                 text = title,
-                fontSize = MiuiX.ROW_TITLE.sp,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.body1,
                 color = if (enabled) colors.onSurface else colors.outline,
             )
             Text(
                 text = summary,
-                fontSize = MiuiX.ROW_SUMMARY.sp,
-                color = if (enabled) colors.onSurfaceSecondary else colors.outline,
-                modifier = Modifier.padding(top = 2.dp),
+                style = MiuixTheme.textStyles.footnote1,
+                color = if (enabled) colors.onSurfaceVariantSummary else colors.outline,
+                modifier = Modifier.padding(top = 3.dp),
             )
         }
         Switch(
@@ -252,16 +321,15 @@ fun CheckboxRow(
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
             Text(
                 text = title,
-                fontSize = MiuiX.ROW_TITLE.sp,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.body1,
                 color = if (enabled) colors.onSurface else colors.outline,
             )
             if (summary.isNotEmpty()) {
                 Text(
                     text = summary,
-                    fontSize = MiuiX.ROW_SUMMARY.sp,
-                    color = if (enabled) colors.onSurfaceSecondary else colors.outline,
-                    modifier = Modifier.padding(top = 2.dp),
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = if (enabled) colors.onSurfaceVariantSummary else colors.outline,
+                    modifier = Modifier.padding(top = 3.dp),
                 )
             }
         }
@@ -299,18 +367,17 @@ fun NavRow(
         Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
             Text(
                 text = title,
-                fontSize = MiuiX.ROW_TITLE.sp,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.body1,
                 color = if (enabled) colors.onSurface else colors.outline,
             )
             Text(
                 text = summary,
-                fontSize = MiuiX.ROW_SUMMARY.sp,
-                color = if (enabled) colors.onSurfaceSecondary else colors.outline,
-                modifier = Modifier.padding(top = 2.dp),
+                style = MiuixTheme.textStyles.footnote1,
+                color = if (enabled) colors.onSurfaceVariantSummary else colors.outline,
+                modifier = Modifier.padding(top = 3.dp),
             )
         }
-        Text(text = value, fontSize = MiuiX.CAPTION.sp, color = colors.onSurfaceSecondary)
+        Text(text = value, style = MiuixTheme.textStyles.footnote1, color = colors.onSurfaceVariantSummary)
         Spacer(Modifier.width(6.dp))
         Text(text = "›", fontSize = 20.sp, color = colors.outline, modifier = Modifier.size(20.dp, 20.dp))
     }
@@ -364,20 +431,19 @@ fun PrefSlider(
             Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                 Text(
                     text = title,
-                    fontSize = MiuiX.ROW_TITLE.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.body1,
                     color = if (enabled) colors.onSurface else colors.outline,
                 )
                 Text(
                     text = summary,
-                    fontSize = MiuiX.ROW_SUMMARY.sp,
-                    color = if (enabled) colors.onSurfaceSecondary else colors.outline,
-                    modifier = Modifier.padding(top = 2.dp),
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = if (enabled) colors.onSurfaceVariantSummary else colors.outline,
+                    modifier = Modifier.padding(top = 3.dp),
                 )
             }
             Text(
                 text = format(value),
-                fontSize = MiuiX.CAPTION.sp,
+                style = MiuixTheme.textStyles.body2,
                 color = colors.primary,
                 fontWeight = FontWeight.Bold,
             )
@@ -424,15 +490,14 @@ fun PrefColorRow(
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
             Text(
                 text = title,
-                fontSize = MiuiX.ROW_TITLE.sp,
-                fontWeight = FontWeight.Bold,
+                style = MiuixTheme.textStyles.body1,
                 color = colors.onSurface,
             )
             Text(
                 text = "点击后滑动颜色条选择颜色及透明度",
-                fontSize = MiuiX.ROW_SUMMARY.sp,
-                color = colors.onSurfaceSecondary,
-                modifier = Modifier.padding(top = 2.dp),
+                style = MiuixTheme.textStyles.footnote1,
+                color = colors.onSurfaceVariantSummary,
+                modifier = Modifier.padding(top = 3.dp),
             )
         }
         Box(
@@ -457,7 +522,7 @@ fun PrefColorRow(
                     activity.writeRemoteInt(key, -1)
                     stored = -1
                     open = false
-                }) { Text("恢复默认", color = colors.onSurfaceSecondary) }
+                }) { Text("恢复默认", color = colors.onSurfaceVariantSummary) }
             },
             title = { Text("选择颜色", color = colors.onSurface) },
             text = {
@@ -478,11 +543,9 @@ private data class RefProject(val repoName: String, val url: String, val label: 
 fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
     val colors = MiuixTheme.colorScheme
     // 检查更新 / 下载状态（问题1：MiuiX 风格弹窗；问题3：下载进度）。
-    // 用 Material3 AlertDialog（在 MiuixTheme 下即 MiuiX 风格）+ Miuix 进度条，替代原生 AlertDialog / ProgressDialog。
     var updateInfo by remember { mutableStateOf<UpdateCheckResult.Available?>(null) }
     var showUpdate by remember { mutableStateOf(false) }
     var downloading by remember { mutableStateOf(false) }
-    // 0f..1f 表示确定进度；-1f 表示未知总长（服务器未回 Content-Length），退化为 indeterminate。
     var downloadProgress by remember { mutableStateOf(0f) }
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
         SubTopBar(title = "关于", showBack = false, onBack = onBack)
@@ -493,10 +556,9 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
-                // 与主页一致：在滚动内容里为悬浮底栏预留高度，避免底部出现空白栏、末项被遮。
                 .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
         ) {
-            // ── 应用卡片（居中大图标 + 标题 + 版本，无背景卡片色，参考 miuix/HyperModifier 关于页风格）──
+            // ── 应用卡片（居中大图标 + 标题 + 版本，无背景卡片色，参考 miuix/HyperModifier 关于页） ──
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -515,163 +577,103 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 )
                 Text(
                     text = "Mi Market Purify",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MiuixTheme.textStyles.title2,
                     textAlign = TextAlign.Center,
                     color = colors.onSurface,
                 )
                 Text(
                     text = "v${BuildConfig.VERSION_NAME}",
-                    fontSize = 14.sp,
-                    color = colors.onSurfaceSecondary,
+                    style = MiuixTheme.textStyles.body2,
+                    color = colors.onSurfaceVariantSummary,
                 )
                 Text(
                     text = "小米应用商店净化与增强",
-                    fontSize = 12.sp,
-                    color = colors.onSurfaceSecondary,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = colors.onSurfaceVariantSummary,
                 )
             }
 
-            SectionHeader("功能", "本模块提供的核心能力")
-            val features = listOf(
-                "广告净化" to "开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口",
-                "界面精简" to "「我的」页推荐/清理/安全检测/个人信息、详情页精选、底栏角标、升级记录、搜索也在看",
-                "功能增强" to "下载超级岛、非正版APP显示、被隐藏更新显示、升级弹窗拦截、悬浮底栏",
-            )
-            features.forEachIndexed { index, (title, desc) ->
-                if (index > 0) Spacer(Modifier.height(8.dp))
-                GroupCard {
-                    Text(
-                        text = title,
-                        fontSize = MiuiX.ROW_TITLE.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.onSurface,
-                    )
-                    Text(
-                        text = desc,
-                        fontSize = MiuiX.ROW_SUMMARY.sp,
-                        color = colors.onSurfaceSecondary,
-                        lineHeight = (MiuiX.ROW_SUMMARY * MiuiX.LINE_SPACING).sp,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
+            // ── 功能区块 ──
+            SettingsSection(topLabel = "功能") {
+                val features = listOf(
+                    "广告净化" to "开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口",
+                    "界面精简" to "「我的」页推荐/清理/安全检测/个人信息、详情页精选、底栏角标、升级记录、搜索也在看",
+                    "功能增强" to "下载超级岛、非正版APP显示、被隐藏更新显示、升级弹窗拦截、悬浮底栏",
+                )
+                features.forEach { (title, desc) ->
+                    SettingItem(headlineText = title, supportingText = desc)
                 }
             }
 
-            SectionHeader("作者", "")
-            val authorCard = GroupCardState("Mars", "点此访问作者主页，点点关注")
-            GroupCard {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { openLink(activity, "https://weibo.com/u/3963594403") }
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+            // ── 作者区块 ──
+            SettingsSection(topLabel = "作者") {
+                SettingItem(
+                    headlineText = "Mars",
+                    supportingText = "点此访问作者主页，点点关注",
+                    onClick = { openLink(activity, "https://weibo.com/u/3963594403") },
                 ) {
+                    // 作者头像作为尾部组件
                     SafeDrawableImage(
                         resId = R.drawable.avatar_mars,
                         modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(8.dp)),
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop,
                     )
-                    Column(modifier = Modifier.weight(1f).padding(start = 12.dp, end = 8.dp)) {
-                        Text(
-                            text = authorCard.title,
-                            fontSize = MiuiX.ROW_TITLE.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.onSurface,
-                        )
-                        Text(
-                            text = authorCard.subtitle,
-                            fontSize = MiuiX.ROW_SUMMARY.sp,
-                            color = colors.onSurfaceSecondary,
-                            modifier = Modifier.padding(top = 3.dp),
-                        )
-                    }
-                    Text(text = "›", fontSize = 20.sp, color = colors.outline)
                 }
             }
 
-            SectionHeader("参考项目", "")
-            val references = listOf(
-                RefProject("callng/NewFuckMarketAds", "https://github.com/callng/NewFuckMarketAds", "GPL-3.0"),
-                RefProject("lisrain/NewFuckMarketAds_Fork", "https://github.com/lisrain/NewFuckMarketAds_Fork", "GPL-3.0"),
-                RefProject("HowieHChen/XiaomiHelper", "https://github.com/HowieHChen/XiaomiHelper", "GPL-3.0"),
-                RefProject("AritxOnly/HyperModifier", "https://github.com/AritxOnly/HyperModifier", "GPL-3.0"),
-            )
-            GroupCard {
-                references.forEachIndexed { index, item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { openLink(activity, item.url) }
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = item.repoName,
-                                fontSize = MiuiX.ROW_SUMMARY.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.onSurface,
-                            )
-                            Text(
-                                text = item.label,
-                                fontSize = MiuiX.MICRO.sp,
-                                color = colors.onSurfaceSecondary,
-                                modifier = Modifier.padding(top = 3.dp),
-                            )
-                        }
-                        Text(text = "›", fontSize = 20.sp, color = colors.outline)
-                    }
-                    if (index < references.lastIndex) {
-                        HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
-                    }
+            // ── 参考项目区块（无分隔线） ──
+            SettingsSection(topLabel = "参考项目") {
+                val references = listOf(
+                    RefProject("callng/NewFuckMarketAds", "https://github.com/callng/NewFuckMarketAds", "GPL-3.0"),
+                    RefProject("lisrain/NewFuckMarketAds_Fork", "https://github.com/lisrain/NewFuckMarketAds_Fork", "GPL-3.0"),
+                    RefProject("HowieHChen/XiaomiHelper", "https://github.com/HowieHChen/XiaomiHelper", "GPL-3.0"),
+                    RefProject("AritxOnly/HyperModifier", "https://github.com/AritxOnly/HyperModifier", "GPL-3.0"),
+                )
+                references.forEach { item ->
+                    SettingItem(
+                        headlineText = item.repoName,
+                        supportingText = item.label,
+                        onClick = { openLink(activity, item.url) },
+                    )
                 }
             }
 
-            SectionHeader("其他", "")
-
-            GroupCard {
-                NavRow(
-                    title = "检查更新",
-                    summary = "对比 GitHub 最新 Release 版本",
-                    value = "",
-                    enabled = true,
-                ) {
-                    Thread {
-                        val result = UpdateChecker.check()
-                        activity.runOnUiThread {
-                            when (result) {
-                                is UpdateCheckResult.Available -> {
-                                    updateInfo = result
-                                    showUpdate = true
+            // ── 其他区块 ──
+            SettingsSection(topLabel = "其他") {
+                SettingItem(
+                    headlineText = "检查更新",
+                    supportingText = "对比 GitHub 最新 Release 版本",
+                    onClick = {
+                        Thread {
+                            val result = UpdateChecker.check()
+                            activity.runOnUiThread {
+                                when (result) {
+                                    is UpdateCheckResult.Available -> {
+                                        updateInfo = result
+                                        showUpdate = true
+                                    }
+                                    is UpdateCheckResult.Latest ->
+                                        Toast.makeText(activity, "已是最新版本", Toast.LENGTH_SHORT).show()
+                                    is UpdateCheckResult.Unavailable ->
+                                        Toast.makeText(activity, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()
                                 }
-                                is UpdateCheckResult.Latest ->
-                                    Toast.makeText(activity, "已是最新版本", Toast.LENGTH_SHORT).show()
-                                is UpdateCheckResult.Unavailable ->
-                                    Toast.makeText(activity, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()
                             }
-                        }
-                    }.start()
-                }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(
-                    title = "隐私政策",
-                    summary = "查看本模块隐私政策与数据说明",
-                    value = "",
-                    enabled = true,
-                ) {
-                    activity.startActivity(Intent(activity, PrivacyPolicyActivity::class.java))
-                }
+                        }.start()
+                    },
+                )
+                SettingItem(
+                    headlineText = "隐私政策",
+                    supportingText = "查看本模块隐私政策与数据说明",
+                    onClick = { activity.startActivity(Intent(activity, PrivacyPolicyActivity::class.java)) },
+                )
             }
 
             Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
         }
 
-        // ── 检查更新结果弹窗（MiuiX 风格；问题1）──
+        // ── 检查更新结果弹窗（MiuiX 风格；问题1） ──
         if (showUpdate && updateInfo != null) {
             val info = updateInfo!!
             AlertDialog(
@@ -684,8 +686,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            // 说明可能很长（含多张截图）：限高 + 纵向滚动，避免图片把弹窗撑出屏幕、
-                            // 底部「下载并安装 / 去发布页」按钮被顶掉。
                             .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.5f).dp)
                             .verticalScroll(rememberScrollState()),
                     ) {
@@ -694,15 +694,12 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                                 append("发现新版本 v${info.versionName}")
                                 if (sizeText.isNotEmpty()) append("\n$sizeText")
                             },
-                            fontSize = 14.sp,
-                            color = colors.onSurfaceSecondary,
+                            style = MiuixTheme.textStyles.body2,
+                            color = colors.onSurfaceVariantSummary,
                             lineHeight = (14 * 1.4).sp,
                         )
                         if (info.notes.isNotBlank()) {
                             Spacer(Modifier.height(12.dp))
-                            // GitHub Release 说明常内联图片（`<img src="..."/>`），旧实现把整段 body
-                            // 当纯文本，导致图片标签原样显示成「代码」；这里解析为「文本 / 图片」两类块，
-                            // 文本块做轻量 Markdown 清理，图片块用内置下载器直接显示（点击可查看原图）。
                             ReleaseNotesView(
                                 notes = info.notes,
                                 onImageClick = { openLink(activity, it) },
@@ -720,7 +717,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                             info = info,
                             onProgress = { d, t ->
                                 activity.runOnUiThread {
-                                    // 未知总长时退化为 indeterminate（-1f），否则按字节比计算百分比。
                                     downloadProgress = if (t > 0) (d.toFloat() / t).coerceIn(0f, 1f) else -1f
                                 }
                             },
@@ -743,12 +739,12 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                     TextButton(onClick = {
                         showUpdate = false
                         openLink(activity, info.releaseUrl)
-                    }) { Text(text = "去发布页", color = colors.onSurfaceSecondary) }
+                    }) { Text(text = "去发布页", color = colors.onSurfaceVariantSummary) }
                 },
             )
         }
 
-        // ── 下载进度弹窗（MiuiX 风格；问题3）──
+        // ── 下载进度弹窗（MiuiX 风格；问题3） ──
         if (downloading) {
             AlertDialog(
                 onDismissRequest = {},
@@ -760,8 +756,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                     ) {
                         Text(
                             text = "正在下载更新包…",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MiuixTheme.textStyles.body1,
                             color = colors.onSurface,
                         )
                         Spacer(Modifier.height(18.dp))
@@ -775,16 +770,16 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = "${(downloadProgress * 100).toInt()}%",
-                                fontSize = 14.sp,
-                                color = colors.onSurfaceSecondary,
+                                style = MiuixTheme.textStyles.body2,
+                                color = colors.onSurfaceVariantSummary,
                             )
                         } else {
                             CircularProgressIndicator(progress = null)
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = "正在获取下载信息…",
-                                fontSize = 14.sp,
-                                color = colors.onSurfaceSecondary,
+                                style = MiuixTheme.textStyles.body2,
+                                color = colors.onSurfaceVariantSummary,
                             )
                         }
                     }
@@ -794,21 +789,12 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
     }
 }
 
-/**
- * 检查更新的发起逻辑已内联到 [AboutContent]：点击「检查更新」于子线程调用 [UpdateChecker.check]，
- * 结果写入 Compose 状态并以 MiuiX 风格弹窗呈现（不再用原生 AlertDialog）。
- */
-
 private data class GroupCardState(val title: String, val subtitle: String)
 
 private fun openLink(activity: ComponentActivity, url: String) {
     runCatching { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
 }
 
-/**
- * 后台下载 APK：进度经 [onProgress](字节) 回调，完成经 [onDone]、失败经 [onError] 回主线程，
- * 由调用方（[AboutContent]）驱动 MiuiX 进度弹窗与安装调起。
- */
 private fun startDownload(
     activity: ComponentActivity,
     info: UpdateCheckResult.Available,
@@ -829,7 +815,6 @@ private fun startDownload(
     }.start()
 }
 
-/** 后台把 APK 下到本地；下载进度经 [onProgress](downloaded, total，单位字节) 回调。 */
 private fun downloadFile(
     url: String,
     dest: File,
@@ -840,8 +825,6 @@ private fun downloadFile(
     conn.readTimeout = 15_000
     try {
         if (conn.responseCode != HttpURLConnection.HTTP_OK) throw IOException("HTTP ${conn.responseCode}")
-        // contentLengthLong 为 -1 表示服务器未回 Content-Length（分块传输），此时无法计算百分比，
-        // 由上层按 total<=0 退化为 indeterminate 进度条。
         val total = conn.contentLengthLong.takeIf { it >= 0 } ?: 0L
         conn.inputStream.use { input ->
             FileOutputStream(dest).use { out ->
@@ -860,7 +843,6 @@ private fun downloadFile(
     }
 }
 
-/** 用 FileProvider 暴露 APK 并调起安装（Android 7+ 禁止 file://，必须走 content://）。 */
 private fun installApk(context: Context, file: File) {
     val uri = FileProvider.getUriForFile(context, "com.mars.mimarketpurify.fileprovider", file)
     val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -869,7 +851,6 @@ private fun installApk(context: Context, file: File) {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     runCatching { context.startActivity(intent) }.onFailure {
-        // 安装权限未授予或被拒：退回发布页，让用户手动获取
         Toast.makeText(context, "无法调起安装，已转去发布页", Toast.LENGTH_LONG).show()
         openLink(context as ComponentActivity, "https://github.com/moonbai/MiMarketPurify/releases/latest")
     }
