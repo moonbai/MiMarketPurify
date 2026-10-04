@@ -38,7 +38,7 @@ import com.mars.mimarketpurify.ui.components.GroupCard
 import com.mars.mimarketpurify.ui.components.NavRow
 import com.mars.mimarketpurify.ui.components.SectionHeader
 import com.mars.mimarketpurify.ui.components.SwitchRow
-import io.github.libxposed.api.XposedService
+import io.github.libxposed.service.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -382,19 +382,21 @@ private fun RecommendRow(
 
 // ==================== 观察框架 service 连接状态 ====================
 
+
 @Composable
-private fun rememberServiceState(): State<Any?> {
-    val state = remember { mutableStateOf(App.mService) }
+private fun rememberServiceState(): State<XposedService?> {
+    val state = remember { mutableStateOf<App.ServiceStateListener?>(null) }
+    val serviceState = remember { mutableStateOf<XposedService?>(null) }
     DisposableEffect(Unit) {
         val listener = object : App.ServiceStateListener {
-            override fun onServiceStateChanged(service: Any?) {
-                state.value = service
+            override fun onServiceStateChanged(service: XposedService?) {
+                serviceState.value = service
             }
         }
         App.addServiceStateListener(listener, true)
         onDispose { App.removeServiceStateListener(listener) }
     }
-    return state
+    return serviceState
 }
 
 // ==================== 顶栏 ====================
