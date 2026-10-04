@@ -5,10 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -86,32 +82,11 @@ private fun SearchScreen(activity: SearchActivity) {
     ) {
         SearchTopBar(query = query, onQueryChange = { query = it }, onBack = { activity.finish() })
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (isSearching) {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn() + slideInVertically { it / 4 },
-                    exit = fadeOut(),
-                ) {
-                    if (results.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(text = "未找到相关功能", fontSize = 15.sp, color = colors.onSurfaceSecondary)
-                        }
-                    } else {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            items(results) { feature ->
-                                FeatureSearchCard(feature = feature) {
-                                    activity.startActivity(SubSettingsActivity.intent(activity, feature.page, feature.key))
-                                }
-                            }
-                        }
-                    }
+        // 搜索结果
+        if (isSearching) {
+            if (results.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = "未找到相关功能", fontSize = 15.sp, color = colors.onSurfaceSecondary)
                 }
             } else {
                 LazyVerticalGrid(
@@ -121,19 +96,34 @@ private fun SearchScreen(activity: SearchActivity) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    item {
-                        Text(
-                            text = "功能推荐",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.onSurface,
-                            modifier = Modifier.padding(bottom = 4.dp),
-                        )
-                    }
-                    items(recommendations) { feature ->
+                    items(results) { feature ->
                         FeatureSearchCard(feature = feature) {
                             activity.startActivity(SubSettingsActivity.intent(activity, feature.page, feature.key))
                         }
+                    }
+                }
+            }
+        } else {
+            // 功能推荐（10 个）
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                item {
+                    Text(
+                        text = "功能推荐",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                }
+                items(recommendations) { feature ->
+                    FeatureSearchCard(feature = feature) {
+                        activity.startActivity(SubSettingsActivity.intent(activity, feature.page, feature.key))
                     }
                 }
             }

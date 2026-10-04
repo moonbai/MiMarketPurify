@@ -500,6 +500,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable { openLink(activity, MiuiX.REPO_URL) }
                         .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
