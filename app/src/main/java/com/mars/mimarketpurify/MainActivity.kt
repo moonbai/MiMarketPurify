@@ -8,7 +8,10 @@ import android.widget.Toast
 import kotlin.math.roundToInt
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +67,11 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_FRUIT,
         Settings.KEY_ENTRANCE,
         Settings.KEY_DETAIL_EXTRAS,
-        Settings.KEY_FLOATING_AD
+        Settings.KEY_FLOATING_AD,
+        // ↓↓↓ 新增 ↓↓↓
+        Settings.KEY_AD_BACK_FLOAT,
+        Settings.KEY_HOME_PAGE_DIALOG
+        // ↑↑↑ 新增 ↑↑↑
     )
 
     /** 二级页「「我的」页」里的开关 */
@@ -86,7 +93,11 @@ class MainActivity : SettingsBaseActivity() {
         Settings.KEY_SEARCH_ALSO_VIEW,
         Settings.KEY_SUB_TAB_FILTER,
         Settings.KEY_HIDE_UPDATE_ALL,
-        Settings.KEY_HIDE_AUTO_UPDATE_SWITCH
+        Settings.KEY_HIDE_AUTO_UPDATE_SWITCH,
+        // ↓↓↓ 新增 ↓↓↓
+        Settings.KEY_PUSH_FLOAT,
+        Settings.KEY_UPDATE_FLOAT_CARD
+        // ↑↑↑ 新增 ↑↑↑
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {

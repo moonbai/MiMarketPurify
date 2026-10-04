@@ -1,23 +1,18 @@
 package com.mars.mimarketpurify.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mars.mimarketpurify.App
+import com.mars.mimarketpurify.FeatureRegistry
 import com.mars.mimarketpurify.MainActivity
 import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.Settings
@@ -42,23 +38,13 @@ import com.mars.mimarketpurify.ui.components.GroupCard
 import com.mars.mimarketpurify.ui.components.NavRow
 import com.mars.mimarketpurify.ui.components.SectionHeader
 import com.mars.mimarketpurify.ui.components.SwitchRow
-import io.github.libxposed.service.XposedService
+import io.github.libxposed.api.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/**
- * 主页内容（整页 Compose）。视觉与交互对齐原原生布局：固定顶栏 + 滚动内容区、
- * 分组卡片、标题/摘要/开关整行可点；配色全部取自 [MiuixTheme.colorScheme]，与悬浮底栏同源。
- * 远程偏好读写、隐藏桌面图标等逻辑复用 [MainActivity] / [SettingsBaseActivity] 的方法。
- *
- * 卡片 / 开关行 / 导航行 / 区块标题等构件与二级设置页、关于页共用
- * [com.mars.mimarketpurify.ui.components] 里的同一套实现，避免重复。
- */
 @Composable
 fun MainScreen(activity: MainActivity) {
     val colors = MiuixTheme.colorScheme
     val service = rememberServiceState()
-    // 订阅远程偏好刷新信号：从二级页返回 / service 重连后，refreshSignal 自增，
-    // 依赖它的 remember 重新取数，入口摘要与总开关随之刷新（否则关闭/开启开关后主页仍显示旧文案）。
     val tick by activity.refreshSignal
     val masterOn = remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
     val adSummary by remember(tick) { mutableStateOf(activity.countText(activity.adKeys)) }
@@ -67,9 +53,18 @@ fun MainScreen(activity: MainActivity) {
     val mineSummary by remember(tick) { mutableStateOf(activity.countText(activity.mineKeys)) }
     val miscSummary by remember(tick) { mutableStateOf(activity.countText(activity.miscKeys)) }
 
+    // 搜索状态
+    var searchQuery by remember { mutableStateOf("") }
+    val searchResults = remember(searchQuery) { FeatureRegistry.search(searchQuery) }
+    val isSearchActive = searchQuery.isNotBlank()
+
+    // 推荐状态：每次进入用当前时间作为 seed，确保每次不同
+    val recommendations = remember {
+        FeatureRegistry.recommend(count = 3, seed = System.currentTimeMillis())
+    }
+
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
         MainHeader(activity = activity, modifier = Modifier.statusBarsPadding())
-
         HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
 
         Column(
@@ -78,113 +73,310 @@ fun MainScreen(activity: MainActivity) {
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
                 .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 6.dp)
-                // 悬浮底栏让位：预留「胶囊高度 + 距底边距」的底部内边距（在滚动内容里，随内容一起滚）。
-                // 这样滚动视口能一直延伸到底、内容从胶囊下方穿过（通透），滚到底时最后一项也完整露出；
-                // 旧写法把这段预留放在外层 Box 上，等于永久裁掉视口，底部会固定空出一条白栏。
                 .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
         ) {
-            StatusCard(service = service, night = activity.isNight())
-            Spacer(Modifier.height(12.dp))
+            // ═══════════ 搜索栏 ═══════════
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+                onClear = { searchQuery = "" },
+            )
 
-            GroupCard {
-                SwitchRow(
-                    title = "总开关",
-                    summary = "关闭后所有功能均不生效",
-                    checked = masterOn.value,
-                    enabled = true,
-                ) { on ->
-                    masterOn.value = on
-                    activity.writeRemote(Settings.KEY_MASTER, on)
+            // ═══════════ 搜索结果 ═══════════
+            AnimatedVisibility(visible = isSearchActive, enter = fadeIn(), exit = fadeOut()) {
+                Column {
+                    Spacer(Modifier.height(8.dp))
+                    if (searchResults.isEmpty()) {
+                        GroupCard {
+                            Text(
+                                text = "未找到相关功能",
+                                fontSize = MiuiX.ROW_TITLE.sp,
+                                color = colors.onSurfaceSecondary,
+                                modifier = Modifier.padding(vertical = MiuiX.ROW_PAD_V.dp),
+                            )
+                        }
+                    } else {
+                        GroupCard {
+                            searchResults.forEachIndexed { index, feature ->
+                                SearchResultRow(
+                                    feature = feature,
+                                    onClick = { activity.openPage(feature.page) },
+                                )
+                                if (index < searchResults.lastIndex) {
+                                    HorizontalDivider(
+                                        color = colors.dividerLine,
+                                        thickness = 1.dp,
+                                        modifier = Modifier.padding(horizontal = 4.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
                 }
             }
 
-            SectionHeader("界面设置", "广告与界面内容清理")
-            GroupCard {
-                NavRow(
-                    title = "广告净化",
-                    summary = "开屏、首页信息流、搜索、下载升级、应用详情等一系列广告",
-                    value = adSummary,
-                    enabled = masterOn.value,
-                ) { activity.openPage(SubSettingsActivity.PAGE_ADS) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(
-                    title = "底栏自定义",
-                    summary = "底部标签筛选",
-                    value = tabsSummary,
-                    enabled = masterOn.value,
-                ) { activity.openPage(SubSettingsActivity.PAGE_TABS) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(
-                    title = "悬浮底栏配置",
-                    summary = "底栏颜色、透明度、显示效果参数",
-                    value = tabbarSummary,
-                    enabled = masterOn.value,
-                ) { activity.openPage(SubSettingsActivity.PAGE_TAB_BAR) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(
-                    title = "「我的」页精简",
-                    summary = "我的页应用推荐、官方入口、清理板块",
-                    value = mineSummary,
-                    enabled = masterOn.value,
-                ) { activity.openPage(SubSettingsActivity.PAGE_MINE) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(
-                    title = "其他界面精简",
-                    summary = "升级记录、搜索相关推荐等零散页面",
-                    value = miscSummary,
-                    enabled = masterOn.value,
-                ) { activity.openPage(SubSettingsActivity.PAGE_MISC) }
-            }
+            // ═══════════ 搜索时隐藏常规内容 ═══════════
+            if (!isSearchActive) {
+                StatusCard(service = service, night = activity.isNight())
+                Spacer(Modifier.height(12.dp))
 
-            SectionHeader("高级功能", "深度净化与功能增强")
-            GroupCard {
-                SwitchRow(
-                    title = "下载超级岛",
-                    summary = "强制让下载进度进入小米超级岛（无视灰度）",
-                    checked = activity.readLocal(Settings.KEY_ISLAND, true),
-                    enabled = masterOn.value,
-                ) { activity.writeRemote(Settings.KEY_ISLAND, it) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(
-                    title = "细节修正",
-                    summary = "显示非正版 APP、被隐藏更新等细节处理",
-                    checked = activity.readLocal(Settings.KEY_MISC, true),
-                    enabled = masterOn.value,
-                ) { activity.writeRemote(Settings.KEY_MISC, it) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(
-                    title = "升级提醒弹窗",
-                    summary = "不再弹出应用商店的升级提醒对话框",
-                    checked = activity.readLocal(Settings.KEY_UPDATE_DIALOG, true),
-                    enabled = masterOn.value,
-                ) { activity.writeRemote(Settings.KEY_UPDATE_DIALOG, it) }
-            }
+                // ═══════════ 发现好用 ═══════════
+                SectionHeader("发现好用", "随机推荐 3 个实用开关")
+                GroupCard {
+                    recommendations.forEachIndexed { index, feature ->
+                        RecommendRow(
+                            feature = feature,
+                            enabled = masterOn.value,
+                            onClick = { activity.openPage(feature.page) },
+                        )
+                        if (index < recommendations.lastIndex) {
+                            HorizontalDivider(
+                                color = colors.dividerLine,
+                                thickness = 1.dp,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                        }
+                    }
+                }
 
-            SectionHeader("模块功能", "仅影响本模块的显示方式与调试选项")
-            GroupCard {
-                SwitchRow(
-                    title = "隐藏桌面图标",
-                    summary = "仅移除桌面抽屉中的图标，仍可从 LSPosed 模块列表进入主页",
-                    checked = activity.isLauncherIconHidden(),
-                    enabled = true,
-                ) { activity.applyHideIcon(it) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(
-                    title = "调试模式",
-                    summary = "开启后将统一日志输出且进入榜单会主动提示相关信息，日常使用关闭即可",
-                    checked = activity.readLocal(Settings.KEY_RANK_DEBUG, false),
-                    enabled = true,
-                ) { activity.writeRemote(Settings.KEY_RANK_DEBUG, it) }
-            }
+                // ═══════════ 总开关 ═══════════
+                Spacer(Modifier.height(12.dp))
+                GroupCard {
+                    SwitchRow(
+                        title = "总开关",
+                        summary = "关闭后所有功能均不生效",
+                        checked = masterOn.value,
+                        enabled = true,
+                    ) { on ->
+                        masterOn.value = on
+                        activity.writeRemote(Settings.KEY_MASTER, on)
+                    }
+                }
 
-            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                // ═══════════ 界面设置 ═══════════
+                SectionHeader("界面设置", "广告与界面内容清理")
+                GroupCard {
+                    NavRow(
+                        title = "广告净化",
+                        summary = "开屏、首页信息流、搜索、下载升级、应用详情等一系列广告",
+                        value = adSummary,
+                        enabled = masterOn.value,
+                    ) { activity.openPage(SubSettingsActivity.PAGE_ADS) }
+                    Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                    NavRow(
+                        title = "底栏自定义",
+                        summary = "底部标签筛选",
+                        value = tabsSummary,
+                        enabled = masterOn.value,
+                    ) { activity.openPage(SubSettingsActivity.PAGE_TABS) }
+                    Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                    NavRow(
+                        title = "悬浮底栏配置",
+                        summary = "底栏颜色、透明度、显示效果参数",
+                        value = tabbarSummary,
+                        enabled = masterOn.value,
+                    ) { activity.openPage(SubSettingsActivity.PAGE_TAB_BAR) }
+                    Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                    NavRow(
+                        title = "「我的」页精简",
+                        summary = "我的页应用推荐、官方入口、清理板块",
+                        value = mineSummary,
+                        enabled = masterOn.value,
+                    ) { activity.openPage(SubSettingsActivity.PAGE_MINE) }
+                    Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                    NavRow(
+                        title = "其他界面精简",
+                        summary = "升级记录、搜索相关推荐等零散页面",
+                        value = miscSummary,
+                        enabled = masterOn.value,
+                    ) { activity.openPage(SubSettingsActivity.PAGE_MISC) }
+                }
+
+                // ═══════════ 高级功能 ═══════════
+                SectionHeader("高级功能", "深度净化与功能增强")
+                GroupCard {
+                    SwitchRow(
+                        title = "下载超级岛",
+                        summary = "强制让下载进度进入小米超级岛（无视灰度）",
+                        checked = activity.readLocal(Settings.KEY_ISLAND, true),
+                        enabled = masterOn.value,
+                    ) { activity.writeRemote(Settings.KEY_ISLAND, it) }
+                    Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                    SwitchRow(
+                        title = "细节修正",
+                        summary = "显示非正版 APP、被隐藏更新等细节处理",
+                        checked = activity.readLocal(Settings.KEY_MISC, true),
+                        enabled = masterOn.value,
+                    ) { activity.writeRemote(Settings.KEY_MISC, it) }
+                    Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                    SwitchRow(
+                        title = "升级提醒弹窗",
+                        summary = "不再弹出应用商店的升级提醒对话框",
+                        checked = activity.readLocal(Settings.KEY_UPDATE_DIALOG, true),
+                        enabled = masterOn.value,
+                    ) { activity.writeRemote(Settings.KEY_UPDATE_DIALOG, it) }
+                }
+
+                // ═══════════ 模块功能 ═══════════
+                SectionHeader("模块功能", "仅影响本模块的显示方式与调试选项")
+                GroupCard {
+                    SwitchRow(
+                        title = "隐藏桌面图标",
+                        summary = "仅移除桌面抽屉中的图标，仍可从 LSPosed 模块列表进入主页",
+                        checked = activity.isLauncherIconHidden(),
+                        enabled = true,
+                    ) { activity.applyHideIcon(it) }
+                    Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                    SwitchRow(
+                        title = "调试模式",
+                        summary = "开启后将统一日志输出且进入榜单会主动提示相关信息，日常使用关闭即可",
+                        checked = activity.readLocal(Settings.KEY_RANK_DEBUG, false),
+                        enabled = true,
+                    ) { activity.writeRemote(Settings.KEY_RANK_DEBUG, it) }
+                }
+
+                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                Text(
+                    text = "Tips：开关实时生效，但还是建议重启应用商店",
+                    fontSize = MiuiX.MICRO.sp,
+                    color = colors.onSurfaceSecondary,
+                    modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 16.dp),
+                )
+            }
+        }
+    }
+}
+
+// ==================== 搜索栏 ====================
+
+@Composable
+private fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    val colors = MiuixTheme.colorScheme
+    val isActive = query.isNotBlank()
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = {
             Text(
-                text = "Tips：开关实时生效，但还是建议重启应用商店",
-                fontSize = MiuiX.MICRO.sp,
+                text = "搜索功能…",
+                fontSize = MiuiX.ROW_TITLE.sp,
                 color = colors.onSurfaceSecondary,
-                modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 16.dp),
+            )
+        },
+        trailingIcon = {
+            if (isActive) {
+                Text(
+                    text = "✕",
+                    fontSize = 18.sp,
+                    color = colors.onSurfaceSecondary,
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .clickable { onClear() }
+                        .padding(8.dp),
+                )
+            }
+        },
+        singleLine = true,
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = colors.surface,
+            unfocusedContainerColor = colors.surface,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            cursorColor = colors.primary,
+            focusedTextColor = colors.onSurface,
+            unfocusedTextColor = colors.onSurface,
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
+    )
+}
+
+// ==================== 搜索结果行 ====================
+
+@Composable
+private fun SearchResultRow(
+    feature: FeatureRegistry.Feature,
+    onClick: () -> Unit,
+) {
+    val colors = MiuixTheme.colorScheme
+    val pageLabel = when (feature.page) {
+        SubSettingsActivity.PAGE_ADS -> "广告净化"
+        SubSettingsActivity.PAGE_MINE -> "我的页"
+        SubSettingsActivity.PAGE_TABS -> "标签栏"
+        SubSettingsActivity.PAGE_MISC -> "界面精简"
+        SubSettingsActivity.PAGE_TAB_BAR -> "悬浮底栏"
+        else -> feature.page
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() }
+            .padding(vertical = MiuiX.ROW_PAD_V.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = feature.title,
+                fontSize = MiuiX.ROW_TITLE.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.onSurface,
+            )
+            Text(
+                text = feature.summary,
+                fontSize = MiuiX.ROW_SUMMARY.sp,
+                color = colors.onSurfaceSecondary,
+                modifier = Modifier.padding(top = 2.dp),
             )
         }
+        Text(
+            text = pageLabel,
+            fontSize = MiuiX.CAPTION.sp,
+            color = colors.primary,
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(text = "›", fontSize = 20.sp, color = colors.outline)
+    }
+}
+
+// ==================== 推荐功能行 ====================
+
+@Composable
+private fun RecommendRow(
+    feature: FeatureRegistry.Feature,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val colors = MiuixTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(enabled = enabled) { onClick() }
+            .padding(vertical = MiuiX.ROW_PAD_V.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = feature.title,
+                fontSize = MiuiX.ROW_TITLE.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (enabled) colors.onSurface else colors.outline,
+            )
+            Text(
+                text = feature.summary,
+                fontSize = MiuiX.ROW_SUMMARY.sp,
+                color = if (enabled) colors.onSurfaceSecondary else colors.outline,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        Text(text = "›", fontSize = 20.sp, color = colors.outline)
     }
 }
 

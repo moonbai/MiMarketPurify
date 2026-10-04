@@ -123,6 +123,9 @@ object Settings {
     const val KEY_HOME_PAGE_DIALOG = "home_page_dialog"
     const val KEY_PUSH_FLOAT = "push_float"
     const val KEY_UPDATE_FLOAT_CARD = "update_float_card"
+    const val KEY_BLOCK_BG_DOWNLOAD = "block_bg_download"
+    const val KEY_TAB_DEEP_CLEAN = "tab_deep_clean"
+    
     const val KEY_RANK_DEBUG = "rank_debug"
     const val KEY_ISLAND = "super_island"
     const val KEY_HIDE_UPDATE_ALL = "hide_update_all"

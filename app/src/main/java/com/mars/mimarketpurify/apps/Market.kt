@@ -36,6 +36,8 @@ import com.mars.mimarketpurify.hooks.market.AdBackFloatBlocker
 import com.mars.mimarketpurify.hooks.market.HomePageDialogBlocker
 import com.mars.mimarketpurify.hooks.market.PushFloatNotificationBlocker
 import com.mars.mimarketpurify.hooks.market.UpdateFloatCardBlocker
+import com.mars.mimarketpurify.hooks.market.BackgroundDownloadBlocker
+import com.mars.mimarketpurify.hooks.market.TabDeepClean
 import io.github.libxposed.api.XposedModuleInterface
 
 object Market : AppRegister() {
@@ -79,7 +81,9 @@ object Market : AppRegister() {
             AdBackFloatBlocker,
             HomePageDialogBlocker,
             PushFloatNotificationBlocker,
-            UpdateFloatCardBlocker
+            UpdateFloatCardBlocker,
+            BackgroundDownloadBlocker,
+            TabDeepClean
         )
     }
 }

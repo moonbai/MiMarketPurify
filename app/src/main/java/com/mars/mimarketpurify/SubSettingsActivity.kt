@@ -184,6 +184,10 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
                 }
             }
         }
+        GroupCard {
+            PrefSwitch(activity, Settings.KEY_TAB_DEEP_CLEAN, "隐藏标签时跳过数据加载",
+                "隐藏的 Tab 不仅不显示，还跳过其内容加载，节省流量和内存", enabled = masterOn)
+        }
     }
     GroupCard {
         PrefSwitch(
@@ -218,6 +222,8 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean) {
         PrefSwitch(activity, Settings.KEY_PUSH_FLOAT, "Push悬浮通知", "屏蔽 MiPush 推送的悬浮通知与游戏推广浮窗", enabled = masterOn)
         Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
         PrefSwitch(activity, Settings.KEY_UPDATE_FLOAT_CARD, "升级浮窗卡片", "屏蔽检测到新版本时弹出的浮窗升级提示", enabled = masterOn)
+        Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+        PrefSwitch(activity, Settings.KEY_BLOCK_BG_DOWNLOAD, "屏蔽后台静默下载", "禁止商店在后台自动下载应用更新，节省流量和电量", enabled = masterOn)
     }
     Footer("Tips：隐藏的可能只是标题，不过眼不见为净嘛~")
 }
