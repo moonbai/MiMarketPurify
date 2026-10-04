@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -542,7 +543,6 @@ private data class RefProject(val repoName: String, val url: String, val label: 
 @Composable
 fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
     val colors = MiuixTheme.colorScheme
-    // 检查更新 / 下载状态（问题1：MiuiX 风格弹窗；问题3：下载进度）。
     var updateInfo by remember { mutableStateOf<UpdateCheckResult.Available?>(null) }
     var showUpdate by remember { mutableStateOf(false) }
     var downloading by remember { mutableStateOf(false) }
@@ -611,16 +611,16 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
                     headlineText = "Mars",
                     supportingText = "点此访问作者主页，点点关注",
                     onClick = { openLink(activity, "https://weibo.com/u/3963594403") },
-                ) {
-                    // 作者头像作为尾部组件
-                    SafeDrawableImage(
-                        resId = R.drawable.avatar_mars,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop,
-                    )
-                }
+                    trailingContent = {
+                        SafeDrawableImage(
+                            resId = R.drawable.avatar_mars,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop,
+                        )
+                    },
+                )
             }
 
             // ── 参考项目区块（无分隔线） ──
@@ -673,7 +673,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
             Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
         }
 
-        // ── 检查更新结果弹窗（MiuiX 风格；问题1） ──
+        // ── 检查更新结果弹窗（MiuiX 风格） ──
         if (showUpdate && updateInfo != null) {
             val info = updateInfo!!
             AlertDialog(
@@ -744,7 +744,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
             )
         }
 
-        // ── 下载进度弹窗（MiuiX 风格；问题3） ──
+        // ── 下载进度弹窗（MiuiX 风格） ──
         if (downloading) {
             AlertDialog(
                 onDismissRequest = {},
@@ -788,8 +788,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit) {
         }
     }
 }
-
-private data class GroupCardState(val title: String, val subtitle: String)
 
 private fun openLink(activity: ComponentActivity, url: String) {
     runCatching { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
