@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
@@ -71,7 +70,7 @@ private fun SearchScreen(activity: SearchActivity) {
         }
     }
     val recommendations = remember(recommendSeed) {
-        FeatureRegistry.recommendByCategory(count = 10, seed = recommendSeed)
+        FeatureRegistry.recommendByCategory(count = 5, seed = recommendSeed)
     }
 
     Column(
@@ -82,11 +81,10 @@ private fun SearchScreen(activity: SearchActivity) {
     ) {
         SearchTopBar(query = query, onQueryChange = { query = it }, onBack = { activity.finish() })
 
-        // 搜索结果
         if (isSearching) {
             if (results.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "未找到相关功能", fontSize = 15.sp, color = colors.onSurfaceSecondary)
+                    Text(text = "未找到相关功能", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
                 }
             } else {
                 LazyVerticalGrid(
@@ -104,7 +102,6 @@ private fun SearchScreen(activity: SearchActivity) {
                 }
             }
         } else {
-            // 功能推荐（10 个）
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
@@ -115,8 +112,7 @@ private fun SearchScreen(activity: SearchActivity) {
                 item {
                     Text(
                         text = "功能推荐",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MiuixTheme.textStyles.title3,
                         color = colors.onSurface,
                         modifier = Modifier.padding(bottom = 4.dp),
                     )
@@ -142,10 +138,10 @@ private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onBack:
             modifier = Modifier.clickable { onBack() }.padding(horizontal = 8.dp, vertical = 4.dp))
         Box(
             modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(24.dp))
-                .background(colors.surface).padding(horizontal = 16.dp),
+                .background(colors.surfaceContainer).padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
-            if (query.isEmpty()) Text(text = "搜索功能…", fontSize = 15.sp, color = colors.onSurfaceSecondary)
+            if (query.isEmpty()) Text(text = "搜索功能…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
             TextField(
                 value = query, onValueChange = onQueryChange, singleLine = true,
                 colors = TextFieldDefaults.colors(
@@ -154,7 +150,7 @@ private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onBack:
                     cursorColor = colors.primary, focusedTextColor = colors.onSurface, unfocusedTextColor = colors.onSurface,
                 ),
                 trailingIcon = {
-                    if (query.isNotBlank()) Text(text = "✕", fontSize = 16.sp, color = colors.onSurfaceSecondary,
+                    if (query.isNotBlank()) Text(text = "✕", fontSize = 16.sp, color = colors.onSurfaceVariantSummary,
                         modifier = Modifier.clickable { onQueryChange("") }.padding(8.dp))
                 },
                 modifier = Modifier.fillMaxSize(),
@@ -168,15 +164,15 @@ private fun FeatureSearchCard(feature: FeatureRegistry.Feature, onClick: () -> U
     val colors = MiuixTheme.colorScheme
     val catColor = categoryColors[feature.category] ?: colors.primary
     Column(
-        modifier = Modifier.clip(RoundedCornerShape(16.dp)).background(colors.surface)
+        modifier = Modifier.clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainer)
             .clickable { onClick() }.padding(14.dp),
     ) {
         Box(modifier = Modifier.size(width = 32.dp, height = 4.dp).clip(RoundedCornerShape(2.dp)).background(catColor))
         Spacer(Modifier.height(10.dp))
-        Text(text = feature.title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
+        Text(text = feature.title, style = MiuixTheme.textStyles.body1, color = colors.onSurface, maxLines = 1)
         Spacer(Modifier.height(4.dp))
-        Text(text = feature.summary, fontSize = 11.sp, color = colors.onSurfaceSecondary, maxLines = 2, lineHeight = 15.sp)
+        Text(text = feature.summary, style = MiuixTheme.textStyles.footnote1, color = colors.onSurfaceVariantSummary, maxLines = 2, lineHeight = 15.sp)
         Spacer(Modifier.height(8.dp))
-        Text(text = feature.category, fontSize = 10.sp, color = catColor, fontWeight = FontWeight.Medium)
+        Text(text = feature.category, fontSize = 10.sp, color = catColor)
     }
 }

@@ -7,10 +7,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,9 +37,8 @@ import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.SubSettingsActivity
 import com.mars.mimarketpurify.isNight
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
-import com.mars.mimarketpurify.ui.components.GroupCard
-import com.mars.mimarketpurify.ui.components.NavRow
-import com.mars.mimarketpurify.ui.components.SectionHeader
+import com.mars.mimarketpurify.ui.components.SettingsSection
+import com.mars.mimarketpurify.ui.components.SettingItem
 import com.mars.mimarketpurify.ui.components.SwitchRow
 import io.github.libxposed.service.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -82,7 +82,6 @@ fun MainScreen(activity: MainActivity) {
 
     Column(modifier = Modifier.fillMaxSize().background(colors.background)) {
         BlurHeader(activity = activity)
-        HorizontalDivider(color = colors.dividerLine, thickness = 1.dp)
 
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding()
@@ -96,47 +95,43 @@ fun MainScreen(activity: MainActivity) {
             Spacer(Modifier.height(12.dp))
 
             if (showRecommendations) {
-                SectionHeader("推荐功能", "每 15 秒自动刷新")
-                GroupCard {
-                    recommendations.forEachIndexed { index, feature ->
-                        RecommendRow(feature = feature,
-                            onClick = { activity.startActivity(SubSettingsActivity.intent(activity, feature.page, feature.key)) })
-                        if (index < recommendations.lastIndex) {
-                            HorizontalDivider(color = colors.dividerLine, thickness = 1.dp,
-                                modifier = Modifier.padding(horizontal = 4.dp))
-                        }
+                SettingsSection(topLabel = "推荐功能（每 15 秒自动刷新）") {
+                    recommendations.forEach { feature ->
+                        SettingItem(
+                            headlineText = feature.title,
+                            supportingText = feature.summary,
+                            onClick = {
+                                activity.startActivity(
+                                    SubSettingsActivity.intent(activity, feature.page, feature.key)
+                                )
+                            },
+                        )
                     }
                 }
                 Spacer(Modifier.height(12.dp))
             }
 
-            GroupCard {
+            SettingsSection {
                 SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
                     checked = masterOn.value, enabled = true) { on ->
                     masterOn.value = on; activity.writeRemote(Settings.KEY_MASTER, on)
                 }
             }
 
-            SectionHeader("界面设置", "广告与界面内容清理")
-            GroupCard {
-                NavRow(title = "广告净化", summary = "广告净化", value = adSummary,
-                    enabled = masterOn.value) { activity.openPage(SubSettingsActivity.PAGE_ADS) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(title = "底栏自定义", summary = "底部标签筛选", value = tabsSummary,
-                    enabled = masterOn.value) { activity.openPage(SubSettingsActivity.PAGE_TABS) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(title = "悬浮底栏配置", summary = "底栏颜色、透明度、显示效果参数", value = tabbarSummary,
-                    enabled = masterOn.value) { activity.openPage(SubSettingsActivity.PAGE_TAB_BAR) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(title = "「我的」页精简", summary = "我的页应用推荐、官方入口、清理板块", value = mineSummary,
-                    enabled = masterOn.value) { activity.openPage(SubSettingsActivity.PAGE_MINE) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                NavRow(title = "其他界面精简", summary = "升级记录、搜索相关推荐等零散页面", value = miscSummary,
-                    enabled = masterOn.value) { activity.openPage(SubSettingsActivity.PAGE_MISC) }
+            SettingsSection(topLabel = "界面设置") {
+                SettingItem(headlineText = "广告净化", supportingText = adSummary,
+                    onClick = { activity.openPage(SubSettingsActivity.PAGE_ADS) })
+                SettingItem(headlineText = "底栏自定义", supportingText = tabsSummary,
+                    onClick = { activity.openPage(SubSettingsActivity.PAGE_TABS) })
+                SettingItem(headlineText = "悬浮底栏配置", supportingText = tabbarSummary,
+                    onClick = { activity.openPage(SubSettingsActivity.PAGE_TAB_BAR) })
+                SettingItem(headlineText = "「我的」页精简", supportingText = mineSummary,
+                    onClick = { activity.openPage(SubSettingsActivity.PAGE_MINE) })
+                SettingItem(headlineText = "其他界面精简", supportingText = miscSummary,
+                    onClick = { activity.openPage(SubSettingsActivity.PAGE_MISC) })
             }
 
-            SectionHeader("高级功能", "深度净化与功能增强")
-            GroupCard {
+            SettingsSection(topLabel = "高级功能") {
                 SwitchRow(title = "下载超级岛", summary = "强制让下载进度进入小米超级岛",
                     checked = activity.readLocal(Settings.KEY_ISLAND, true),
                     enabled = masterOn.value) { activity.writeRemote(Settings.KEY_ISLAND, it) }
@@ -150,8 +145,7 @@ fun MainScreen(activity: MainActivity) {
                     enabled = masterOn.value) { activity.writeRemote(Settings.KEY_UPDATE_DIALOG, it) }
             }
 
-            SectionHeader("模块功能", "仅影响本模块的显示方式与调试选项")
-            GroupCard {
+            SettingsSection(topLabel = "模块功能") {
                 SwitchRow(title = "隐藏桌面图标", summary = "仅移除桌面抽屉中的图标",
                     checked = activity.isLauncherIconHidden(), enabled = true) { activity.applyHideIcon(it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
@@ -168,7 +162,7 @@ fun MainScreen(activity: MainActivity) {
 
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
             Text(text = "Tips：开关实时生效，但还是建议重启应用商店",
-                fontSize = MiuiX.MICRO.sp, color = colors.onSurfaceSecondary,
+                fontSize = MiuiX.MICRO.sp, color = colors.onSurfaceVariantSummary,
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 16.dp))
         }
     }
@@ -181,10 +175,10 @@ private fun BlurHeader(activity: MainActivity) {
         .padding(horizontal = MiuiX.PAGE_H.dp, vertical = MiuiX.PAGE_H.dp),
         verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = "Mi Market Purify", fontSize = MiuiX.HOME_TITLE.sp,
+            Text(text = "Mi Market Purify", style = MiuixTheme.textStyles.title2,
                 fontWeight = FontWeight.Bold, color = colors.onSurface)
-            Text(text = "小米应用商店净化与增强", fontSize = MiuiX.CAPTION.sp,
-                color = colors.onSurfaceSecondary, modifier = Modifier.padding(top = 2.dp))
+            Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
+                color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
         }
     }
 }
@@ -193,12 +187,12 @@ private fun BlurHeader(activity: MainActivity) {
 private fun MiuiXSearchBar(onClick: () -> Unit) {
     val colors = MiuixTheme.colorScheme
     Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
-        .background(colors.surface).clickable { onClick() }
+        .background(colors.surfaceContainer).clickable { onClick() }
         .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Text(text = "🔍", fontSize = 16.sp, color = colors.onSurfaceSecondary)
+        Text(text = "🔍", fontSize = 16.sp, color = colors.onSurfaceVariantSummary)
         Spacer(Modifier.width(10.dp))
-        Text(text = "搜索功能…", fontSize = 15.sp, color = colors.onSurfaceSecondary)
+        Text(text = "搜索功能…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
     }
 }
 
@@ -209,10 +203,10 @@ private fun RecommendRow(feature: FeatureRegistry.Feature, onClick: () -> Unit) 
         .clickable { onClick() }.padding(vertical = MiuiX.ROW_PAD_V.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = feature.title, fontSize = MiuiX.ROW_TITLE.sp,
+            Text(text = feature.title, style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.Bold, color = colors.onSurface)
-            Text(text = feature.summary, fontSize = MiuiX.ROW_SUMMARY.sp,
-                color = colors.onSurfaceSecondary, modifier = Modifier.padding(top = 2.dp))
+            Text(text = feature.summary, style = MiuixTheme.textStyles.footnote1,
+                color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
         }
         Text(text = "›", fontSize = 20.sp, color = colors.outline)
     }
@@ -223,7 +217,7 @@ private fun StatusCard(service: XposedService?, night: Boolean) {
     val colors = MiuixTheme.colorScheme
     val titleText: String; val titleColor: Color; val bodyText: String; val bgColor: Color
     if (service == null) {
-        titleText = "模块未激活"; titleColor = colors.onSurfaceSecondary
+        titleText = "模块未激活"; titleColor = colors.onSurfaceVariantSummary
         bodyText = "请在 LSPosed 框架中启用本模块，并在作用域里勾选「应用商店」，然后重启应用商店。"
         bgColor = Color(MiuiX.neutralSoft(night))
     } else {
@@ -234,10 +228,16 @@ private fun StatusCard(service: XposedService?, night: Boolean) {
             else "当前框架不支持远程偏好，开关可能不会立即生效，建议重启一次应用商店。"
         bgColor = Color(MiuiX.STATE_ACTIVE_SOFT)
     }
-    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-        .background(bgColor).padding(horizontal = MiuiX.CARD_PAD_H.dp, vertical = MiuiX.CARD_PAD_V.dp)) {
-        Text(text = titleText, fontSize = MiuiX.ROW_TITLE.sp, fontWeight = FontWeight.Bold, color = titleColor)
-        Text(text = bodyText, fontSize = MiuiX.ROW_SUMMARY.sp, color = colors.onSurfaceSecondary,
-            lineHeight = (MiuiX.ROW_SUMMARY * MiuiX.LINE_SPACING).sp, modifier = Modifier.padding(top = 4.dp))
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = bgColor,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = MiuiX.CARD_PAD_H.dp, vertical = MiuiX.CARD_PAD_V.dp),
+        ) {
+            Text(text = titleText, style = MiuixTheme.textStyles.body1, fontWeight = FontWeight.Bold, color = titleColor)
+            Text(text = bodyText, style = MiuixTheme.textStyles.footnote1, color = colors.onSurfaceVariantSummary,
+                lineHeight = (MiuiX.ROW_SUMMARY * MiuiX.LINE_SPACING).sp, modifier = Modifier.padding(top = 4.dp))
+        }
     }
 }
