@@ -115,30 +115,30 @@ fun MainScreen(
             StatusCard(service = service, night = activity.useDarkTheme())
             Spacer(Modifier.height(12.dp))
 
-        SettingsSection {
-            SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
-                checked = masterOn.value, enabled = true) { on ->
-                masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
-            }
-        }
-
-        if (showRecommendations) {
-            Spacer(Modifier.height(12.dp))
-            SettingsSection(topLabel = "推荐功能") {
-                recommendations.forEach { feature ->
-                    SettingItem(
-                        headlineText = feature.title,
-                        supportingText = feature.summary,
-                        onClick = {
-                            activity.startActivity(
-                                SubSettingsActivity.intent(activity, feature.page, feature.key)
-                            )
-                        },
-                    )
+            SettingsSection {
+                SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
+                    checked = masterOn.value, enabled = true) { on ->
+                    masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
                 }
             }
-            Spacer(Modifier.height(12.dp))
-        }
+
+            if (showRecommendations) {
+                Spacer(Modifier.height(12.dp))
+                SettingsSection(topLabel = "推荐功能") {
+                    recommendations.forEach { feature ->
+                        SettingItem(
+                            headlineText = feature.title,
+                            supportingText = feature.summary,
+                            onClick = {
+                                activity.startActivity(
+                                    SubSettingsActivity.intent(activity, feature.page, feature.key)
+                                )
+                            },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
 
             SettingsSection(topLabel = "界面设置") {
                 SettingItem(headlineText = "广告净化", supportingText = adSummary,
@@ -152,10 +152,6 @@ fun MainScreen(
             }
 
             SettingsSection(topLabel = "高级功能") {
-                // 悬浮底栏（商店）：合并到底栏自定义内，改跳 PAGE_TABS
-                SettingItem(headlineText = "悬浮底栏（商店）", supportingText = "胶囊底栏、液态与单色图标",
-                    onClick = { activity.openPage(SubSettingsActivity.PAGE_TABS) })
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 SwitchRow(title = "下载超级岛", summary = "强制让下载进度进入小米超级岛",
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_ISLAND, true),
                     enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_ISLAND, it) }
@@ -262,22 +258,6 @@ private fun MiuiXSearchBar(onClick: () -> Unit) {
         Text(text = "🔍", fontSize = 16.sp, color = colors.onSurfaceVariantSummary)
         Spacer(Modifier.width(10.dp))
         Text(text = "搜索功能…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
-    }
-}
-
-@Composable
-private fun RecommendRow(feature: FeatureRegistry.Feature, onClick: () -> Unit) {
-    val colors = MiuixTheme.colorScheme
-    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-        .clickable { onClick() }.padding(vertical = MiuiX.ROW_PAD_V.dp, horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = feature.title, style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Bold, color = colors.onSurface)
-            Text(text = feature.summary, style = MiuixTheme.textStyles.footnote1,
-                color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
-        }
-        Text(text = "›", fontSize = 20.sp, color = colors.outline)
     }
 }
 
