@@ -545,9 +545,9 @@ fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
             },
         )
     }
-    SettingsSection(topLabel = "主题模式") {
+    SettingsSection(topLabel = "显示样式") {
         DropdownPreference(
-            title = "外观深浅色",
+            title = "显示样式",
             summary = "选择浅色、深色或跟随系统自动切换",
             valueText = themeLabels[mode],
             entries = listOf(DropdownEntry(items = items)),
@@ -588,7 +588,7 @@ fun PrefTabFilterSpinner(
     // 复用 MiuiX 原生 WindowDropdownPopup 承载多选弹窗（collapseOnSelection=false 保持展开逐项勾选），
     // 条目标题统一使用 body1，与仓库其它条目（PrefSwitch 等）保持一致，不再使用字号偏大的内置标题样式。
     DropdownPreference(
-        title = "底部标签显示",
+        title = "标签显示",
         summary = dynamicSummary,
         enabled = enabled,
         collapseOnSelection = false,
@@ -827,7 +827,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                     "广告净化" to "开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口",
                     "界面精简" to "「我的」页推荐/清理/安全检测/个人信息、详情页精选、底栏角标、升级记录、搜索也在看",
                     "功能增强" to "下载超级岛、非正版APP显示、被隐藏更新显示、升级弹窗拦截",
-                    "底栏自定义" to "自定义底栏显示，添加更新入口，悬浮底栏设置",
+                    "底栏配置" to "自定义底栏显示，添加更新入口，悬浮底栏设置",
                 )
                 features.forEach { (title, desc) ->
                     SettingItem(headlineText = title, supportingText = desc)

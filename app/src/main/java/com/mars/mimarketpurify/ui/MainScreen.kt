@@ -143,11 +143,11 @@ fun MainScreen(
             SettingsSection(topLabel = "界面设置") {
                 SettingItem(headlineText = "广告净化", supportingText = adSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_ADS) })
-                SettingItem(headlineText = "底栏自定义", supportingText = tabsSummary,
+                SettingItem(headlineText = "底栏配置", supportingText = tabsSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_TABS) })
                 SettingItem(headlineText = "「我的」页精简", supportingText = mineSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MINE) })
-                SettingItem(headlineText = "其他界面精简", supportingText = miscSummary,
+                SettingItem(headlineText = "界面精简", supportingText = miscSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MISC) })
             }
 
@@ -257,7 +257,7 @@ private fun MiuiXSearchBar(onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically) {
         Text(text = "🔍", fontSize = 16.sp, color = colors.onSurfaceVariantSummary)
         Spacer(Modifier.width(10.dp))
-        Text(text = "搜索功能…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
+        Text(text = "功能搜索…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
     }
 }
 

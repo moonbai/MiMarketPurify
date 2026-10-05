@@ -53,8 +53,8 @@ class SubSettingsActivity : SettingsBaseActivity() {
         val title = when (page) {
             PAGE_ADS -> "广告净化"
             PAGE_MINE -> "「我的」页精简"
-            PAGE_TABS -> "底部标签栏"
-            PAGE_MISC -> "其他界面精简"
+            PAGE_TABS -> "底栏配置"
+            PAGE_MISC -> "界面精简"
             PAGE_THEME -> "主题与外观"
             else -> page
         }
@@ -142,7 +142,7 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Stri
             HighlightSwitch(activity, Settings.KEY_FRUIT, "领水果入口", "隐藏福利活动 gif 动图入口", masterOn, hl)
             HighlightSwitch(activity, Settings.KEY_INSTALL_RECOMMEND, "安装后推荐", "拦截点击安装后弹出的「用户还喜欢」推荐弹窗", masterOn, hl)
         }
-        Footer("广告净化模块负责开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口")
+        Footer("Tips: 应用商店未来有可能会倒闭，但绝不会变质")
     }
 }
 
@@ -181,7 +181,7 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
         SettingsSection {
             HighlightSwitch(activity, Settings.KEY_TAB_BADGE, "底栏角标", "去掉底部标签页的数字角标与红点", masterOn, hl)
         }
-        Footer("「我的」页精简负责隐藏推荐、清理、安全检测、个人信息等内容")
+        Footer("Tips: 这不是「你的」页，是「我的」页「我的」")
     }
 }
 
@@ -197,12 +197,12 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
             .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
     ) {
-        SettingsSection(topLabel = "底栏标签") {
+        SettingsSection(topLabel = "底栏配置") {
             PrefSwitch(
                 activity = activity,
                 key = Settings.KEY_TAB_FILTER,
-                title = "筛选底部标签",
-                summary = "开启后按下方勾选隐藏不需要的底栏标签（关闭则恢复全部）",
+                title = "底部标签自定义",
+                summary = "开启后在下方勾选需要显示的底栏标签",
                 default = true,
                 enabled = masterOn,
                 onChanged = { activity.refreshSignal.value++ },
@@ -213,7 +213,7 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
         }
         Spacer(Modifier.height(12.dp))
         SettingsSection(topLabel = "增强") {
-            PrefSwitch(activity, Settings.KEY_UPDATE_TAB, "底栏更新入口", "在商店原生底栏注入「更新」入口", default = false, enabled = masterOn)
+            PrefSwitch(activity, Settings.KEY_UPDATE_TAB, "底栏更新入口", "在商店底栏注入「更新」入口", default = false, enabled = masterOn)
             Spacer(Modifier.height(12.dp))
             PrefSwitch(activity, Settings.KEY_TAB_DEEP_CLEAN, "顶栏标签深度清理", "清理首页/榜单等页面顶部的推广子标签", default = true, enabled = masterOn)
         }
@@ -225,8 +225,8 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             PrefSwitch(
                 activity = activity,
                 key = Settings.KEY_FLOATING_BAR,
-                title = "启用悬浮底栏",
-                summary = "替换商店原生贴底栏为居中胶囊导航",
+                title = "悬浮底栏",
+                summary = "替换商店原生底栏为居中胶囊导航",
                 default = false,
                 enabled = masterOn,
                 onChanged = { activity.refreshSignal.value++ },
@@ -236,7 +236,7 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
                     Settings.FLOATING_RADIUS_MIN, Settings.FLOATING_RADIUS_MAX, Settings.FLOATING_RADIUS_DEFAULT, true, format = { "${it}dp" })
                 PrefSlider(activity, Settings.KEY_FLOAT_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）",
                     Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.STORE_FLOAT_ALPHA_DEFAULT, true, format = { "${it}%" })
-                PrefSlider(activity, Settings.KEY_STORE_FLOAT_BOTTOM_MARGIN, "距底栏距离", "悬浮底栏到屏幕底部的间距（dp）",
+                PrefSlider(activity, Settings.KEY_STORE_FLOAT_BOTTOM_MARGIN, "底栏距离", "悬浮底栏到屏幕底部的间距（dp）",
                     Settings.STORE_FLOAT_BOTTOM_MARGIN_MIN, Settings.STORE_FLOAT_BOTTOM_MARGIN_MAX, Settings.STORE_FLOAT_BOTTOM_MARGIN_DEFAULT, true, format = { "${it}dp" })
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID, "液态选中高亮动画", "选中项显示跟随移动的液态胶囊", default = true, enabled = masterOn)
@@ -246,7 +246,7 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
                 PrefColorRow(activity, "底栏背景色", Settings.KEY_STORE_FLOAT_BG_COLOR,
                     Settings.STORE_FLOAT_BG_COLOR_LIGHT, Settings.STORE_FLOAT_BG_COLOR_DARK)
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                PrefColorRow(activity, "选中项背景色", Settings.KEY_STORE_FLOAT_SELECT_BG_COLOR,
+                PrefColorRow(activity, "选中背景色", Settings.KEY_STORE_FLOAT_SELECT_BG_COLOR,
                     Settings.STORE_FLOAT_SELECT_BG_COLOR_LIGHT, Settings.STORE_FLOAT_SELECT_BG_COLOR_DARK)
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 PrefColorRow(activity, "普通文字颜色", Settings.KEY_STORE_FLOAT_TEXT_NORMAL_COLOR,
@@ -257,11 +257,11 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             }
         }
 
-        Footer("选择需要展示的底栏标签，取消勾选后对应标签将被隐藏。")
+        Footer("Tips: 在这里你可以享受五彩斑斓的商店底栏")
     }
 }
 
-// ═══════════════ 其他界面精简 ═══════════════
+// ═══════════════ 界面精简 ═══════════════
 
 @Composable
 private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: String = "") {
@@ -282,7 +282,7 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
             HighlightSwitch(activity, Settings.KEY_BLOCK_BG_DOWNLOAD, "屏蔽后台静默下载", "禁止商店在后台自动下载应用更新", masterOn, hl)
             HighlightSwitch(activity, Settings.KEY_LONG_PRESS_JUMP, "长按跳转插件", "长按下载按钮跳转到插件主页", masterOn, hl)
         }
-        Footer("其他界面精简负责详情页精选、升级记录、搜索也在看、顶栏推广位等")
+        Footer("Tips: 应用商店乱七八糟的东西真多啊")
     }
 }
 
@@ -295,12 +295,12 @@ private fun PluginFloatingBarSection(activity: SubSettingsActivity) {
     val pluginBarOn by remember(tick) {
         mutableStateOf(activity.readLocal(Settings.KEY_FLOAT_BAR_ENABLE, true))
     }
-    SettingsSection(topLabel = "插件悬浮底栏") {
+    SettingsSection(topLabel = "插件底栏") {
         PrefSwitch(
             activity = activity,
             key = Settings.KEY_FLOAT_BAR_ENABLE,
-            title = "启用插件悬浮底栏",
-            summary = "在主页 / 关于页底部显示居中胶囊导航（主页、关于切换栏）",
+            title = "插件悬浮底栏",
+            summary = "在主页 / 关于页底部显示居中胶囊导航",
             default = true,
             enabled = true,
             affectsStore = false,
@@ -308,11 +308,11 @@ private fun PluginFloatingBarSection(activity: SubSettingsActivity) {
         )
         if (pluginBarOn) {
             Spacer(Modifier.height(12.dp))
-            PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标", default = true, enabled = true)
+            PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "标签文字", "关闭后悬浮底栏只保留图标", default = true, enabled = true)
             Spacer(Modifier.height(12.dp))
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, true, format = { "${it}dp" })
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, true, format = { "${it}%" })
-            PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部外边距", "悬浮底栏到屏幕底部的间距（dp）", Settings.FLOATING_BOTTOM_MARGIN_MIN, Settings.FLOATING_BOTTOM_MARGIN_MAX, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, true, format = { "${it}dp" })
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "底部外边距", "悬浮底栏到屏幕底部的间距（dp）", Settings.FLOATING_BOTTOM_MARGIN_MIN, Settings.FLOATING_BOTTOM_MARGIN_MAX, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, true, format = { "${it}dp" })
             Spacer(Modifier.height(12.dp))
             PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR,
                 Settings.FLOAT_BG_COLOR_LIGHT, Settings.FLOAT_BG_COLOR_DARK)
@@ -364,7 +364,7 @@ private fun ThemeScreen(activity: SubSettingsActivity) {
                 activity = activity,
                 key = Settings.KEY_UI_SCALE,
                 title = "界面缩放",
-                summary = "整体放大 / 缩小本插件界面（仅作用于本插件，不影响应用商店）",
+                summary = "整体放大 / 缩小本插件界面",
                 min = 80, max = 125, default = 100, enabled = true,
                 format = { "${it}%" },
                 onChanged = { v ->
@@ -406,6 +406,6 @@ private fun ThemeScreen(activity: SubSettingsActivity) {
             }
         }
 
-        Footer("主题模式与界面缩放改动后立即重建本页生效；预测性返回需 Android 13 及以上系统支持。")
+        Footer("Tips: 这个界面似乎没太大的作用~")
     }
 }
