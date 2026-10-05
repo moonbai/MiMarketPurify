@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.ui.ModuleTheme
 import kotlinx.coroutines.delay
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 class SearchActivity : ComponentActivity() {
 

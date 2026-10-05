@@ -24,6 +24,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.ui.ModuleTheme
 import com.mars.mimarketpurify.useDarkTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 隐私政策页：通过 WebView 加载本地 HTML 文件。

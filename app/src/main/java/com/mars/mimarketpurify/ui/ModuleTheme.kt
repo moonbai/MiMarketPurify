@@ -2,6 +2,7 @@ package com.mars.mimarketpurify.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import com.mars.mimarketpurify.uiScaleValue
@@ -21,8 +22,9 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
  */
 @Composable
 fun ModuleTheme(content: @Composable () -> Unit) {
-    val dark = useDarkTheme()
-    val scale = uiScaleValue()
+    val ctx = LocalContext.current
+    val dark = ctx.useDarkTheme()
+    val scale = ctx.uiScaleValue()
     val base = LocalDensity.current
     CompositionLocalProvider(
         LocalDensity provides Density(base.density * scale, base.fontScale * scale),
