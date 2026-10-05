@@ -50,9 +50,6 @@ import io.github.libxposed.service.XposedService
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.delay
 
-// ═══════════ 重启应用商店工具函数 ═══════════
-
-/** 强制停止应用商店并重新启动（优先 root force-stop，无 root 回退 killBackgroundProcesses） */
 private fun restartMarket(context: Context) {
     MarketRestarter.restart(context)
 }
@@ -60,7 +57,6 @@ private fun restartMarket(context: Context) {
 @Composable
 fun MainScreen(
     activity: MainActivity,
-    /** 插件悬浮底栏关闭时（需求4/7），底部切换栏隐藏，改由顶栏「关于」按钮进入关于页。 */
     showAboutButton: Boolean = false,
     onOpenAbout: () -> Unit = {},
 ) {
@@ -97,15 +93,12 @@ fun MainScreen(
         onDispose { App.removeServiceStateListener(listener) }
     }
 
-    // 首页共享的 LayerBackdrop：下方滚动内容作为源，顶栏消费它实现固定高斯模糊。
     val backdrop = rememberLayerBackdrop()
     val density = LocalDensity.current
-    // 初始估计顶栏高度（状态栏 + 内容），首帧布局后立即修正，避免明显跳动
     var headerHeightPx by remember { mutableStateOf(with(density) { 96.dp.roundToPx() }) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
 
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        // 滚动内容在底层，顶部留出固定顶栏空间
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -122,7 +115,6 @@ fun MainScreen(
             StatusCard(service = service, night = activity.useDarkTheme())
             Spacer(Modifier.height(12.dp))
 
-        // 总开关：作为全局总控，置于「推荐功能」上方，方便优先决定是否启用
         SettingsSection {
             SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
                 checked = masterOn.value, enabled = true) { on ->
@@ -160,10 +152,9 @@ fun MainScreen(
             }
 
             SettingsSection(topLabel = "高级功能") {
-                // 「悬浮底栏（商店）」由「界面设置」移入「高级功能」（需求6 重排）：
-                // 它是针对应用商店的 Hook 增强，与下方下载超级岛 / 细节修正 / 升级提醒弹窗同类。
+                // 悬浮底栏（商店）：合并到底栏自定义内，改跳 PAGE_TABS
                 SettingItem(headlineText = "悬浮底栏（商店）", supportingText = "胶囊底栏、液态与单色图标",
-                    onClick = { activity.openPage(SubSettingsActivity.PAGE_TAB_BAR) })
+                    onClick = { activity.openPage(SubSettingsActivity.PAGE_TABS) })
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 SwitchRow(title = "下载超级岛", summary = "强制让下载进度进入小米超级岛",
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_ISLAND, true),
@@ -179,7 +170,6 @@ fun MainScreen(
             }
 
             SettingsSection(topLabel = "模块功能") {
-                // 主题与外观入口调整到分组第一个位置（需求5）
                 SettingItem(
                     headlineText = "主题与外观",
                     supportingText = "深色模式、预测性返回、界面缩放、悬浮底栏",
@@ -189,7 +179,6 @@ fun MainScreen(
                 SwitchRow(title = "隐藏桌面图标", summary = "仅移除桌面抽屉中的图标",
                     checked = activity.isLauncherIconHidden(), enabled = true) { activity.applyHideIcon(it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                // 「随机推荐」开关已移入「主题与外观」（需求5）；此处不再重复。
                 SwitchRow(title = "调试模式", summary = "开启后将统一日志输出",
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, false),
                     enabled = true) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, it) }
@@ -201,7 +190,6 @@ fun MainScreen(
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 16.dp))
         }
 
-        // 固定模糊顶栏：覆盖在滚动内容之上，消费同一 LayerBackdrop 实现实时高斯模糊
         BlurHeader(
             activity = activity,
             backdrop = backdrop,
@@ -212,8 +200,6 @@ fun MainScreen(
         )
     }
 }
-
-// ═══════════ 顶栏（含重启按钮） ═══════════
 
 @Composable
 private fun BlurHeader(
@@ -241,7 +227,6 @@ private fun BlurHeader(
                 Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
                     color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
             }
-            // 插件悬浮底栏关闭时（需求4/7）：底部切换栏隐藏，这里提供「关于」入口，避免无法进入关于页。
             if (showAboutButton) {
                 Box(
                     modifier = Modifier
@@ -254,7 +239,6 @@ private fun BlurHeader(
                 }
                 Spacer(Modifier.width(8.dp))
             }
-            // 重启按钮：浅色底胶囊，点击直接重启（取消二次确认）
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))

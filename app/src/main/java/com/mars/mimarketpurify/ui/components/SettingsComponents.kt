@@ -62,6 +62,7 @@ import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.SettingsBaseActivity
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.PrivacyPolicyActivity
+import com.mars.mimarketpurify.useDarkTheme
 import top.yukonga.miuix.kmp.basic.ColorPicker
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -88,7 +89,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 
-// ==================== SettingItem（深色模式修复：显式设 onSurface 色） ====================
+// ==================== SettingItem ====================
 
 @Composable
 fun SettingItem(
@@ -109,7 +110,7 @@ fun SettingItem(
             Text(
                 text = headlineText,
                 style = MiuixTheme.textStyles.body1,
-                color = colors.onSurface,  // ← 修复：显式设色，深色模式下为白色
+                color = colors.onSurface,
             )
             if (supportingText.isNotEmpty()) {
                 Text(
@@ -140,7 +141,6 @@ fun SettingsSection(
                 text = it,
                 color = MiuixTheme.colorScheme.primary,
                 style = MiuixTheme.textStyles.footnote1,
-                // 左内边距与卡片内行内容(20dp)一致，使分区标题与各功能标题左边缘对齐
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
         }
@@ -257,7 +257,6 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                 color = colors.onSurface,
             )
             Spacer(Modifier.weight(1f))
-            // 重启按钮：浅色底胶囊，点击直接重启（取消二次确认）
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
@@ -278,7 +277,7 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
 
 
 
-// ==================== 开关行（拇指色恢复白色，通用性最佳） ====================
+// ==================== 开关行 ====================
 
 @Composable
 fun SwitchRow(
@@ -286,7 +285,7 @@ fun SwitchRow(
     summary: String,
     checked: Boolean,
     enabled: Boolean,
-    /** 是否影响应用商店（远程偏好无法实时生效时需重启商店）；决定提示条是否带「重启商店」按钮 */
+    /** affectsStore=true 时弹出带「重启商店」按钮的提示 */
     affectsStore: Boolean = true,
     onCheckedChange: (Boolean) -> Unit,
 ) {
@@ -296,7 +295,6 @@ fun SwitchRow(
     val scope = rememberCoroutineScope()
     var isChecked by remember(checked) { mutableStateOf(checked) }
 
-    /** 切换后：先回写状态，再按需弹出 Snackbar 提示（含可选「重启商店」Action）。 */
     fun toggle(next: Boolean) {
         isChecked = next
         onCheckedChange(next)
@@ -306,7 +304,8 @@ fun SwitchRow(
                     .getBoolean(Settings.KEY_SWITCH_HINT, true)
                 if (!hintOn) return@launch
                 val msg = "$title：${if (next) "已开启" else "已关闭"}"
-                val needsRestart = affectsStore && !Settings.remotePrefsAvailable()
+                // affectsStore=true 时始终显示「重启商店」按钮
+                val needsRestart = affectsStore
                 val result = snackbarHost.showSnackbar(
                     message = msg,
                     actionLabel = if (needsRestart) "重启商店" else null,
@@ -343,7 +342,7 @@ fun SwitchRow(
             onCheckedChange = { toggle(it) },
             enabled = enabled,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,       // 白色拇指：浅色轨道/深色轨道上都清晰
+                checkedThumbColor = Color.White,
                 checkedTrackColor = colors.primary,
                 uncheckedThumbColor = Color.White,
                 uncheckedTrackColor = Color(MiuiX.SWITCH_TRACK_OFF),
@@ -458,12 +457,8 @@ fun PrefSwitch(
     }
 }
 
-// ==================== 偏好绑定：主题模式（MiuiX SpinnerPreference 下拉单选） ====================
+// ==================== 偏好绑定：主题模式 ====================
 
-/**
- * 主题模式：跟随系统 / 浅色 / 深色，使用 MiuiX 的 [WindowSpinnerPreference] 下拉单选控件。
- * 选中项以内联文本展示，展开为下拉菜单（带勾选标记）；改动后即时重建本页生效。
- */
 @Composable
 fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
     val tick by activity.refreshSignal
@@ -488,7 +483,6 @@ fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
             summary = "选择浅色 / 深色，或跟随系统自动切换",
             onSelectedIndexChange = { index ->
                 mode = index
-                // 主题模式只影响本插件 UI，存模块自身 SP（不经 XposedService），与 useDarkTheme 读取同源
                 activity.writeLocalInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, index)
                 onApplied()
             },
@@ -496,13 +490,8 @@ fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
     }
 }
 
-// ==================== 偏好绑定：底部标签筛选（MiuiX Grouped SpinnerPreference 伪多选） ====================
+// ==================== 偏好绑定：底部标签筛选 ====================
 
-/**
- * 底部标签筛选：使用 MiuiX 的 [WindowSpinnerPreference]（多选项 + [collapseOnSelection] = false）实现「伪多选」——
- * 单组 Spinner 展开后逐项勾选，选中态以勾选标记展示，关闭筛选开关时整体隐藏。
- * 与原本逐条 Checkbox 不同，这里把全部标签纳入一个下拉，交互更紧凑、与 MiuiX 设置语汇统一。
- */
 @Composable
 fun PrefTabFilterSpinner(
     activity: SettingsBaseActivity,
@@ -532,7 +521,7 @@ fun PrefTabFilterSpinner(
     )
 }
 
-// ==================== 偏好绑定：数值滑杆（Adjust Volume 样式：可滑可改数值） ====================
+// ==================== 偏好绑定：数值滑杆 ====================
 
 @Composable
 fun PrefSlider(
@@ -549,7 +538,6 @@ fun PrefSlider(
 ) {
     val tick by activity.refreshSignal
     var value by remember(tick) { mutableStateOf(activity.readLocalInt(key, default)) }
-    // 显示文本由 format(value) 派生；输入时解析其中的数字并回写，保持单位（dp/%/…）不变。
     var textValue by remember(tick) { mutableStateOf(format(value)) }
     val colors = MiuixTheme.colorScheme
 
@@ -578,7 +566,6 @@ fun PrefSlider(
                     modifier = Modifier.padding(top = 3.dp),
                 )
             }
-            // 可编辑数值输入框：既能跟滑杆联动，也能直接键入数值后回车确认（Adjust Volume 样式）。
             BasicTextField(
                 value = textValue,
                 onValueChange = { new ->
@@ -620,16 +607,19 @@ fun PrefSlider(
     }
 }
 
-// ==================== 偏好绑定：颜色选择 ====================
+// ==================== 偏好绑定：颜色选择（深色模式适配 + 双默认色） ====================
 
 @Composable
 fun PrefColorRow(
     activity: SettingsBaseActivity,
     title: String,
     key: String,
-    defaultColor: Int,
+    defaultColorLight: Int,
+    defaultColorDark: Int,
 ) {
     val tick by activity.refreshSignal
+    val dark = activity.useDarkTheme()
+    val defaultColor = if (dark) defaultColorDark else defaultColorLight
     var stored by remember(tick) { mutableStateOf(activity.readLocalInt(key, -1)) }
     val shown = if (stored == -1) defaultColor else stored
     var pickerColor by remember { mutableStateOf(shown) }
@@ -666,6 +656,9 @@ fun PrefColorRow(
     if (open) {
         AlertDialog(
             onDismissRequest = { open = false },
+            containerColor = colors.surfaceContainer,
+            titleContentColor = colors.onSurface,
+            textContentColor = colors.onSurface,
             confirmButton = {
                 TextButton(onClick = {
                     activity.writeRemoteInt(key, pickerColor)
@@ -680,7 +673,7 @@ fun PrefColorRow(
                     open = false
                 }) { Text("恢复默认", color = colors.onSurfaceVariantSummary) }
             },
-            title = { Text("选择颜色", color = colors.onSurface) },
+            title = { Text("选择颜色") },
             text = {
                 ColorPicker(
                     color = Color(pickerColor),
@@ -704,7 +697,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
     var downloadProgress by remember { mutableStateOf(0f) }
     val scrollState = rememberScrollState()
 
-    // 系统返回键：关于页内统一返回（独立 Activity 关闭自身；主页内回到首页标签）
     BackHandler(onBack = onBack)
 
     val doCheckUpdate: () -> Unit = {
@@ -722,15 +714,10 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
         }.start()
     }
 
-    // LayerBackdrop 捕获「动态光晕背景」；内联「检查更新」按钮消费它，实现真实的高斯模糊。
     val backdrop = rememberLayerBackdrop()
-
-    // 「向上滑动」进度 0→1（滚动 320px 封顶）：动态光晕背景随之上滑淡出。
     val scrollProgress by remember { derivedStateOf { (scrollState.value / 320f).coerceIn(0f, 1f) } }
 
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        // MiuiX 风格「高斯模糊动态背景」：主题色柔和光晕，缓慢漂移；上滑时淡出。
-        // 该层被 layerBackdrop 捕获，供内联「检查更新」毛玻璃按钮做真实高斯模糊采样。
         AboutFloatingBackground(
             modifier = Modifier
                 .fillMaxSize()
@@ -738,12 +725,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             alpha = 1f - scrollProgress,
         )
 
-        // 首屏留白说明：
-        //  - heroTopGap：图标距页面顶部的留白（首屏大留白、近似垂直居中）
-        //  - heroBottomGap：检查更新按钮距下方「功能」区块的留白（随屏幕高度缩放）
-        //  - 三者配合让 Hero 居上、检查更新按钮内联其下方，滚动后整体自然上移露出后续区块
         val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-        // 取屏幕高度的28％和10％
         val heroTopGap = screenHeight * 0.20f
         val heroBottomGap = screenHeight * 0.10f
         Column(
@@ -755,18 +737,14 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                 .padding(bottom = FloatingTabBarDefaults.Height + floatingBarInset + 16.dp),
         ) {
             Spacer(Modifier.height(heroTopGap))
-            // 顶部 Hero：图标/版本/描述（无背景卡片、无背景模糊、无文字阴影）
             AboutHeroHeader(activity = activity)
-            // Hero 与「检查更新」按钮之间的间距；本轮在上一版(20dp)基础上再下移一些
             Spacer(Modifier.height(heroBottomGap))
-            // 检查更新：长条圆角矩形毛玻璃按钮，内联在 Hero 正下方
             AboutUpdateBar(
                 activity = activity,
                 onClick = doCheckUpdate,
                 backdrop = backdrop,
                 modifier = Modifier.fillMaxWidth(),
             )
-            // 按钮与下方「功能」区块之间的间距（随屏幕高度缩放）
             Spacer(Modifier.height(heroBottomGap))
 
             SettingsSection(topLabel = "功能") {
@@ -941,12 +919,6 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
 
 // ==================== 关于页：模糊顶栏（Hero Header） ====================
 
-/**
- * 通用毛玻璃容器：从父组件传入 [LayerBackdrop]，对页面内容做高斯模糊采样。
- * 参考 HyperModifier 的 SoftGlassSurface / DeadlinerMiuixScaffold，使用 Miuix KMP 自带的
- * [rememberLayerBackdrop] + [floatingGlassSurface] 替代原 ViewBackdropSampler，避免整窗
- * PixelCopy，同时保证关于页 Hero 与底栏、首页顶栏都有真实模糊。
- */
 @Composable
 internal fun AboutGlassCard(
     backdrop: LayerBackdrop?,
@@ -983,10 +955,6 @@ internal fun AboutGlassCard(
     )
 }
 
-/**
- * 关于页顶部头图：无背景卡片（图标/版本/描述直接落在页面底色上）、居中排布，
- * 无背景模糊、无文字阴影；点击跳转到仓库。
- */
 @Composable
 private fun AboutHeroHeader(activity: ComponentActivity) {
     val colors = MiuixTheme.colorScheme
@@ -1024,15 +992,8 @@ private fun AboutHeroHeader(activity: ComponentActivity) {
     }
 }
 
-// ==================== 关于页：MiuiX 风格动态光晕背景 ====================
+// ==================== 关于页：动态光晕背景 ====================
 
-/**
- * 「高斯模糊动态背景」：以主题色派生的柔和高光色，绘制 3 个缓慢漂移的径向光晕铺满整页，
- * 作为关于页底图（参考 HyperModifier 的 AboutFloatingBackground / Deadliner 浮动光晕）。
- *
- * 该层被 [layerBackdrop] 捕获，底部「检查更新」毛玻璃按钮据此做真实高斯模糊采样；
- * [alpha] 随滚动进度衰减（上滑淡出），让内容区回归纯净底色。
- */
 @Composable
 private fun AboutFloatingBackground(modifier: Modifier = Modifier, alpha: Float) {
     val transition = rememberInfiniteTransition(label = "aboutFloatingBackground")
@@ -1098,7 +1059,6 @@ private fun AboutFloatingBackground(modifier: Modifier = Modifier, alpha: Float)
     }
 }
 
-/** 由主题色派生高饱和、明亮度适中的高光色；[hueShift] 生成邻近色相，避免多色光晕发灰。 */
 private fun vividGlowColor(color: Color, hueShift: Float): Color {
     val hsl = FloatArray(3)
     ColorUtils.colorToHSL(color.toArgb(), hsl)
@@ -1112,12 +1072,8 @@ private fun vividGlowColor(color: Color, hueShift: Float): Color {
     return Color(ColorUtils.HSLToColor(hsl))
 }
 
-// ==================== 关于页：检查更新按钮（长条毛玻璃） ====================
+// ==================== 关于页：检查更新按钮 ====================
 
-/**
- * 关于页「检查更新」长条圆角矩形毛玻璃按钮，内联在 Hero 正下方：
- * 文字主色高亮，点击触发检查更新。毛玻璃不可用时回退半透明纯色。
- */
 @Composable
 private fun AboutUpdateBar(
     activity: ComponentActivity,
@@ -1126,15 +1082,12 @@ private fun AboutUpdateBar(
     modifier: Modifier = Modifier,
 ) {
     val isDark = MiuixTheme.colorScheme.onSurface.luminance() > 0.5f
-    // 长条圆角矩形（半径小于半高，区别于全圆角胶囊）
     val barShape = RoundedCornerShape(20.dp)
-    // 毛玻璃着色：亮色近白、暗色用 surfaceContainer，保证在动态光晕上清晰可见
     val glassTint = if (isDark) {
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.62f)
     } else {
         Color.White.copy(alpha = 0.58f)
     }
-    // 边缘高光：顶部亮、底部弱，模拟玻璃反光
     val edgeBrush = Brush.verticalGradient(
         colors = listOf(
             Color.White.copy(alpha = if (isDark) 0.22f else 0.72f),

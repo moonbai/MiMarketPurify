@@ -44,7 +44,6 @@ object Settings {
     const val KEY_FLOAT_TEXT_SELECT_COLOR = "float_bar_text_select_color"
 
     // ===== 商店悬浮底栏（Hook）专属配色：与「插件本体底栏」配色相互独立、互不影响 =====
-    // 商店 Hook（ComposeFloatingBarHost）改读这组 key；插件本体底栏继续读上面的 KEY_FLOAT_*_COLOR。
     const val KEY_STORE_FLOAT_BG_COLOR = "store_float_bar_bg_color"
     const val KEY_STORE_FLOAT_SELECT_BG_COLOR = "store_float_bar_select_bg_color"
     const val KEY_STORE_FLOAT_TEXT_NORMAL_COLOR = "store_float_bar_text_normal_color"
@@ -57,17 +56,33 @@ object Settings {
     const val KEY_FLOAT_ANIM_SLIDER = "float_bar_anim_slider"
     const val KEY_FLOAT_ANIM_PRESS = "float_bar_anim_press"
 
+    // ===== 商店悬浮底栏颜色默认值（浅色） =====
+    const val STORE_FLOAT_BG_COLOR_LIGHT = 0xFFF2F2F2.toInt()
+    const val STORE_FLOAT_SELECT_BG_COLOR_LIGHT = 0xFFDADADA.toInt()
+    const val STORE_FLOAT_TEXT_NORMAL_COLOR_LIGHT = 0xFF000000.toInt()
+    const val STORE_FLOAT_TEXT_SELECT_COLOR_LIGHT = 0xFF000000.toInt()
+    const val FLOAT_BG_COLOR_LIGHT = 0xFFF2F2F2.toInt()
+    const val FLOAT_SELECT_BG_COLOR_LIGHT = 0xFFDADADA.toInt()
+    const val FLOAT_TEXT_NORMAL_COLOR_LIGHT = 0xFF000000.toInt()
+    const val FLOAT_TEXT_SELECT_COLOR_LIGHT = 0xFF000000.toInt()
+
+    // ===== 商店悬浮底栏颜色默认值（深色） =====
+    const val STORE_FLOAT_BG_COLOR_DARK = 0xFF1A1A1A.toInt()
+    const val STORE_FLOAT_SELECT_BG_COLOR_DARK = 0xFF333333.toInt()
+    const val STORE_FLOAT_TEXT_NORMAL_COLOR_DARK = 0xFFB0B0B0.toInt()
+    const val STORE_FLOAT_TEXT_SELECT_COLOR_DARK = 0xFFFFFFFF.toInt()
+    const val FLOAT_BG_COLOR_DARK = 0xFF1A1A1A.toInt()
+    const val FLOAT_SELECT_BG_COLOR_DARK = 0xFF333333.toInt()
+    const val FLOAT_TEXT_NORMAL_COLOR_DARK = 0xFFB0B0B0.toInt()
+    const val FLOAT_TEXT_SELECT_COLOR_DARK = 0xFFFFFFFF.toInt()
+
     // ===== 商店悬浮底栏（Hook）独立外观参数：与插件本体底栏彻底解耦 =====
-    // 「添加回」圆角半径 / 背景透明度 / 距底栏距离，并各自对应一套仅作用于商店底栏的 key，
-    // 不再复用插件底栏的 KEY_FLOATING_BAR_RADIUS / KEY_FLOATING_BAR_BOTTOM_MARGIN。
     const val KEY_STORE_FLOAT_BOTTOM_MARGIN = "store_float_bar_bottom_margin"
 
     const val FLOATING_ALPHA_MIN = 35
     const val FLOATING_ALPHA_MAX = 100
     const val FLOATING_ALPHA_DEFAULT = 75
 
-    // 商店悬浮底栏独立透明度默认值：对齐原 FloatingTabBar 内置 BarAlpha(0.4)，
-    // 使「添加回」控件前的默认观感不被破坏（0.4 → 40%）。
     const val STORE_FLOAT_ALPHA_DEFAULT = 40
     const val STORE_FLOAT_BOTTOM_MARGIN_MIN = 0
     const val STORE_FLOAT_BOTTOM_MARGIN_MAX = 48
@@ -136,20 +151,15 @@ object Settings {
     const val KEY_UPDATE_TAB = "update_tab_entry"
 
     // ═══════════════ 新增功能 ═══════════════
-    /** 长按下载按钮跳转插件主页 */
     const val KEY_LONG_PRESS_JUMP = "long_press_jump"
-    /** 拦截安装后推荐弹窗（复用 KEY_SEARCH 开关控制） */
     const val KEY_INSTALL_RECOMMEND = "install_recommend"
 
     /** 主题模式：0=跟随系统，1=浅色，2=深色（模块自身 SP，不经目标 App） */
     const val KEY_THEME_MODE = "theme_mode"
 
     // ═══════════════ 外观（模块自身 UI）══════════════
-    /** 预测性返回：针对本插件自身 Activity，默认开启 */
     const val KEY_PREDICTIVE_BACK = "predictive_back"
-    /** 界面缩放：百分比整数（80~125），100=原始大小（模块自身 UI，不经目标 App） */
     const val KEY_UI_SCALE = "ui_scale"
-    /** 开关操作提示：切换功能开关后是否弹出 Snackbar 提示（模块自身 SP，默认开启） */
     const val KEY_SWITCH_HINT = "switch_hint"
 
     // ═══════════════ 读取缓存 ═══════════════
@@ -251,24 +261,18 @@ object Settings {
         getInt(KEY_FLOATING_BAR_BOTTOM_MARGIN, FLOATING_BOTTOM_MARGIN_DEFAULT)
             .coerceIn(FLOATING_BOTTOM_MARGIN_MIN, FLOATING_BOTTOM_MARGIN_MAX)
 
-    // ── 商店悬浮底栏独立外观参数 getter（与插件本体底栏彻底解耦）──
-
-    /** 商店底栏圆角半径（dp）：读取专属 key KEY_FLOAT_CORNER_RADIUS，缺省沿用原默认 29。 */
     fun storeBarRadiusDp(): Int =
         getInt(KEY_FLOAT_CORNER_RADIUS, FLOATING_RADIUS_DEFAULT)
             .coerceIn(FLOATING_RADIUS_MIN, FLOATING_RADIUS_MAX)
 
-    /** 商店底栏背景透明度（%）：读取专属 key KEY_FLOAT_BAR_ALPHA，缺省 40%（对齐 BarAlpha）。 */
     fun storeBarAlphaPercent(): Int =
         getInt(KEY_FLOAT_BAR_ALPHA, STORE_FLOAT_ALPHA_DEFAULT)
             .coerceIn(FLOATING_ALPHA_MIN, FLOATING_ALPHA_MAX)
 
-    /** 商店底栏距屏幕底部间距（dp）：读取专属 key KEY_STORE_FLOAT_BOTTOM_MARGIN，缺省 4。 */
     fun storeBarBottomMarginDp(): Int =
         getInt(KEY_STORE_FLOAT_BOTTOM_MARGIN, STORE_FLOAT_BOTTOM_MARGIN_DEFAULT)
             .coerceIn(STORE_FLOAT_BOTTOM_MARGIN_MIN, STORE_FLOAT_BOTTOM_MARGIN_MAX)
 
-    /** 插件本体悬浮底栏（主页/关于页底部胶囊）是否启用，默认开启。 */
     fun isPluginBarEnabled(): Boolean = isEnabled(KEY_FLOAT_BAR_ENABLE, true)
 
     fun getKeptTabs(): Set<String> {

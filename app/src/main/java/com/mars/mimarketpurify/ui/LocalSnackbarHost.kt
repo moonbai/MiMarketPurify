@@ -3,7 +3,10 @@ package com.mars.mimarketpurify.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.darkColorScheme
@@ -15,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.mars.mimarketpurify.useDarkTheme
 
 /**
@@ -33,28 +37,37 @@ val LocalSnackbarHost = compositionLocalOf<SnackbarHostState?> { null }
  * 提供一个 [SnackbarHostState] 并在内容底部安装 [SnackbarHost] 容器。
  *
  * 模块内所有 Compose 页面经 [ModuleTheme] 间接调用本函数，因此任意位置的开关 / 按钮都能
- * 通过 [LocalSnackbarHost] 弹出 Snackbar 提示。内容根布局会被包进一层 [Box]（撑满全屏），
- * 以便 Snackbar 悬浮于底部中央、绘制在所有页面内容之上。
+ * 通过 [LocalSnackbarHost] 弹出 Snackbar 提示。
  *
- * Snackbar 自身用一套与主题明暗同步的 [MaterialTheme] 着色，避免在深色模式下出现
- * 浅色-on-浅色的不可读问题。
- *
- * @param content 页面内容。
+ * Snackbar 外观：圆角 16dp + 半透明 surfaceContainerHigh + 水平内边距 16dp，
+ * 替代默认纯黑背景，视觉更柔和、与 MiuiX 风格统一。
  */
 @Composable
 fun ProvideSnackbarHost(content: @Composable () -> Unit) {
     val hostState = remember { SnackbarHostState() }
     val dark = LocalContext.current.useDarkTheme()
+    val colors = if (dark) darkColorScheme() else lightColorScheme()
+
     Box(modifier = Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalSnackbarHost provides hostState) {
             content()
         }
-        MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+        MaterialTheme(colorScheme = colors) {
             SnackbarHost(
                 hostState = hostState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .navigationBarsPadding(),
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                snackbar = { snackbarData ->
+                    Snackbar(
+                        snackbarData = snackbarData,
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = colors.surfaceContainerHigh.copy(alpha = 0.88f),
+                        contentColor = colors.onSurface,
+                        actionColor = colors.primary,
+                    )
+                },
             )
         }
     }

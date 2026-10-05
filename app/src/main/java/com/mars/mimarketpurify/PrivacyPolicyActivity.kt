@@ -87,9 +87,9 @@ private fun PrivacyPolicyScreen(dark: Boolean, onBack: () -> Unit) {
         // WebView 内容（跟随模块主题模式：深色 / 浅色）
         // 关键点：WebView 的 prefers-color-scheme 取决于其 Context 的 uiMode，
         // 而本模块各 Activity 的 AppTheme 为浅色（与 useDarkTheme() 解耦），
-        // 因此这里显式把 WebView 的 Context 切成深色 uiMode，使 privacy_policy.html
+        // 因此这里显式把 WebView 的 Context 切成对应 uiMode，使 privacy_policy.html
         // 内 @media (prefers-color-scheme: dark) 的样式在「模块强制深色 / 系统浅色」
-        // 场景下也能正确生效，避免深色模式下仍是浅色网页。
+        // 场景下也能正确生效。
         AndroidView(
             factory = { context ->
                 val webContext = if (dark) {
@@ -106,13 +106,13 @@ private fun PrivacyPolicyScreen(dark: Boolean, onBack: () -> Unit) {
                     settings.defaultTextEncodingName = "UTF-8"
 
                     // ===== 深色模式适配 =====
+                    // isAlgorithmicDarkeningAllowed / forceDark 必须按 dark 显式设置，
+                    // 否则默认值可能与期望不一致（尤其在模块强制深色但系统浅色时）。
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        // API 33+：允许算法暗化 / 跟随 prefers-color-scheme
-                        settings.isAlgorithmicDarkeningAllowed = true
-                    } else {
-                        // API 29-32：强制暗化
+                        settings.isAlgorithmicDarkeningAllowed = dark
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         @Suppress("DEPRECATION")
-                        settings.forceDark = WebSettings.FORCE_DARK_ON
+                        settings.forceDark = if (dark) WebSettings.FORCE_DARK_ON else WebSettings.FORCE_DARK_OFF
                     }
 
                     loadUrl("file:///android_asset/privacy_policy.html")
