@@ -1,6 +1,7 @@
 package com.mars.mimarketpurify
 
 import android.os.Build
+import android.content.res.Configuration
 import android.os.Bundle
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -83,10 +84,21 @@ private fun PrivacyPolicyScreen(onBack: () -> Unit) {
             )
         }
 
-        // WebView 内容（强制跟随系统深色模式）
+        // WebView 内容（跟随模块主题模式：深色 / 浅色）
+        // 关键点：WebView 的 prefers-color-scheme 取决于其 Context 的 uiMode，
+        // 而本模块各 Activity 的 AppTheme 为浅色（与 useDarkTheme() 解耦），
+        // 因此这里显式把 WebView 的 Context 切成深色 uiMode，使 privacy_policy.html
+        // 内 @media (prefers-color-scheme: dark) 的样式在「模块强制深色 / 系统浅色」
+        // 场景下也能正确生效，避免深色模式下仍是浅色网页。
         AndroidView(
             factory = { context ->
-                WebView(context).apply {
+                val webContext = if (dark) {
+                    val cfg = Configuration(context.resources.configuration)
+                    cfg.uiMode = (cfg.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv())
+                        .or(Configuration.UI_MODE_NIGHT_YES)
+                    context.createConfigurationContext(cfg)
+                } else context
+                WebView(webContext).apply {
                     webViewClient = WebViewClient()
                     settings.javaScriptEnabled = false
                     settings.loadWithOverviewMode = true
@@ -95,7 +107,7 @@ private fun PrivacyPolicyScreen(onBack: () -> Unit) {
 
                     // ===== 深色模式适配 =====
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        // API 33+：使用算法暗化，由系统控制
+                        // API 33+：允许算法暗化 / 跟随 prefers-color-scheme
                         settings.isAlgorithmicDarkeningAllowed = true
                     } else {
                         // API 29-32：强制暗化

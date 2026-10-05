@@ -65,7 +65,6 @@ fun MainScreen(activity: MainActivity) {
     val masterOn = remember(tick) { mutableStateOf(activity.readLocal(com.mars.mimarketpurify.Settings.KEY_MASTER, true)) }
     val adSummary by remember(tick) { mutableStateOf(activity.countText(activity.adKeys)) }
     val tabsSummary by remember(tick) { mutableStateOf(activity.tabsText()) }
-    val tabbarSummary by remember(tick) { mutableStateOf(activity.tabbarText()) }
     val mineSummary by remember(tick) { mutableStateOf(activity.countText(activity.mineKeys)) }
     val miscSummary by remember(tick) { mutableStateOf(activity.countText(activity.miscKeys)) }
 
@@ -149,20 +148,11 @@ fun MainScreen(activity: MainActivity) {
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_ADS) })
                 SettingItem(headlineText = "底栏自定义", supportingText = tabsSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_TABS) })
-                SettingItem(headlineText = "悬浮底栏配置", supportingText = tabbarSummary,
-                    onClick = { activity.openPage(SubSettingsActivity.PAGE_TAB_BAR) })
                 SettingItem(headlineText = "「我的」页精简", supportingText = mineSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MINE) })
                 SettingItem(headlineText = "其他界面精简", supportingText = miscSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MISC) })
             }
-
-            Spacer(Modifier.height(12.dp))
-            SettingItem(
-                headlineText = "主题与外观",
-                supportingText = "深色模式、预测性返回、界面缩放",
-                onClick = { activity.openPage(SubSettingsActivity.PAGE_THEME) },
-            )
 
             SettingsSection(topLabel = "高级功能") {
                 SwitchRow(title = "下载超级岛", summary = "强制让下载进度进入小米超级岛",
@@ -191,6 +181,13 @@ fun MainScreen(activity: MainActivity) {
                 SwitchRow(title = "调试模式", summary = "开启后将统一日志输出",
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, false),
                     enabled = true) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, it) }
+                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                // 主题与外观入口移入模块设置分组：深色模式 / 预测性返回 / 界面缩放 / 悬浮底栏
+                SettingItem(
+                    headlineText = "主题与外观",
+                    supportingText = "深色模式、预测性返回、界面缩放、悬浮底栏",
+                    onClick = { activity.openPage(SubSettingsActivity.PAGE_THEME) },
+                )
             }
 
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))

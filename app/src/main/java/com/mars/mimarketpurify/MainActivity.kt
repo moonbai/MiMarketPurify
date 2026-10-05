@@ -9,6 +9,7 @@ import kotlin.math.roundToInt
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -69,11 +70,17 @@ class MainActivity : SettingsBaseActivity() {
         super.onCreate(savedInstanceState)
         EntryGuardReceiver.ensureEntryEnabled(this)
         applyWindowTheme()
-        setupPredictiveBack { finish() }
 
         setContent {
             ModuleTheme {
                 var tab by remember { mutableStateOf(0) }
+                // 预测性返回统一由 Compose BackHandler 接管：
+                //  - 关于标签：回到主页标签（tab = 0）；
+                //  - 主页标签：关闭 Activity。
+                // 不再依赖 setupPredictiveBack 的全局 finish 回调，避免与 AboutContent 内
+                // 的 BackHandler 形成双回调竞争，保证返回手势的预测动画与返回逻辑一致。
+                BackHandler(enabled = tab != 0) { tab = 0 }
+                BackHandler(enabled = tab == 0) { finish() }
                 Box(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
                     when (tab) {
                         0 -> MainScreen(activity = this@MainActivity)
@@ -120,7 +127,6 @@ class MainActivity : SettingsBaseActivity() {
         }
         return parts.joinToString(" · ")
     }
-    internal fun tabbarText(): String = if (readLocal(Settings.KEY_FLOATING_BAR, false)) "悬浮已开启" else "原版底栏"
     internal fun openPage(page: String) { startActivity(SubSettingsActivity.intent(this, page)) }
 }
 

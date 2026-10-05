@@ -643,7 +643,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
         //  - 三者配合让 Hero 居上、检查更新按钮内联其下方，滚动后整体自然上移露出后续区块
         val screenHeight = LocalConfiguration.current.screenHeightDp.dp
         // 取屏幕高度的28％和10％
-        val heroTopGap = screenHeight * 0.28f
+        val heroTopGap = screenHeight * 0.20f
         val heroBottomGap = screenHeight * 0.10f
         Column(
             modifier = Modifier

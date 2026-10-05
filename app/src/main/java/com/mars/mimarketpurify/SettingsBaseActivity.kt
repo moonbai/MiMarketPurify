@@ -12,6 +12,7 @@ import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.App.ServiceStateListener
 import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.Settings.PREFS_GROUP
+import com.mars.mimarketpurify.uiScaleValue
 import com.mars.mimarketpurify.useDarkTheme
 import io.github.libxposed.service.XposedService
 
@@ -40,6 +41,13 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
      * 用于 [onResume] 检测主题模式改动后是否需要重建以重新着色（[setContent] 仅执行一次）。
      */
     protected var appliedDarkTheme = false
+
+    /**
+     * 当前 Activity 在 [applyWindowTheme] 中实际套用的界面缩放。
+     * 用于 [onResume] 检测「界面缩放」改动后是否需要重建以套用新缩放
+     * （例如从「主题与外观」页改完缩放返回主页时，主页需重建才能生效）。
+     */
+    protected var appliedScale = 1f
 
     /**
      * Compose 页面观察此信号以重新读取偏好。
@@ -72,16 +80,23 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
             recreate()
             return
         }
+        // 界面缩放改动后（例如从「主题与外观」页返回主页），本页需重建以套用新缩放。
+        // 与 appliedDarkTheme 同理，避免「改完缩放回到主页仍是原大小」的观感不一致。
+        if (uiScaleValue() != appliedScale) {
+            recreate()
+            return
+        }
         refreshAll()
     }
 
     /**
-     * 套用窗口底色与状态栏前景色，并记录 [appliedDarkTheme]。
+     * 套用窗口底色与状态栏前景色，并记录 [appliedDarkTheme] / [appliedScale]。
      * 各设置页在 onCreate 的 setContent 之前调用一次；Compose 内容由 [ModuleTheme] 负责。
      */
     protected fun applyWindowTheme() {
         val dark = useDarkTheme()
         appliedDarkTheme = dark
+        appliedScale = uiScaleValue()
         window.setBackgroundDrawable(ColorDrawable(MiuiX.bg(dark)))
         WindowCompat.getInsetsController(window, window.decorView)
             ?.isAppearanceLightStatusBars = !dark

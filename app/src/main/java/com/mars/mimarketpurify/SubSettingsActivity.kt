@@ -37,7 +37,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
         const val PAGE_MINE = "mine"
         const val PAGE_TABS = "tabs"
         const val PAGE_MISC = "misc"
-        const val PAGE_TAB_BAR = "tab_bar_config"
         const val PAGE_THEME = "theme"
 
         fun intent(ctx: Context, page: String, highlight: String? = null): Intent =
@@ -56,7 +55,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
             PAGE_MINE -> "「我的」页精简"
             PAGE_TABS -> "底部标签栏"
             PAGE_MISC -> "其他界面精简"
-            PAGE_TAB_BAR -> "悬浮底栏配置"
             PAGE_THEME -> "主题与外观"
             else -> page
         }
@@ -74,7 +72,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
                         PAGE_MINE -> MineScreen(activity = this@SubSettingsActivity, masterOn = masterOn.value, hl)
                         PAGE_TABS -> TabsScreen(activity = this@SubSettingsActivity, masterOn = masterOn.value)
                         PAGE_MISC -> MiscScreen(activity = this@SubSettingsActivity, masterOn = masterOn.value, hl)
-                        PAGE_TAB_BAR -> TabBarConfigScreen(activity = this@SubSettingsActivity, masterOn = masterOn.value)
                         PAGE_THEME -> ThemeScreen(activity = this@SubSettingsActivity)
                     }
                 }
@@ -200,6 +197,8 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
     val keys = remember { Settings.TAB_ITEMS.keys.toList() }
     val tick by activity.refreshSignal
     val kept = remember(tick) { mutableStateOf(Settings.getKeptTabs()) }
+    // 筛选开关关闭后，下方标签勾选项同步隐藏（开关联动）
+    val filterOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_TAB_FILTER, true)) }
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
@@ -213,13 +212,17 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
                 summary = "开启后按下方勾选隐藏不需要的底栏标签（关闭则恢复全部）",
                 default = true,
                 enabled = masterOn,
+                onChanged = { activity.refreshSignal.value++ },
             )
-            keys.forEach { key ->
-                val label = Settings.TAB_ITEMS[key] ?: key
-                CheckboxRow(title = label, summary = key, checked = key in kept.value, enabled = masterOn) { on ->
-                    val next = if (on) kept.value + key else kept.value - key
-                    kept.value = next
-                    activity.writeRemoteString(Settings.KEY_TAB_KEEP, next.joinToString(","))
+            // 筛选开关开启时才展示各标签勾选项，关闭后整体隐藏
+            if (filterOn) {
+                keys.forEach { key ->
+                    val label = Settings.TAB_ITEMS[key] ?: key
+                    CheckboxRow(title = label, summary = key, checked = key in kept.value, enabled = masterOn) { on ->
+                        val next = if (on) kept.value + key else kept.value - key
+                        kept.value = next
+                        activity.writeRemoteString(Settings.KEY_TAB_KEEP, next.joinToString(","))
+                    }
                 }
             }
         }
@@ -258,30 +261,34 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
     }
 }
 
-// ═══════════════ 悬浮底栏配置 ═══════════════
+// ═══════════════ 悬浮底栏配置（已并入「主题与外观」） ═══════════════
 
 @Composable
-private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean) {
+private fun FloatingBarConfigSection(activity: SubSettingsActivity, masterOn: Boolean) {
+    val tick by activity.refreshSignal
+    // 悬浮底栏总开关状态：关闭后下方外观选项整体隐藏（开关联动）
+    val floatingOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_FLOATING_BAR, false)) }
     val sliderMax = 29
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
-            .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
-            .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
-    ) {
-        SettingsSection {
-            PrefSwitch(activity, Settings.KEY_FLOATING_BAR, "启用悬浮底栏", "在商店底部渲染胶囊风格Tab导航栏", default = false, enabled = masterOn)
+    SettingsSection(topLabel = "悬浮底栏") {
+        PrefSwitch(
+            activity = activity,
+            key = Settings.KEY_FLOATING_BAR,
+            title = "启用悬浮底栏",
+            summary = "在商店底部渲染胶囊风格Tab导航栏",
+            default = false,
+            enabled = masterOn,
+            onChanged = { activity.refreshSignal.value++ },
+        )
+        // 仅在「启用悬浮底栏」开启时展示下方相关选项，关闭后同步隐藏
+        if (floatingOn) {
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标", default = true, enabled = masterOn)
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID, "液态选中高亮动画", "选中项显示跟随移动的液态胶囊", default = true, enabled = masterOn)
             PrefSwitch(activity, Settings.KEY_FLOATING_BAR_MONOCHROME, "单色图标", "图标抽成单色描边、随主题着色", default = false, enabled = masterOn)
-        }
-        Spacer(Modifier.height(12.dp))
-        SettingsSection {
+            Spacer(Modifier.height(12.dp))
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部外边距", "悬浮底栏到屏幕底部的间距（dp）", 0, sliderMax, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, masterOn, format = { "${it}dp" })
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, masterOn, format = { "${it}dp" })
             PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, masterOn, format = { "${it}%" })
-        }
-        Spacer(Modifier.height(12.dp))
-        SettingsSection {
+            Spacer(Modifier.height(12.dp))
             PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xFFF2F2F2.toInt())
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
             PrefColorRow(activity, "选中项背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, 0xFFDADADA.toInt())
@@ -290,7 +297,6 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
             PrefColorRow(activity, "文字选中色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFF000000.toInt())
         }
-        Footer("悬浮底栏替代原生贴底栏，实现 iOS 风格胶囊导航")
     }
 }
 
@@ -298,6 +304,9 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
 
 @Composable
 private fun ThemeScreen(activity: SubSettingsActivity) {
+    // 总开关联动：悬浮底栏配置选项随总开关置灰
+    val tick by activity.refreshSignal
+    val masterOn = remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_MASTER, true)) }
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
@@ -337,6 +346,12 @@ private fun ThemeScreen(activity: SubSettingsActivity) {
                 },
             )
         }
+
+        Spacer(Modifier.height(12.dp))
+        // 悬浮底栏配置：从独立的「悬浮底栏配置」页并入「主题与外观」，
+        // 与深色模式 / 缩放等外观项统一管理（见 FloatingBarConfigSection）。
+        FloatingBarConfigSection(activity = activity, masterOn = masterOn.value)
+
         Footer("主题模式与界面缩放改动后立即重建本页生效；预测性返回需 Android 13 及以上系统支持。")
     }
 }
