@@ -64,9 +64,10 @@ import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.PrivacyPolicyActivity
 import com.mars.mimarketpurify.useDarkTheme
 import top.yukonga.miuix.kmp.basic.ColorPicker
+import top.yukonga.miuix.kmp.basic.DropdownDefaults
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
+import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.mars.mimarketpurify.ui.LocalSnackbarHost
 import androidx.activity.compose.BackHandler
@@ -435,6 +436,68 @@ fun NavRow(
     }
 }
 
+// ==================== 下拉偏好行 ====================
+// 标题统一使用 MiuixTheme.textStyles.body1，与仓库其它条目（PrefSwitch / PrefSlider 等）保持一致；
+// 下拉弹窗复用 MiuiX 原生 WindowDropdownPopup，避免引入额外依赖并保证深色模式适配。
+
+@Composable
+fun DropdownPreference(
+    title: String,
+    summary: String? = null,
+    valueText: String? = null,
+    enabled: Boolean = true,
+    collapseOnSelection: Boolean = true,
+    entries: List<DropdownEntry>,
+) {
+    val colors = MiuixTheme.colorScheme
+    var expanded by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(enabled = enabled) { expanded = true }
+            .padding(horizontal = 20.dp, vertical = MiuiX.ROW_PAD_V.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.body1,
+                color = if (enabled) colors.onSurface else colors.outline,
+            )
+            if (!summary.isNullOrEmpty()) {
+                Text(
+                    text = summary,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = if (enabled) colors.onSurfaceVariantSummary else colors.outline,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
+            }
+        }
+        if (!valueText.isNullOrEmpty()) {
+            Text(
+                text = valueText,
+                style = MiuixTheme.textStyles.footnote1,
+                color = colors.onSurfaceVariantActions,
+                textAlign = TextAlign.End,
+                modifier = Modifier.padding(end = 6.dp),
+            )
+        }
+        Text(text = "›", fontSize = 20.sp, color = colors.outline, modifier = Modifier.size(20.dp, 20.dp))
+    }
+    if (entries.isNotEmpty()) {
+        WindowDropdownPopup(
+            entries = entries,
+            show = expanded,
+            onDismiss = { expanded = false },
+            onDismissFinished = {},
+            maxHeight = null,
+            dropdownColors = DropdownDefaults.dropdownColors(),
+            collapseOnSelection = collapseOnSelection,
+        )
+    }
+}
+
 // ==================== 偏好绑定：开关 ====================
 
 @Composable
@@ -470,26 +533,24 @@ fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
             )
         )
     }
-    val items = listOf(
-        com.mars.mimarketpurify.THEME_FOLLOW to "跟随系统",
-        com.mars.mimarketpurify.THEME_LIGHT to "浅色",
-        com.mars.mimarketpurify.THEME_DARK to "深色",
-    ).map { (value, title) -> DropdownItem(text = title) }
-    SettingsSection(topLabel = "主题模式") {
-        WindowSpinnerPreference(
-            modifier = Modifier
-                .padding(start = MiuiX.PREF_ITEM_START.dp) // 和PrefSwitch左侧边距对齐
-                .padding(vertical = 4.dp), // 补齐上下垂直内边距，统一条目高度
-            items = items,
-            selectedIndex = mode,
-            title = "外观深浅色",
-            summary = "选择浅色、深色或跟随系统自动切换",
-            onSelectedIndexChange = { index ->
+    val themeLabels = listOf("跟随系统", "浅色", "深色")
+    val items = themeLabels.mapIndexed { index, label ->
+        DropdownItem(
+            text = label,
+            selected = index == mode,
+            onClick = {
                 mode = index
                 activity.writeLocalInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, index)
                 onApplied()
             },
-            titleStyle = TextStyle(fontWeight = FontWeight.Normal) // 取消标题加粗，和开关条目字重一致
+        )
+    }
+    SettingsSection(topLabel = "主题模式") {
+        DropdownPreference(
+            title = "外观深浅色",
+            summary = "选择浅色、深色或跟随系统自动切换",
+            valueText = themeLabels[mode],
+            entries = listOf(DropdownEntry(items = items)),
         )
     }
 }
@@ -524,24 +585,15 @@ fun PrefTabFilterSpinner(
         else -> "已选 ${keptLabels.size} 项：${keptLabels.take(3).joinToString("、")}…"
     }
 
-    var showPopup by remember { mutableStateOf(false) }
-
-    SettingItem(
-        headlineText = "底部标签显示",
-        supportingText = dynamicSummary,
+    // 复用 MiuiX 原生 WindowDropdownPopup 承载多选弹窗（collapseOnSelection=false 保持展开逐项勾选），
+    // 条目标题统一使用 body1，与仓库其它条目（PrefSwitch 等）保持一致，不再使用字号偏大的内置标题样式。
+    DropdownPreference(
+        title = "底部标签显示",
+        summary = dynamicSummary,
         enabled = enabled,
-        onClick = { showPopup = true },
-        trailingContent = {
-            Icon(Icons.Default.ExpandMore, contentDescription = null)
-        }
+        collapseOnSelection = false,
+        entries = listOf(DropdownEntry(items = items)),
     )
-
-    if (showPopup) {
-        MultiSelectPopup(
-            items = items,
-            onDismiss = { showPopup = false }
-        )
-    }
 }
 
 // ==================== 偏好绑定：数值滑杆 ====================

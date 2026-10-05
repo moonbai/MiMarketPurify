@@ -1,17 +1,12 @@
 package com.mars.mimarketpurify.hooks.market
 
-import android.app.Activity
 import android.app.Application
 import android.os.Build
-import android.os.Bundle
 import android.util.Log
-import android.view.View
-import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.TAG
 import com.mars.mimarketpurify.init.BaseHook
 import io.github.kyuubiran.ezxhelper.core.finder.MethodFinder.`-Static`.methodFinder
-import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 /**
  * 预测性返回增强 Hook
@@ -23,9 +18,11 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
  * 本 Hook 尝试：
  * 1. 反射设置目标 App 的 ApplicationInfo.enableOnBackInvokedCallback = true
  * 2. 如果系统已强制开启（API 35+），则无需此反射（但不影响）
- * 3. Hook Activity.attachBaseContext，确保在 Application 初始化阶段注入
+ * 3. Hook Application.attachBaseContext / onCreate，确保在 Application 初始化阶段注入
  */
 internal object PredictiveBackHook : BaseHook() {
+
+    override val name: String = "预测性返回"
 
     override fun init() {
         if (!Settings.isEnabled(Settings.KEY_PREDICTIVE_BACK, true)) return
@@ -40,13 +37,12 @@ internal object PredictiveBackHook : BaseHook() {
     }
 
     /**
-     * Hook Application.attachBaseContext，在最早时机注入预测性返回开关。
+     * Hook Application.attachBaseContext 与 onCreate，在最早时机注入预测性返回开关。
      *
      * 原理：
-     * - attachBaseContext 是 Application 的最早生命周期回调
-     * - 此时 ApplicationInfo 已可读写，但 Activity 尚未创建
-     * - 修改 ApplicationInfo.enableOnBackInvokedCallback 后，
-     *   系统在后续 Activity 初始化时会读取此值
+     * - attachBaseContext 是 Application 的最早生命周期回调，此时 ApplicationInfo 已可读写
+     * - 修改 ApplicationInfo.enableOnBackInvokedCallback 后，系统后续初始化时会读取此值
+     * - onCreate 再次设置，防止 attachBaseContext 中的修改被覆盖
      *
      * 限制：
      * - Android 15+ (API 35+) 的 enforceEnableOnBackInvokedCallback()
@@ -55,16 +51,35 @@ internal object PredictiveBackHook : BaseHook() {
      * - 对 targetSdk >= 35 的应用，系统已强制开启，无需此 Hook
      */
     private fun hookApplicationAttach() {
-        val context = HookEnv.hostContext ?: return
-        val pkgName = context.packageName ?: return
+        // 方案 1：attachBaseContext，最早时机（先 proceed 放行原生逻辑，再注入开关）
+        Application::class.java.methodFinder()
+            .filterByName("attachBaseContext")
+            .filterByParamCount(1)
+            .first()
+            .hooked {
+                val result = proceed()
+                (thisObject as? Application)?.let { applyPredictiveBack(it) }
+                result
+            }
 
-        // 方案 1：直接反射修改（最可靠）
+        // 方案 2：onCreate 后再次确认，防止被覆盖
+        Application::class.java.methodFinder()
+            .filterByName("onCreate")
+            .filterByParamCount(0)
+            .first()
+            .hooked {
+                val result = proceed()
+                (thisObject as? Application)?.let { applyPredictiveBack(it) }
+                result
+            }
+    }
+
+    private fun applyPredictiveBack(app: Application) {
+        val appInfo = app.applicationInfo
+        val pkgName = app.packageName ?: return
+
         try {
-            val appInfo = context.applicationInfo
-            val clazz = appInfo.javaClass
-
-            // ApplicationInfo.enableOnBackInvokedCallback
-            // API 33+ 才有此字段
+            val clazz = appInfo::class.java
             val field = clazz.getField("enableOnBackInvokedCallback")
             val current = field.getBoolean(appInfo)
 
@@ -78,26 +93,6 @@ internal object PredictiveBackHook : BaseHook() {
             Log.d(TAG, "PredictiveBackHook: enableOnBackInvokedCallback 字段不存在 (API < 33)")
         } catch (e: Throwable) {
             Log.w(TAG, "PredictiveBackHook: 反射失败", e)
-        }
-
-        // 方案 2：Hook Application.onCreate 后再次确认
-        try {
-            val appClass = context.javaClass
-            appClass.methodFinder()
-                .filterByName("onCreate")
-                .filterByParamCount(0)
-                .first()
-                .hooked {
-                    // onCreate 后再次设置，防止 attachBaseContext 中的修改被覆盖
-                    val appInfo = context.applicationInfo
-                    val field = appInfo.javaClass.getField("enableOnBackInvokedCallback")
-                    if (!field.getBoolean(appInfo)) {
-                        field.setBoolean(appInfo, true)
-                        Log.i(TAG, "PredictiveBackHook: onCreate 后重新设置 enableOnBackInvokedCallback")
-                    }
-                }
-        } catch (_: Throwable) {
-            // 静默失败
         }
     }
 }
