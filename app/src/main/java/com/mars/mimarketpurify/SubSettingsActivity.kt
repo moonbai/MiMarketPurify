@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.Settings
 import com.mars.mimarketpurify.ui.ModuleTheme
@@ -50,7 +51,8 @@ class SubSettingsActivity : SettingsBaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         page = intent?.getStringExtra(EXTRA_PAGE) ?: PAGE_MINE
-        val title = FeatureRegistry.pageTitles[page] ?: page
+        val titleRes = FeatureRegistry.pageTitleRes[page]
+        val title = if (titleRes != null) getString(titleRes) else page
         applyWindowTheme()
         setupPredictiveBack { finish() }
         setContent {
@@ -99,8 +101,8 @@ private fun HighlightSwitch(
         PrefSwitch(
             activity = activity,
             key = key,
-            title = FeatureRegistry.titleOf(key),
-            summary = FeatureRegistry.summaryOf(key),
+            title = stringResource(FeatureRegistry.titleRes(key)),
+            summary = stringResource(FeatureRegistry.summaryRes(key)),
             default = true,
             enabled = enabled,
             onChanged = onChanged,
@@ -133,7 +135,7 @@ private fun AdsScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Stri
                         HighlightSwitch(activity, Settings.KEY_FRUIT, masterOn, hl)
                         HighlightSwitch(activity, Settings.KEY_INSTALL_RECOMMEND, masterOn, hl)
         }
-        Footer("广告净化模块负责开屏、首页信息流、搜索、升级/下载页、详情页、榜单广告、领水果入口、活动入口")
+        Footer(stringResource(R.string.footer_ads))
     }
 }
 
@@ -158,10 +160,10 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
                         HighlightSwitch(activity, Settings.KEY_ORCHARD_SKIN, masterOn, hl)
         }
         if (cleanupOn && orchardOn) {
-            SettingsSection(topLabel = "升级卡片") {
+            SettingsSection(topLabel = stringResource(R.string.sec_upgrade_card)) {
                 PrefSwitch(
                     activity = activity,
-                    key = Settings.KEY_CARD_EXPAND, title = FeatureRegistry.titleOf(Settings.KEY_CARD_EXPAND), summary = FeatureRegistry.summaryOf(Settings.KEY_CARD_EXPAND),
+                    key = Settings.KEY_CARD_EXPAND, title = stringResource(FeatureRegistry.titleRes(Settings.KEY_CARD_EXPAND)), summary = stringResource(FeatureRegistry.summaryRes(Settings.KEY_CARD_EXPAND)),
                     default = false,
                     enabled = masterOn,
                 )
@@ -170,7 +172,7 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
         SettingsSection {
                         HighlightSwitch(activity, Settings.KEY_TAB_BADGE, masterOn, hl)
         }
-        Footer("「我的」页精简负责隐藏推荐、清理、安全检测、个人信息等内容")
+        Footer(stringResource(R.string.footer_mine))
     }
 }
 
@@ -186,10 +188,10 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
             .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
     ) {
-        SettingsSection(topLabel = "底栏标签") {
+        SettingsSection(topLabel = stringResource(R.string.sec_bottom_tabs)) {
             PrefSwitch(
                 activity = activity,
-                key = Settings.KEY_TAB_FILTER, title = FeatureRegistry.titleOf(Settings.KEY_TAB_FILTER), summary = FeatureRegistry.summaryOf(Settings.KEY_TAB_FILTER),
+                key = Settings.KEY_TAB_FILTER, title = stringResource(FeatureRegistry.titleRes(Settings.KEY_TAB_FILTER)), summary = stringResource(FeatureRegistry.summaryRes(Settings.KEY_TAB_FILTER)),
                 default = true,
                 enabled = masterOn,
                 onChanged = { activity.refreshSignal.value++ },
@@ -199,50 +201,50 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
             }
         }
         Spacer(Modifier.height(12.dp))
-        SettingsSection(topLabel = "增强") {
-            PrefSwitch(activity, Settings.KEY_UPDATE_TAB, FeatureRegistry.titleOf(Settings.KEY_UPDATE_TAB), FeatureRegistry.summaryOf(Settings.KEY_UPDATE_TAB), default = false, enabled = masterOn)
+        SettingsSection(topLabel = stringResource(R.string.sec_enhance)) {
+            PrefSwitch(activity, Settings.KEY_UPDATE_TAB, stringResource(FeatureRegistry.titleRes(Settings.KEY_UPDATE_TAB)), stringResource(FeatureRegistry.summaryRes(Settings.KEY_UPDATE_TAB)), default = false, enabled = masterOn)
             Spacer(Modifier.height(12.dp))
-            PrefSwitch(activity, Settings.KEY_TAB_DEEP_CLEAN, FeatureRegistry.titleOf(Settings.KEY_TAB_DEEP_CLEAN), FeatureRegistry.summaryOf(Settings.KEY_TAB_DEEP_CLEAN), default = true, enabled = masterOn)
+            PrefSwitch(activity, Settings.KEY_TAB_DEEP_CLEAN, stringResource(FeatureRegistry.titleRes(Settings.KEY_TAB_DEEP_CLEAN)), stringResource(FeatureRegistry.summaryRes(Settings.KEY_TAB_DEEP_CLEAN)), default = true, enabled = masterOn)
         }
 
         Spacer(Modifier.height(12.dp))
         // ═══ 悬浮底栏（商店）配置 ═══
-        SettingsSection(topLabel = "悬浮底栏") {
+        SettingsSection(topLabel = stringResource(R.string.sec_floating_bar)) {
             // Fix: onChanged 触发 refreshSignal，关闭后子项立即隐藏
             PrefSwitch(
                 activity = activity,
-                key = Settings.KEY_FLOATING_BAR, title = FeatureRegistry.titleOf(Settings.KEY_FLOATING_BAR), summary = FeatureRegistry.summaryOf(Settings.KEY_FLOATING_BAR),
+                key = Settings.KEY_FLOATING_BAR, title = stringResource(FeatureRegistry.titleRes(Settings.KEY_FLOATING_BAR)), summary = stringResource(FeatureRegistry.summaryRes(Settings.KEY_FLOATING_BAR)),
                 default = false,
                 enabled = masterOn,
                 onChanged = { activity.refreshSignal.value++ },
             )
             if (floatingOn) {
-                PrefSlider(activity, Settings.KEY_FLOAT_CORNER_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角",
+                PrefSlider(activity, Settings.KEY_FLOAT_CORNER_RADIUS, stringResource(R.string.slider_floating_radius), stringResource(R.string.slider_floating_radius_sum),
                     Settings.FLOATING_RADIUS_MIN, Settings.FLOATING_RADIUS_MAX, Settings.FLOATING_RADIUS_DEFAULT, true, format = { "${it}dp" })
-                PrefSlider(activity, Settings.KEY_FLOAT_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）",
+                PrefSlider(activity, Settings.KEY_FLOAT_BAR_ALPHA, stringResource(R.string.slider_floating_alpha), stringResource(R.string.slider_floating_alpha_sum),
                     Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.STORE_FLOAT_ALPHA_DEFAULT, true, format = { "${it}%" })
-                PrefSlider(activity, Settings.KEY_STORE_FLOAT_BOTTOM_MARGIN, "距底栏距离", "悬浮底栏到屏幕底部的间距（dp）",
+                PrefSlider(activity, Settings.KEY_STORE_FLOAT_BOTTOM_MARGIN, stringResource(R.string.slider_floating_bottom_margin), stringResource(R.string.slider_floating_bottom_margin_sum),
                     Settings.STORE_FLOAT_BOTTOM_MARGIN_MIN, Settings.STORE_FLOAT_BOTTOM_MARGIN_MAX, Settings.STORE_FLOAT_BOTTOM_MARGIN_DEFAULT, true, format = { "${it}dp" })
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID, FeatureRegistry.titleOf(Settings.KEY_FLOATING_BAR_LIQUID), FeatureRegistry.summaryOf(Settings.KEY_FLOATING_BAR_LIQUID), default = true, enabled = masterOn)
-                PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID_3D, FeatureRegistry.titleOf(Settings.KEY_FLOATING_BAR_LIQUID_3D), FeatureRegistry.summaryOf(Settings.KEY_FLOATING_BAR_LIQUID_3D), default = false, enabled = masterOn)
-                PrefSwitch(activity, Settings.KEY_FLOATING_BAR_MONOCHROME, FeatureRegistry.titleOf(Settings.KEY_FLOATING_BAR_MONOCHROME), FeatureRegistry.summaryOf(Settings.KEY_FLOATING_BAR_MONOCHROME), default = false, enabled = masterOn)
+                PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID, stringResource(FeatureRegistry.titleRes(Settings.KEY_FLOATING_BAR_LIQUID)), stringResource(FeatureRegistry.summaryRes(Settings.KEY_FLOATING_BAR_LIQUID)), default = true, enabled = masterOn)
+                PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID_3D, stringResource(FeatureRegistry.titleRes(Settings.KEY_FLOATING_BAR_LIQUID_3D)), stringResource(FeatureRegistry.summaryRes(Settings.KEY_FLOATING_BAR_LIQUID_3D)), default = false, enabled = masterOn)
+                PrefSwitch(activity, Settings.KEY_FLOATING_BAR_MONOCHROME, stringResource(FeatureRegistry.titleRes(Settings.KEY_FLOATING_BAR_MONOCHROME)), stringResource(FeatureRegistry.summaryRes(Settings.KEY_FLOATING_BAR_MONOCHROME)), default = false, enabled = masterOn)
                 Spacer(Modifier.height(12.dp))
-                PrefColorRow(activity, "底栏背景色", Settings.KEY_STORE_FLOAT_BG_COLOR,
+                PrefColorRow(activity, stringResource(R.string.color_floating_bg), Settings.KEY_STORE_FLOAT_BG_COLOR,
                     Settings.STORE_FLOAT_BG_COLOR_LIGHT, Settings.STORE_FLOAT_BG_COLOR_DARK)
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                PrefColorRow(activity, "选中项背景色", Settings.KEY_STORE_FLOAT_SELECT_BG_COLOR,
+                PrefColorRow(activity, stringResource(R.string.color_floating_select_bg), Settings.KEY_STORE_FLOAT_SELECT_BG_COLOR,
                     Settings.STORE_FLOAT_SELECT_BG_COLOR_LIGHT, Settings.STORE_FLOAT_SELECT_BG_COLOR_DARK)
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                PrefColorRow(activity, "普通文字颜色", Settings.KEY_STORE_FLOAT_TEXT_NORMAL_COLOR,
+                PrefColorRow(activity, stringResource(R.string.color_floating_text_normal), Settings.KEY_STORE_FLOAT_TEXT_NORMAL_COLOR,
                     Settings.STORE_FLOAT_TEXT_NORMAL_COLOR_LIGHT, Settings.STORE_FLOAT_TEXT_NORMAL_COLOR_DARK)
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                PrefColorRow(activity, "选中文字颜色", Settings.KEY_STORE_FLOAT_TEXT_SELECT_COLOR,
+                PrefColorRow(activity, stringResource(R.string.color_floating_text_select), Settings.KEY_STORE_FLOAT_TEXT_SELECT_COLOR,
                     Settings.STORE_FLOAT_TEXT_SELECT_COLOR_LIGHT, Settings.STORE_FLOAT_TEXT_SELECT_COLOR_DARK)
             }
         }
 
-        Footer("选择需要展示的底栏标签，取消勾选后对应标签将被隐藏。")
+        Footer(stringResource(R.string.footer_tabs))
     }
 }
 
@@ -255,7 +257,7 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
             .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
             .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
     ) {
-        SettingsSection(topLabel = "界面精简") {
+        SettingsSection(topLabel = stringResource(R.string.sec_misc)) {
                         HighlightSwitch(activity, Settings.KEY_DETAIL_FEATURED, masterOn, hl)
                         HighlightSwitch(activity, Settings.KEY_UPDATE_HISTORY, masterOn, hl)
                         HighlightSwitch(activity, Settings.KEY_SEARCH_ALSO_VIEW, masterOn, hl)
@@ -267,7 +269,7 @@ private fun MiscScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
                         HighlightSwitch(activity, Settings.KEY_BLOCK_BG_DOWNLOAD, masterOn, hl)
                         HighlightSwitch(activity, Settings.KEY_LONG_PRESS_JUMP, masterOn, hl)
         }
-        Footer("其他界面精简负责详情页精选、升级记录、搜索也在看、顶栏推广位等")
+        Footer(stringResource(R.string.footer_misc))
     }
 }
 
@@ -280,10 +282,10 @@ private fun PluginFloatingBarSection(activity: SubSettingsActivity) {
     val pluginBarOn by remember(tick) {
         mutableStateOf(activity.readLocal(Settings.KEY_FLOAT_BAR_ENABLE, true))
     }
-    SettingsSection(topLabel = "插件悬浮底栏") {
+    SettingsSection(topLabel = stringResource(R.string.sec_plugin_floating_bar)) {
         PrefSwitch(
             activity = activity,
-            key = Settings.KEY_FLOAT_BAR_ENABLE, title = FeatureRegistry.titleOf(Settings.KEY_FLOAT_BAR_ENABLE), summary = FeatureRegistry.summaryOf(Settings.KEY_FLOAT_BAR_ENABLE),
+            key = Settings.KEY_FLOAT_BAR_ENABLE, title = stringResource(FeatureRegistry.titleRes(Settings.KEY_FLOAT_BAR_ENABLE)), summary = stringResource(FeatureRegistry.summaryRes(Settings.KEY_FLOAT_BAR_ENABLE)),
             default = true,
             enabled = true,
             affectsStore = false,
@@ -291,22 +293,22 @@ private fun PluginFloatingBarSection(activity: SubSettingsActivity) {
         )
         if (pluginBarOn) {
             Spacer(Modifier.height(12.dp))
-            PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, FeatureRegistry.titleOf(Settings.KEY_FLOATING_BAR_LABEL), FeatureRegistry.summaryOf(Settings.KEY_FLOATING_BAR_LABEL), default = true, enabled = true)
+            PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, stringResource(FeatureRegistry.titleRes(Settings.KEY_FLOATING_BAR_LABEL)), stringResource(FeatureRegistry.summaryRes(Settings.KEY_FLOATING_BAR_LABEL)), default = true, enabled = true)
             Spacer(Modifier.height(12.dp))
-            PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, true, format = { "${it}dp" })
-            PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, true, format = { "${it}%" })
-            PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部外边距", "悬浮底栏到屏幕底部的间距（dp）", Settings.FLOATING_BOTTOM_MARGIN_MIN, Settings.FLOATING_BOTTOM_MARGIN_MAX, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, true, format = { "${it}dp" })
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, stringResource(R.string.slider_plugin_radius), stringResource(R.string.slider_plugin_radius_sum), 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, true, format = { "${it}dp" })
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, stringResource(R.string.slider_plugin_alpha), stringResource(R.string.slider_plugin_alpha_sum), Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, true, format = { "${it}%" })
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, stringResource(R.string.slider_plugin_bottom_margin), stringResource(R.string.slider_plugin_bottom_margin_sum), Settings.FLOATING_BOTTOM_MARGIN_MIN, Settings.FLOATING_BOTTOM_MARGIN_MAX, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, true, format = { "${it}dp" })
             Spacer(Modifier.height(12.dp))
-            PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR,
+            PrefColorRow(activity, stringResource(R.string.color_plugin_bg), Settings.KEY_FLOAT_BG_COLOR,
                 Settings.FLOAT_BG_COLOR_LIGHT, Settings.FLOAT_BG_COLOR_DARK)
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-            PrefColorRow(activity, "选中项背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR,
+            PrefColorRow(activity, stringResource(R.string.color_plugin_select_bg), Settings.KEY_FLOAT_SELECT_BG_COLOR,
                 Settings.FLOAT_SELECT_BG_COLOR_LIGHT, Settings.FLOAT_SELECT_BG_COLOR_DARK)
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-            PrefColorRow(activity, "文字默认色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR,
+            PrefColorRow(activity, stringResource(R.string.color_plugin_text_normal), Settings.KEY_FLOAT_TEXT_NORMAL_COLOR,
                 Settings.FLOAT_TEXT_NORMAL_COLOR_LIGHT, Settings.FLOAT_TEXT_NORMAL_COLOR_DARK)
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-            PrefColorRow(activity, "文字选中色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR,
+            PrefColorRow(activity, stringResource(R.string.color_plugin_text_select), Settings.KEY_FLOAT_TEXT_SELECT_COLOR,
                 Settings.FLOAT_TEXT_SELECT_COLOR_LIGHT, Settings.FLOAT_TEXT_SELECT_COLOR_DARK)
         }
     }
@@ -325,10 +327,10 @@ private fun ThemeScreen(activity: SubSettingsActivity) {
         PrefThemeMode(activity = activity, onApplied = { activity.recreate() })
 
         Spacer(Modifier.height(12.dp))
-        SettingsSection(topLabel = "手势与显示") {
+        SettingsSection(topLabel = stringResource(R.string.sec_gesture_display)) {
             PrefSwitch(
                 activity = activity,
-                key = Settings.KEY_PREDICTIVE_BACK, title = FeatureRegistry.titleOf(Settings.KEY_PREDICTIVE_BACK), summary = FeatureRegistry.summaryOf(Settings.KEY_PREDICTIVE_BACK),
+                key = Settings.KEY_PREDICTIVE_BACK, title = stringResource(FeatureRegistry.titleRes(Settings.KEY_PREDICTIVE_BACK)), summary = stringResource(FeatureRegistry.summaryRes(Settings.KEY_PREDICTIVE_BACK)),
                 default = true,
                 enabled = true,
                 onChanged = { on ->
@@ -340,12 +342,12 @@ private fun ThemeScreen(activity: SubSettingsActivity) {
         }
 
         Spacer(Modifier.height(12.dp))
-        SettingsSection(topLabel = "界面缩放") {
+        SettingsSection(topLabel = stringResource(R.string.sec_ui_scale)) {
             PrefSlider(
                 activity = activity,
                 key = Settings.KEY_UI_SCALE,
-                title = "界面缩放",
-                summary = "整体放大 / 缩小本插件界面（仅作用于本插件，不影响应用商店）",
+                title = stringResource(R.string.slider_ui_scale),
+                summary = stringResource(R.string.slider_ui_scale_sum),
                 min = 80, max = 125, default = 100, enabled = true,
                 format = { "${it}%" },
                 onChanged = { v ->
@@ -359,12 +361,12 @@ private fun ThemeScreen(activity: SubSettingsActivity) {
         PluginFloatingBarSection(activity = activity)
 
         Spacer(Modifier.height(12.dp))
-        SettingsSection(topLabel = "主页推荐") {
+        SettingsSection(topLabel = stringResource(R.string.sec_home_recommend)) {
             PrefSwitch(
                 activity = activity,
                 key = Settings.KEY_RECOMMENDATIONS_ENABLED,
-                title = "随机推荐",
-                summary = "在模块主页展示 3 条随机功能推荐入口",
+                title = stringResource(R.string.switch_recommend),
+                summary = stringResource(R.string.switch_recommend_sum),
                 default = true,
                 enabled = true,
                 affectsStore = false,
@@ -372,13 +374,13 @@ private fun ThemeScreen(activity: SubSettingsActivity) {
         }
 
         Spacer(Modifier.height(12.dp))
-        SettingsSection(topLabel = "操作提示") {
+        SettingsSection(topLabel = stringResource(R.string.sec_op_hint)) {
             val hintOn by remember(tick) {
                 mutableStateOf(activity.readLocalBoolDirect(Settings.KEY_SWITCH_HINT, true))
             }
             SwitchRow(
-                title = "开关操作提示",
-                summary = "切换功能开关后弹出 Snackbar 提示；若需重启应用商店生效，提示内附「重启商店」按钮",
+                title = stringResource(R.string.switch_op_hint),
+                summary = stringResource(R.string.switch_op_hint_sum),
                 checked = hintOn,
                 enabled = true,
                 affectsStore = false,
@@ -387,6 +389,6 @@ private fun ThemeScreen(activity: SubSettingsActivity) {
             }
         }
 
-        Footer("主题模式与界面缩放改动后立即重建本页生效；预测性返回需 Android 13 及以上系统支持。")
+        Footer(stringResource(R.string.footer_theme))
     }
 }

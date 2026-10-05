@@ -26,6 +26,8 @@ import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.ui.ModuleTheme
 import com.mars.mimarketpurify.useDarkTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.ui.res.stringResource
+import com.mars.mimarketpurify.R
 
 /**
  * 隐私政策页：通过 WebView 加载本地 HTML 文件。
@@ -77,7 +79,7 @@ private fun PrivacyPolicyScreen(dark: Boolean, onBack: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "隐私政策",
+                text = stringResource(R.string.privacy_title),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = colors.onSurface,

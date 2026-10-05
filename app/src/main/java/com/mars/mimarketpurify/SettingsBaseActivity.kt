@@ -15,6 +15,7 @@ import com.mars.mimarketpurify.Settings.PREFS_GROUP
 import com.mars.mimarketpurify.uiScaleValue
 import com.mars.mimarketpurify.useDarkTheme
 import io.github.libxposed.service.XposedService
+import com.mars.mimarketpurify.R
 
 /**
  * 设置页的**纯逻辑基类**（不再包含任何原生 View 构建器）。
@@ -144,7 +145,7 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
         runCatching {
             prefs.edit()?.putBoolean(key, value)?.apply()
         }.onFailure {
-            Toast.makeText(this, "保存失败：${it.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.save_failed, it.message), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -167,7 +168,7 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
         runCatching {
             prefs.edit()?.putInt(key, value)?.apply()
         }.onFailure {
-            Toast.makeText(this, "保存失败：${it.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.save_failed, it.message), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -177,7 +178,7 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
         runCatching {
             prefs.edit()?.putString(key, value)?.apply()
         }.onFailure {
-            Toast.makeText(this, "保存失败：${it.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.save_failed, it.message), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -193,7 +194,7 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
         runCatching {
             getSharedPreferences(PREFS_GROUP, MODE_PRIVATE).edit().putInt(key, value).apply()
         }.onFailure {
-            Toast.makeText(this, "保存失败：${it.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.save_failed, it.message), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -204,7 +205,7 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
         runCatching {
             getSharedPreferences(PREFS_GROUP, MODE_PRIVATE).edit().putBoolean(key, value).apply()
         }.onFailure {
-            Toast.makeText(this, "保存失败：${it.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.save_failed, it.message), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -230,8 +231,7 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
             )
             Toast.makeText(
                 this,
-                if (hide) "已隐藏桌面图标，可在 LSPosed 模块列表中进入主页"
-                else "已恢复桌面图标",
+                if (hide) getString(R.string.toast_hide_icon) else getString(R.string.toast_restore_icon),
                 Toast.LENGTH_LONG,
             ).show()
         }

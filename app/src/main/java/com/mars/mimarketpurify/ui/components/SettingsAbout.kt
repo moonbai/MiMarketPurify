@@ -90,6 +90,7 @@ import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 
 // ==================== 关于页：安全图片加载（被本页复用） ====================
 @Composable
@@ -136,9 +137,9 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                 when (result) {
                     is UpdateCheckResult.Available -> { updateInfo = result; showUpdate = true }
                     is UpdateCheckResult.Latest ->
-                        Toast.makeText(activity, "已是最新版本", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, activity.getString(R.string.toast_latest), Toast.LENGTH_SHORT).show()
                     is UpdateCheckResult.Unavailable ->
-                        Toast.makeText(activity, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, activity.getString(R.string.toast_check_fail), Toast.LENGTH_SHORT).show()
                 }
             }
         }.start()
@@ -177,20 +178,27 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             )
             Spacer(Modifier.height(heroBottomGap))
 
-            SettingsSection(topLabel = "功能") {
+            SettingsSection(topLabel = stringResource(R.string.sec_features)) {
                 val byCategory = FeatureRegistry.allFeatures.groupBy { it.category }
-                byCategory.forEach { (category, feats) ->
+                val sep = stringResource(R.string.list_sep)
+                for ((category, feats) in byCategory) {
+                    val catTitle = stringResource(FeatureRegistry.categoryTitles[category] ?: R.string.sec_features)
+                    val sb = StringBuilder()
+                    for (f in feats) {
+                        if (sb.isNotEmpty()) sb.append(sep)
+                        sb.append(stringResource(f.titleRes))
+                    }
                     SettingItem(
-                        headlineText = category,
-                        supportingText = feats.joinToString("、") { it.title },
+                        headlineText = catTitle,
+                        supportingText = sb.toString(),
                     )
                 }
             }
 
-            SettingsSection(topLabel = "作者") {
+            SettingsSection(topLabel = stringResource(R.string.sec_author)) {
                 SettingItem(
-                    headlineText = "Mars",
-                    supportingText = "点此访问作者主页，点点关注",
+                    headlineText = stringResource(R.string.about_author_name),
+                    supportingText = stringResource(R.string.about_author_summary),
                     onClick = { openLink(activity, "https://weibo.com/u/3963594403") },
                     trailingContent = {
                         SafeDrawableImage(
@@ -204,7 +212,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                 )
             }
 
-            SettingsSection(topLabel = "参考项目") {
+            SettingsSection(topLabel = stringResource(R.string.sec_references)) {
                 val references = listOf(
                     RefProject("callng/NewFuckMarketAds", "https://github.com/callng/NewFuckMarketAds", "GPL-3.0"),
                     RefProject("lisrain/NewFuckMarketAds_Fork", "https://github.com/lisrain/NewFuckMarketAds_Fork", "GPL-3.0"),
@@ -220,25 +228,25 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                 }
             }
 
-            SettingsSection(topLabel = "其他") {
+            SettingsSection(topLabel = stringResource(R.string.sec_other)) {
                 SettingItem(
-                    headlineText = "隐私政策",
-                    supportingText = "查看本模块隐私政策与数据说明",
+                    headlineText = stringResource(R.string.about_privacy_title),
+                    supportingText = stringResource(R.string.about_privacy_summary),
                     onClick = { activity.startActivity(Intent(activity, PrivacyPolicyActivity::class.java)) },
                 )
             }
 
-            Footer("不乱拉屎的应用商店才是好的应用商店@Mars")
+            Footer(stringResource(R.string.about_footer))
         }
 
         if (showUpdate && updateInfo != null) {
             val info = updateInfo!!
             AlertDialog(
                 onDismissRequest = { showUpdate = false },
-                title = { Text(text = "模块更新", color = colors.onSurface) },
+                title = { Text(text = stringResource(R.string.about_update_title), color = colors.onSurface) },
                 text = {
                     val sizeText = if (info.sizeBytes > 0) {
-                        "大小：%.1f MB".format(info.sizeBytes / 1048576.0)
+                        stringResource(R.string.about_update_size, info.sizeBytes / 1048576.0)
                     } else ""
                     Column(
                         modifier = Modifier
@@ -246,9 +254,10 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                             .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.5f).dp)
                             .verticalScroll(rememberScrollState()),
                     ) {
+                        val updateFound = stringResource(R.string.about_update_found, info.versionName)
                         Text(
                             text = buildString {
-                                append("发现新版本 v${info.versionName}")
+                                append(updateFound)
                                 if (sizeText.isNotEmpty()) append("\n$sizeText")
                             },
                             style = MiuixTheme.textStyles.body2,
@@ -286,17 +295,17 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                             onError = { e ->
                                 activity.runOnUiThread {
                                     downloading = false
-                                    Toast.makeText(activity, "下载失败：${e.message}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(activity, activity.getString(R.string.toast_download_fail, e.message ?: ""), Toast.LENGTH_LONG).show()
                                 }
                             },
                         )
-                    }) { Text(text = "下载并安装", color = colors.primary) }
+                    }) { Text(text = stringResource(R.string.about_download_install), color = colors.primary) }
                 },
                 dismissButton = {
                     TextButton(onClick = {
                         showUpdate = false
                         openLink(activity, info.releaseUrl)
-                    }) { Text(text = "去发布页", color = colors.onSurfaceVariantSummary) }
+                    }) { Text(text = stringResource(R.string.about_go_release), color = colors.onSurfaceVariantSummary) }
                 },
             )
         }
@@ -311,7 +320,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            text = "正在下载更新包…",
+                            text = stringResource(R.string.about_downloading),
                             style = MiuixTheme.textStyles.body1,
                             color = colors.onSurface,
                         )
@@ -333,7 +342,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
                             CircularProgressIndicator(progress = null)
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                text = "正在获取下载信息…",
+                                text = stringResource(R.string.about_download_progress),
                                 style = MiuixTheme.textStyles.body2,
                                 color = colors.onSurfaceVariantSummary,
                             )
@@ -413,7 +422,7 @@ private fun AboutHeroHeader(activity: ComponentActivity) {
             color = colors.onSurfaceVariantSummary,
         )
         Text(
-            text = "小米应用商店净化与增强",
+            text = stringResource(R.string.ui_app_subtitle),
             style = MiuixTheme.textStyles.footnote1,
             color = colors.onSurfaceVariantSummary,
         )
@@ -534,7 +543,7 @@ private fun AboutUpdateBar(
         onClick = onClick,
     ) {
         Text(
-            text = "检查更新",
+            text = stringResource(R.string.about_check_update),
             style = MiuixTheme.textStyles.title3,
             color = MiuixTheme.colorScheme.primary,
         )
@@ -601,7 +610,7 @@ private fun installApk(context: Context, file: File) {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     runCatching { context.startActivity(intent) }.onFailure {
-        Toast.makeText(context, "无法调起安装，已转去发布页", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, context.getString(R.string.toast_install_fail), Toast.LENGTH_LONG).show()
         openLink(context as ComponentActivity, "https://github.com/moonbai/MiMarketPurify/releases/latest")
     }
 }

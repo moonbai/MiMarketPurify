@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +43,7 @@ import com.mars.mimarketpurify.ui.components.SettingsSection
 import com.mars.mimarketpurify.ui.components.SettingItem
 import com.mars.mimarketpurify.ui.components.SwitchRow
 import com.mars.mimarketpurify.ui.components.AboutGlassCard
+import com.mars.mimarketpurify.R
 import com.mars.mimarketpurify.util.MarketRestarter
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -116,7 +118,7 @@ fun MainScreen(
             Spacer(Modifier.height(12.dp))
 
             SettingsSection {
-                SwitchRow(title = "总开关", summary = "关闭后所有功能均不生效",
+                SwitchRow(title = stringResource(R.string.ui_master), summary = stringResource(R.string.ui_master_summary),
                     checked = masterOn.value, enabled = true) { on ->
                     masterOn.value = on; activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MASTER, on)
                 }
@@ -124,11 +126,11 @@ fun MainScreen(
 
             if (showRecommendations) {
                 Spacer(Modifier.height(12.dp))
-                SettingsSection(topLabel = "推荐功能") {
-                    recommendations.forEach { feature ->
+                SettingsSection(topLabel = stringResource(R.string.ui_recommend)) {
+                    for (feature in recommendations) {
                         SettingItem(
-                            headlineText = feature.title,
-                            supportingText = feature.summary,
+                            headlineText = stringResource(feature.titleRes),
+                            supportingText = stringResource(feature.summaryRes),
                             onClick = {
                                 activity.startActivity(
                                     SubSettingsActivity.intent(activity, feature.page, feature.key)
@@ -140,48 +142,48 @@ fun MainScreen(
                 Spacer(Modifier.height(12.dp))
             }
 
-            SettingsSection(topLabel = "界面设置") {
-                SettingItem(headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_ADS].orEmpty(), supportingText = adSummary,
+            SettingsSection(topLabel = stringResource(R.string.ui_interface_settings)) {
+                SettingItem(headlineText = stringResource(FeatureRegistry.pageTitleRes[SubSettingsActivity.PAGE_ADS]!!), supportingText = adSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_ADS) })
-                SettingItem(headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_TABS].orEmpty(), supportingText = tabsSummary,
+                SettingItem(headlineText = stringResource(FeatureRegistry.pageTitleRes[SubSettingsActivity.PAGE_TABS]!!), supportingText = tabsSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_TABS) })
-                SettingItem(headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_MINE].orEmpty(), supportingText = mineSummary,
+                SettingItem(headlineText = stringResource(FeatureRegistry.pageTitleRes[SubSettingsActivity.PAGE_MINE]!!), supportingText = mineSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MINE) })
-                SettingItem(headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_MISC].orEmpty(), supportingText = miscSummary,
+                SettingItem(headlineText = stringResource(FeatureRegistry.pageTitleRes[SubSettingsActivity.PAGE_MISC]!!), supportingText = miscSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MISC) })
             }
 
-            SettingsSection(topLabel = "高级功能") {
-                SwitchRow(title = FeatureRegistry.titleOf(com.mars.mimarketpurify.Settings.KEY_ISLAND), summary = FeatureRegistry.summaryOf(com.mars.mimarketpurify.Settings.KEY_ISLAND),
+            SettingsSection(topLabel = stringResource(R.string.ui_advanced)) {
+                SwitchRow(title = stringResource(FeatureRegistry.titleRes(com.mars.mimarketpurify.Settings.KEY_ISLAND)), summary = stringResource(FeatureRegistry.summaryRes(com.mars.mimarketpurify.Settings.KEY_ISLAND)),
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_ISLAND, true),
                     enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_ISLAND, it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = FeatureRegistry.titleOf(com.mars.mimarketpurify.Settings.KEY_MISC), summary = FeatureRegistry.summaryOf(com.mars.mimarketpurify.Settings.KEY_MISC),
+                SwitchRow(title = stringResource(FeatureRegistry.titleRes(com.mars.mimarketpurify.Settings.KEY_MISC)), summary = stringResource(FeatureRegistry.summaryRes(com.mars.mimarketpurify.Settings.KEY_MISC)),
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_MISC, true),
                     enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MISC, it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = FeatureRegistry.titleOf(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG), summary = FeatureRegistry.summaryOf(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG),
+                SwitchRow(title = stringResource(FeatureRegistry.titleRes(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG)), summary = stringResource(FeatureRegistry.summaryRes(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG)),
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG, true),
                     enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG, it) }
             }
 
-            SettingsSection(topLabel = "模块功能") {
+            SettingsSection(topLabel = stringResource(R.string.ui_module)) {
                 SettingItem(
-                    headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_THEME].orEmpty(),
-                    supportingText = "深色模式、预测性返回、界面缩放、悬浮底栏",
+                    headlineText = stringResource(FeatureRegistry.pageTitleRes[SubSettingsActivity.PAGE_THEME]!!),
+                    supportingText = stringResource(R.string.ui_theme_group_summary),
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_THEME) },
                 )
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = "隐藏桌面图标", summary = "仅移除桌面抽屉中的图标",
+                SwitchRow(title = stringResource(R.string.ui_hide_icon), summary = stringResource(R.string.ui_hide_icon_summary),
                     checked = activity.isLauncherIconHidden(), enabled = true) { activity.applyHideIcon(it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = FeatureRegistry.titleOf(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG), summary = FeatureRegistry.summaryOf(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG),
+                SwitchRow(title = stringResource(FeatureRegistry.titleRes(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG)), summary = stringResource(FeatureRegistry.summaryRes(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG)),
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, false),
                     enabled = true) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, it) }
             }
 
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-            Text(text = "Tips：开关实时生效，但还是建议重启应用商店",
+            Text(text = stringResource(R.string.ui_tips),
                 fontSize = MiuiX.MICRO.sp, color = colors.onSurfaceVariantSummary,
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 16.dp))
         }
@@ -220,7 +222,7 @@ private fun BlurHeader(
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = "Mi Market Purify", style = MiuixTheme.textStyles.title2,
                     fontWeight = FontWeight.Bold, color = colors.onSurface)
-                Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
+                Text(text = stringResource(R.string.ui_app_subtitle), style = MiuixTheme.textStyles.body2,
                     color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
             }
             if (showAboutButton) {
@@ -231,7 +233,7 @@ private fun BlurHeader(
                         .clickable { onOpenAbout() }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
-                    Text(text = "关于", fontSize = 13.sp, color = colors.primary)
+                    Text(text = stringResource(R.string.ui_about), fontSize = 13.sp, color = colors.primary)
                 }
                 Spacer(Modifier.width(8.dp))
             }
@@ -242,7 +244,7 @@ private fun BlurHeader(
                     .clickable { onRestartMarket() }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
-                Text(text = "重启商店", fontSize = 13.sp, color = colors.primary)
+                Text(text = stringResource(R.string.ui_restart_market), fontSize = 13.sp, color = colors.primary)
             }
         }
     }
@@ -257,7 +259,7 @@ private fun MiuiXSearchBar(onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically) {
         Text(text = "🔍", fontSize = 16.sp, color = colors.onSurfaceVariantSummary)
         Spacer(Modifier.width(10.dp))
-        Text(text = "搜索功能…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
+        Text(text = stringResource(R.string.ui_search_hint), style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
     }
 }
 
@@ -266,15 +268,15 @@ private fun StatusCard(service: XposedService?, night: Boolean) {
     val colors = MiuixTheme.colorScheme
     val titleText: String; val titleColor: Color; val bodyText: String; val bgColor: Color
     if (service == null) {
-        titleText = "模块未激活"; titleColor = colors.onSurfaceVariantSummary
-        bodyText = "请在 LSPosed 框架中启用本模块，并在作用域里勾选「应用商店」，然后重启应用商店。"
+        titleText = stringResource(R.string.ui_module_inactive); titleColor = colors.onSurfaceVariantSummary
+        bodyText = stringResource(R.string.ui_module_inactive_body)
         bgColor = Color(MiuiX.neutralSoft(night))
     } else {
         val remote = service.frameworkProperties and XposedService.PROP_CAP_REMOTE != 0L
-        titleText = "已激活 · ${service.frameworkName} ${service.frameworkVersion}"
+        titleText = stringResource(R.string.ui_activated, service.frameworkName, service.frameworkVersion)
         titleColor = Color(MiuiX.STATE_ACTIVE)
-        bodyText = if (remote) "支持远程偏好：开关改动实时生效，一般无需重启应用商店。\n\n插件调试基于应用商店版本：4.126.xx"
-            else "当前框架不支持远程偏好，开关可能不会立即生效，建议重启一次应用商店。"
+        bodyText = if (remote) stringResource(R.string.ui_remote_supported) + "\n\n" + stringResource(R.string.ui_debug_version)
+            else stringResource(R.string.ui_remote_unsupported)
         bgColor = Color(MiuiX.STATE_ACTIVE_SOFT)
     }
     Surface(

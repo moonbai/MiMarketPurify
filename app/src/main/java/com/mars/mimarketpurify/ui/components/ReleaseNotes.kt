@@ -25,6 +25,8 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.net.HttpURLConnection
 import java.net.URL
+import androidx.compose.ui.res.stringResource
+import com.mars.mimarketpurify.R
 
 /**
  * GitHub Release 说明的轻量渲染（Markdown + 内联 HTML 混排）。
@@ -263,12 +265,12 @@ private fun RemoteImage(
                 contentScale = ContentScale.Fit,
             )
             failed -> Text(
-                text = "图片加载失败",
+                text = stringResource(R.string.img_load_fail),
                 fontSize = 12.sp,
                 color = colors.onSurfaceSecondary,
             )
             else -> Text(
-                text = "图片加载中…",
+                text = stringResource(R.string.img_loading),
                 fontSize = 12.sp,
                 color = colors.onSurfaceSecondary,
             )

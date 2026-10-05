@@ -42,6 +42,8 @@ import com.mars.mimarketpurify.util.ViewBackdropSampler
 import com.mars.mimarketpurify.util.ViewBackdropSnapshot
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import androidx.compose.ui.res.stringResource
+import com.mars.mimarketpurify.R
 
 class MainActivity : SettingsBaseActivity() {
 
@@ -125,20 +127,20 @@ class MainActivity : SettingsBaseActivity() {
             val result = UpdateChecker.check()
             runOnUiThread {
                 if (result is UpdateCheckResult.Available) {
-                    Toast.makeText(this@MainActivity, "发现新版本 v${result.versionName}，可前往「检查更新」查看", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, this@MainActivity.getString(R.string.toast_new_version, result.versionName), Toast.LENGTH_LONG).show()
                 }
             }
         }.start()
     }
 
-    internal fun countText(keys: List<String>): String = "已启用 ${keys.count { readLocal(it, true) }}/${keys.size}"
+    internal fun countText(keys: List<String>): String = getString(R.string.count_enabled, keys.count { readLocal(it, true) }, keys.size)
     internal fun tabsText(): String {
         val parts = mutableListOf<String>()
-        if (!readLocal(Settings.KEY_TAB_FILTER, true)) parts += "筛选已关闭"
+        if (!readLocal(Settings.KEY_TAB_FILTER, true)) parts += getString(R.string.tabs_filter_off)
         else {
             val kept = readLocalTabs().size
             val extra = if (readLocal(Settings.KEY_UPDATE_TAB, true)) 1 else 0
-            parts += if (kept + extra <= 0) "未开启" else "已开启 ${kept + extra} 个"
+            parts += if (kept + extra <= 0) getString(R.string.tabs_none) else getString(R.string.tabs_enabled, kept + extra)
         }
         return parts.joinToString(" · ")
     }
@@ -148,8 +150,8 @@ class MainActivity : SettingsBaseActivity() {
 @Composable
 private fun BottomNavBar(selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
     val items = listOf(
-        FloatingTabItem(key = "home", label = "主页", icon = NavIcons.Home),
-        FloatingTabItem(key = "about", label = "关于", icon = NavIcons.Person),
+        FloatingTabItem(key = "home", label = stringResource(R.string.nav_home), icon = NavIcons.Home),
+        FloatingTabItem(key = "about", label = stringResource(R.string.nav_about), icon = NavIcons.Person),
     )
     val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
     val radius = Settings.floatingBarRadiusDp().dp

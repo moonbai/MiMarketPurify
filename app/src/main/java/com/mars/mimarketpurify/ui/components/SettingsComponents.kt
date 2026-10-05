@@ -89,6 +89,7 @@ import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 
 // ==================== SettingItem ====================
 
@@ -245,7 +246,7 @@ fun SubTopBar(title: String, onBack: () -> Unit, showBack: Boolean = true) {
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Text(
-                    text = "重启商店",
+                    text = stringResource(R.string.btn_restart),
                     fontSize = 13.sp,
                     color = colors.primary,
                 )
@@ -273,6 +274,9 @@ fun SwitchRow(
     val context = LocalContext.current
     val snackbarHost = LocalSnackbarHost.current
     val scope = rememberCoroutineScope()
+    val onLabel = stringResource(R.string.snack_on)
+    val offLabel = stringResource(R.string.snack_off)
+    val toggleFmt = stringResource(R.string.snack_toggle)
     var isChecked by remember(checked) { mutableStateOf(checked) }
 
     fun toggle(next: Boolean) {
@@ -283,12 +287,12 @@ fun SwitchRow(
                 val hintOn = context.getSharedPreferences(Settings.PREFS_GROUP, Context.MODE_PRIVATE)
                     .getBoolean(Settings.KEY_SWITCH_HINT, true)
                 if (!hintOn) return@launch
-                val msg = "$title：${if (next) "已开启" else "已关闭"}"
+                val msg = toggleFmt.format(title, if (next) onLabel else offLabel)
                 // affectsStore=true 时始终显示「重启商店」按钮
                 val needsRestart = affectsStore
                 val result = snackbarHost.showSnackbar(
                     message = msg,
-                    actionLabel = if (needsRestart) "重启商店" else null,
+                    actionLabel = if (needsRestart) context.getString(R.string.btn_restart) else null,
                     duration = SnackbarDuration.Short,
                 )
                 if (result == SnackbarResult.ActionPerformed) MarketRestarter.restart(context)
@@ -512,7 +516,7 @@ fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
             )
         )
     }
-    val themeLabels = listOf("跟随系统", "浅色", "深色")
+    val themeLabels = listOf(stringResource(R.string.theme_follow), stringResource(R.string.theme_light), stringResource(R.string.theme_dark))
     val items = themeLabels.mapIndexed { index, label ->
         DropdownItem(
             text = label,
@@ -524,10 +528,10 @@ fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
             },
         )
     }
-    SettingsSection(topLabel = "主题模式") {
+    SettingsSection(topLabel = stringResource(R.string.sec_theme_mode)) {
         DropdownPreference(
-            title = "外观深浅色",
-            summary = "选择浅色、深色或跟随系统自动切换",
+            title = stringResource(R.string.theme_mode_title),
+            summary = stringResource(R.string.theme_mode_summary),
             valueText = themeLabels[mode],
             entries = listOf(DropdownEntry(items = items)),
         )
@@ -558,16 +562,16 @@ fun PrefTabFilterSpinner(
 
     val keptLabels = kept.mapNotNull { key -> Settings.TAB_ITEMS[key] }
     val dynamicSummary = when {
-        !enabled -> "已关闭筛选，恢复全部标签"
-        keptLabels.isEmpty() -> "未选择任何标签"
-        keptLabels.size <= 3 -> "已选：${keptLabels.joinToString("、")}"
-        else -> "已选 ${keptLabels.size} 项：${keptLabels.take(3).joinToString("、")}…"
+        !enabled -> stringResource(R.string.tab_filter_off)
+        keptLabels.isEmpty() -> stringResource(R.string.tab_filter_none)
+        keptLabels.size <= 3 -> stringResource(R.string.tab_filter_selected_few, keptLabels.joinToString(stringResource(R.string.list_sep)))
+        else -> stringResource(R.string.tab_filter_selected_many, keptLabels.size, keptLabels.take(3).joinToString(stringResource(R.string.list_sep)))
     }
 
     // 复用 MiuiX 原生 WindowDropdownPopup 承载多选弹窗（collapseOnSelection=false 保持展开逐项勾选），
     // 条目标题统一使用 body1，与仓库其它条目（PrefSwitch 等）保持一致，不再使用字号偏大的内置标题样式。
     DropdownPreference(
-        title = "底部标签显示",
+        title = stringResource(R.string.tab_filter_title),
         summary = dynamicSummary,
         enabled = enabled,
         collapseOnSelection = false,
@@ -694,7 +698,7 @@ fun PrefColorRow(
                 color = colors.onSurface,
             )
             Text(
-                text = "点击后滑动颜色条选择颜色及透明度",
+                text = stringResource(R.string.color_hint),
                 style = MiuixTheme.textStyles.footnote1,
                 color = colors.onSurfaceVariantSummary,
                 modifier = Modifier.padding(top = 3.dp),
@@ -718,16 +722,16 @@ fun PrefColorRow(
                     activity.writeRemoteInt(key, pickerColor)
                     stored = pickerColor
                     open = false
-                }) { Text("确定", color = colors.primary) }
+                }) { Text(stringResource(R.string.color_pick_confirm), color = colors.primary) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     activity.writeRemoteInt(key, -1)
                     stored = -1
                     open = false
-                }) { Text("恢复默认", color = colors.onSurfaceVariantSummary) }
+                }) { Text(stringResource(R.string.color_pick_reset), color = colors.onSurfaceVariantSummary) }
             },
-            title = { Text("选择颜色") },
+            title = { Text(stringResource(R.string.color_pick_title)) },
             text = {
                 ColorPicker(
                     color = Color(pickerColor),

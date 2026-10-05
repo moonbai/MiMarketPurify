@@ -28,6 +28,8 @@ import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.ui.ModuleTheme
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.ui.res.stringResource
+import com.mars.mimarketpurify.R
 
 class SearchActivity : ComponentActivity() {
 
@@ -52,11 +54,13 @@ class SearchActivity : ComponentActivity() {
 }
 
 private val categoryColors = mapOf(
-    "广告净化" to Color(0xFFE53935),
-    "我的页精简" to Color(0xFF1E88E5),
-    "标签栏" to Color(0xFF43A047),
-    "界面精简" to Color(0xFFF57C00),
-    "悬浮底栏" to Color(0xFF8E24AA),
+    "cat_ad" to Color(0xFFE53935),
+    "cat_mine" to Color(0xFF1E88E5),
+    "cat_tabs" to Color(0xFF43A047),
+    "cat_misc" to Color(0xFFF57C00),
+    "cat_floating" to Color(0xFF8E24AA),
+    "cat_enhance" to Color(0xFF5E35B1),
+    "cat_theme" to Color(0xFF00897B),
 )
 
 @Composable
@@ -88,7 +92,7 @@ private fun SearchScreen(activity: SearchActivity) {
         if (isSearching) {
             if (results.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "未找到相关功能", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
+                    Text(text = stringResource(R.string.ui_search_no_result), style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
                 }
             } else {
                 LazyVerticalGrid(
@@ -115,7 +119,7 @@ private fun SearchScreen(activity: SearchActivity) {
             ) {
                 item(span = { GridItemSpan(2) }) {
                     Text(
-                        text = "功能推荐",
+                        text = stringResource(R.string.ui_feature_recommend),
                         style = MiuixTheme.textStyles.title3,
                         color = colors.onSurface,
                         modifier = Modifier.padding(bottom = 4.dp),
@@ -145,7 +149,7 @@ private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onBack:
                 .background(colors.surfaceContainer).padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
-            if (query.isEmpty()) Text(text = "搜索功能…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
+            if (query.isEmpty()) Text(text = stringResource(R.string.ui_search_hint), style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
             TextField(
                 value = query, onValueChange = onQueryChange, singleLine = true,
                 // 显式左对齐：避免 MiuiX body1 默认居中导致光标落在「搜/索」之间
@@ -175,10 +179,10 @@ private fun FeatureSearchCard(feature: FeatureRegistry.Feature, onClick: () -> U
     ) {
         Box(modifier = Modifier.size(width = 32.dp, height = 4.dp).clip(RoundedCornerShape(2.dp)).background(catColor))
         Spacer(Modifier.height(10.dp))
-        Text(text = feature.title, style = MiuixTheme.textStyles.body1, color = colors.onSurface, maxLines = 1)
+        Text(text = stringResource(feature.titleRes), style = MiuixTheme.textStyles.body1, color = colors.onSurface, maxLines = 1)
         Spacer(Modifier.height(4.dp))
-        Text(text = feature.summary, style = MiuixTheme.textStyles.footnote1, color = colors.onSurfaceVariantSummary, maxLines = 2, lineHeight = 15.sp)
+        Text(text = stringResource(feature.summaryRes), style = MiuixTheme.textStyles.footnote1, color = colors.onSurfaceVariantSummary, maxLines = 2, lineHeight = 15.sp)
         Spacer(Modifier.height(8.dp))
-        Text(text = feature.category, fontSize = 10.sp, color = catColor)
+        Text(text = stringResource(FeatureRegistry.categoryTitles[feature.category] ?: R.string.sec_features), fontSize = 10.sp, color = catColor)
     }
 }
