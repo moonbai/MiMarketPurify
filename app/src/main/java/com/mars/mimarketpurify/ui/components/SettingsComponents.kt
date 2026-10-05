@@ -286,9 +286,9 @@ fun SwitchRow(
     summary: String,
     checked: Boolean,
     enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
     /** 是否影响应用商店（远程偏好无法实时生效时需重启商店）；决定提示条是否带「重启商店」按钮 */
     affectsStore: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit,
 ) {
     val colors = MiuixTheme.colorScheme
     val context = LocalContext.current
