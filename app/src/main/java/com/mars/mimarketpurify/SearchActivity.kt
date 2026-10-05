@@ -145,7 +145,7 @@ private fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onBack:
                 .background(colors.surfaceContainer).padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
-            if (query.isEmpty()) Text(text = "功能搜索…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
+            if (query.isEmpty()) Text(text = "搜索功能…", style = MiuixTheme.textStyles.body1, color = colors.onSurfaceVariantSummary)
             TextField(
                 value = query, onValueChange = onQueryChange, singleLine = true,
                 // 显式左对齐：避免 MiuiX body1 默认居中导致光标落在「搜/索」之间
