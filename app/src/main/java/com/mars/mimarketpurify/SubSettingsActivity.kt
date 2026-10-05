@@ -197,9 +197,7 @@ private fun MineScreen(activity: SubSettingsActivity, masterOn: Boolean, hl: Str
 
 @Composable
 private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
-    val keys = remember { Settings.TAB_ITEMS.keys.toList() }
     val tick by activity.refreshSignal
-    val kept = remember(tick) { mutableStateOf(Settings.getKeptTabs()) }
     // 筛选开关关闭后，下方标签勾选项同步隐藏（开关联动）
     val filterOn by remember(tick) { mutableStateOf(activity.readLocal(Settings.KEY_TAB_FILTER, true)) }
     Column(
@@ -217,16 +215,9 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
                 enabled = masterOn,
                 onChanged = { activity.refreshSignal.value++ },
             )
-            // 筛选开关开启时才展示各标签勾选项，关闭后整体隐藏
+            // 筛选开关开启时展示 MiuiX Grouped Spinner（伪多选）；关闭后整体禁用并隐藏勾选项
             if (filterOn) {
-                keys.forEach { key ->
-                    val label = Settings.TAB_ITEMS[key] ?: key
-                    CheckboxRow(title = label, summary = key, checked = key in kept.value, enabled = masterOn) { on ->
-                        val next = if (on) kept.value + key else kept.value - key
-                        kept.value = next
-                        activity.writeRemoteString(Settings.KEY_TAB_KEEP, next.joinToString(","))
-                    }
-                }
+                PrefTabFilterSpinner(activity = activity, enabled = masterOn)
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -288,6 +279,11 @@ private fun StoreFloatingBarScreen(activity: SubSettingsActivity, masterOn: Bool
             )
             // 仅在「启用悬浮底栏」开启时展示下方行为选项，关闭后同步隐藏
             if (floatingOn) {
+                // ── 商店悬浮底栏独立外观参数（与插件本体底栏解耦）──
+                PrefSlider(activity, Settings.KEY_FLOAT_CORNER_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", Settings.FLOATING_RADIUS_MIN, Settings.FLOATING_RADIUS_MAX, Settings.FLOATING_RADIUS_DEFAULT, true, format = { "${it}dp" })
+                PrefSlider(activity, Settings.KEY_FLOAT_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.STORE_FLOAT_ALPHA_DEFAULT, true, format = { "${it}%" })
+                PrefSlider(activity, Settings.KEY_STORE_FLOAT_BOTTOM_MARGIN, "距底栏距离", "悬浮底栏到屏幕底部的间距（dp）", Settings.STORE_FLOAT_BOTTOM_MARGIN_MIN, Settings.STORE_FLOAT_BOTTOM_MARGIN_MAX, Settings.STORE_FLOAT_BOTTOM_MARGIN_DEFAULT, true, format = { "${it}dp" })
+                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID, "液态选中高亮动画", "选中项显示跟随移动的液态胶囊", default = true, enabled = masterOn)
                 PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LIQUID_3D, "3D 液态高亮", "在液态基础上叠加阴影，增强立体感", default = false, enabled = masterOn)
                 PrefSwitch(activity, Settings.KEY_FLOATING_BAR_MONOCHROME, "单色图标", "图标抽成单色描边、随主题着色", default = false, enabled = masterOn)
@@ -310,21 +306,41 @@ private fun StoreFloatingBarScreen(activity: SubSettingsActivity, masterOn: Bool
 
 @Composable
 private fun PluginFloatingBarSection(activity: SubSettingsActivity) {
+    val tick by activity.refreshSignal
     val sliderMax = 29
+    // 插件悬浮底栏独立总开关（需求4）：关闭后下方外观相关开关一并隐藏。
+    // 该开关作用于模块自身的底部胶囊导航（主页 / 关于页），不写远程偏好（仅影响本插件 UI）。
+    val pluginBarOn by remember(tick) {
+        mutableStateOf(activity.readLocal(Settings.KEY_FLOAT_BAR_ENABLE, true))
+    }
     SettingsSection(topLabel = "插件悬浮底栏") {
-        PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标", default = true, enabled = true)
-        Spacer(Modifier.height(12.dp))
-        PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, true, format = { "${it}dp" })
-        PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, true, format = { "${it}%" })
-        PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部外边距", "悬浮底栏到屏幕底部的间距（dp）", Settings.FLOATING_BOTTOM_MARGIN_MIN, Settings.FLOATING_BOTTOM_MARGIN_MAX, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, true, format = { "${it}dp" })
-        Spacer(Modifier.height(12.dp))
-        PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xFFF2F2F2.toInt())
-        Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-        PrefColorRow(activity, "选中项背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, 0xFFDADADA.toInt())
-        Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-        PrefColorRow(activity, "文字默认色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0xFF000000.toInt())
-        Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-        PrefColorRow(activity, "文字选中色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFF000000.toInt())
+        PrefSwitch(
+            activity = activity,
+            key = Settings.KEY_FLOAT_BAR_ENABLE,
+            title = "启用插件悬浮底栏",
+            summary = "在主页 / 关于页底部显示居中胶囊导航（主页、关于切换栏）",
+            default = true,
+            enabled = true,
+            affectsStore = false,
+            onChanged = { activity.refreshSignal.value++ },
+        )
+        // 仅在「启用插件悬浮底栏」开启时展示外观相关控件，关闭后同步隐藏（需求4）。
+        if (pluginBarOn) {
+            Spacer(Modifier.height(12.dp))
+            PrefSwitch(activity, Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标", default = true, enabled = true)
+            Spacer(Modifier.height(12.dp))
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, true, format = { "${it}dp" })
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, true, format = { "${it}%" })
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部外边距", "悬浮底栏到屏幕底部的间距（dp）", Settings.FLOATING_BOTTOM_MARGIN_MIN, Settings.FLOATING_BOTTOM_MARGIN_MAX, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, true, format = { "${it}dp" })
+            Spacer(Modifier.height(12.dp))
+            PrefColorRow(activity, "底栏背景色", Settings.KEY_FLOAT_BG_COLOR, 0xFFF2F2F2.toInt())
+            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+            PrefColorRow(activity, "选中项背景色", Settings.KEY_FLOAT_SELECT_BG_COLOR, 0xFFDADADA.toInt())
+            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+            PrefColorRow(activity, "文字默认色", Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, 0xFF000000.toInt())
+            Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+            PrefColorRow(activity, "文字选中色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFF000000.toInt())
+        }
     }
 }
 
@@ -379,6 +395,39 @@ private fun ThemeScreen(activity: SubSettingsActivity) {
         // 插件本体悬浮底栏：外观配置（标签文字 / 圆角 / 透明度 / 配色），与深色模式 / 缩放统一管理；
         // 其「针对商店底栏的 Hook 行为」见主页「界面设置」内的「悬浮底栏（商店）」。
         PluginFloatingBarSection(activity = activity)
+
+        Spacer(Modifier.height(12.dp))
+        // 随机推荐（需求5：由主页「模块功能」移入此处）：控制主页是否展示 3 条随机功能推荐。
+        // 仅影响本插件主页，不影响应用商店，故无需重启商店。
+        SettingsSection(topLabel = "主页推荐") {
+            PrefSwitch(
+                activity = activity,
+                key = Settings.KEY_RECOMMENDATIONS_ENABLED,
+                title = "随机推荐",
+                summary = "在模块主页展示 3 条随机功能推荐入口",
+                default = true,
+                enabled = true,
+                affectsStore = false,
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+        // 开关操作提示（需求8）：控制切换任意功能开关后是否弹出 Snackbar 提示。
+        // 存于模块自身 SP（不经远程偏好），仅影响本插件 UI。
+        SettingsSection(topLabel = "操作提示") {
+            val hintOn by remember(tick) {
+                mutableStateOf(activity.readLocalBoolDirect(Settings.KEY_SWITCH_HINT, true))
+            }
+            SwitchRow(
+                title = "开关操作提示",
+                summary = "切换功能开关后弹出 Snackbar 提示；若需重启应用商店生效，提示内附「重启商店」按钮",
+                checked = hintOn,
+                enabled = true,
+                affectsStore = false,
+            ) { on ->
+                activity.writeLocalBool(Settings.KEY_SWITCH_HINT, on)
+            }
+        }
 
         Footer("主题模式与界面缩放改动后立即重建本页生效；预测性返回需 Android 13 及以上系统支持。")
     }

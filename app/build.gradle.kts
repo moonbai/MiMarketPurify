@@ -38,7 +38,7 @@ android {
         // （Mi Market 实际运行于 HyperOS / Android 14+，即 API 34+，无功能影响）。
         minSdk = 33
         targetSdk = 36
-        versionCode = 36
+        versionCode = 37
         versionName = "1.2.2"
         buildConfigField("String", "APP_NAME", "\"Mi Market Purify\"")
         // 只打包用到的语言资源，丢弃 Compose / Miuix 等库自带的其余 locale，进一步压缩体积
@@ -111,6 +111,8 @@ dependencies {
     // ── Miuix KMP：悬浮底栏主题（MiuixTheme/Colors）与毛玻璃（rememberLayerBackdrop/layerBackdrop）──
     implementation(libs.miuix.ui.android)
     implementation(libs.miuix.blur.android)
+    // ── Miuix 偏好组件：SpinnerPreference / SliderPreference 等原生 MiuiX 设置控件（同源同版本 0.9.4）──
+    implementation(libs.miuix.preference.android)
 
     // ── HyperModifier 悬浮底栏实际依赖：io.github.kyant0:shapes（提供 Capsule 胶囊形状）──
     implementation(libs.kyant.shapes)

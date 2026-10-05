@@ -281,8 +281,11 @@ class ComposeFloatingBarHost private constructor(
         val visible = tabs.isNotEmpty() && (nativeBarPresent || syntheticUpdate)
         // 实时读取外观配置，纳入 state 相等性判断——配置变化即触发重组，颜色/圆角/间距即时生效。
         val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
-        val radiusDp = Settings.floatingBarRadiusDp()
-        val bottomMarginDp = Settings.floatingBarBottomMarginDp()
+        // 商店悬浮底栏使用「独立外观参数」（与插件本体底栏彻底解耦）：圆角 / 距底栏距离 / 背景透明度
+        // 分别读 storeBar* getter，对应「悬浮底栏（商店）」页「添加回」的三项控件（需求3）。
+        val radiusDp = Settings.storeBarRadiusDp()
+        val bottomMarginDp = Settings.storeBarBottomMarginDp()
+        val barAlphaPercent = Settings.storeBarAlphaPercent()
         // 商店悬浮底栏使用「专属」配色 key（KEY_STORE_FLOAT_*_COLOR），与插件本体底栏
         // （KEY_FLOAT_*_COLOR）相互独立；前者在「界面设置 → 悬浮底栏（商店）」配置，
         // 后者在「主题与外观」配置，互不干扰。
@@ -300,6 +303,7 @@ class ComposeFloatingBarHost private constructor(
             showLabel = showLabel,
             radiusDp = radiusDp,
             bottomMarginDp = bottomMarginDp,
+            barAlphaPercent = barAlphaPercent,
             barColorArgb = barColorArgb,
             indicatorColorArgb = indicatorColorArgb,
             textSelectedArgb = textSelectedArgb,
@@ -487,6 +491,8 @@ private data class MarketNavigationState(
     val showLabel: Boolean = true,
     val radiusDp: Int = 29,
     val bottomMarginDp: Int = 4,
+    /** 底栏背景透明度（%），由「悬浮底栏（商店）」页「背景透明度」控件控制（需求3），默认 40%。 */
+    val barAlphaPercent: Int = 40,
     val barColorArgb: Int = -1,
     val indicatorColorArgb: Int = -1,
     val textSelectedArgb: Int = -1,
@@ -544,7 +550,14 @@ private fun MarketNavigationContent(
         val indicatorColor = if (state.indicatorColorArgb == -1) null else Color(state.indicatorColorArgb)
         val textSelected = if (state.textSelectedArgb == -1) null else Color(state.textSelectedArgb)
         val textNormal = if (state.textNormalArgb == -1) null else Color(state.textNormalArgb)
-        val barColor = if (state.barColorArgb == -1) null else Color(state.barColorArgb)
+        // 背景透明度（%）混入底栏颜色：无论是否自定义配色，均按 barAlphaPercent 折算 alpha，
+        // 使「悬浮底栏（商店）」页「背景透明度」控件对毛玻璃态 / 纯色态同时生效（需求3）。
+        val barAlpha = (state.barAlphaPercent.coerceIn(0, 100)) / 100f
+        val barColor = if (state.barColorArgb == -1) {
+            colors.surfaceContainer.copy(alpha = barAlpha)
+        } else {
+            Color(state.barColorArgb).copy(alpha = barAlpha)
+        }
 
         // 「移花接木」更新入口：原生底栏已注入该 tab 时直接复用（isUpdate=true）；
         // 若某些商店版本未为注入项生成对应 TabView（导致胶囊里看不到「更新」），

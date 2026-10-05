@@ -2,6 +2,7 @@ package com.mars.mimarketpurify.ui.components
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
@@ -26,6 +27,9 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.*
@@ -42,7 +46,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.TextStyle
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.unit.dp
@@ -56,7 +63,11 @@ import com.mars.mimarketpurify.SettingsBaseActivity
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import com.mars.mimarketpurify.PrivacyPolicyActivity
 import top.yukonga.miuix.kmp.basic.ColorPicker
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.mars.mimarketpurify.ui.LocalSnackbarHost
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -75,6 +86,7 @@ import com.mars.mimarketpurify.util.floatingGlassSurface
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import kotlinx.coroutines.launch
 
 // ==================== SettingItem（深色模式修复：显式设 onSurface 色） ====================
 
@@ -275,14 +287,41 @@ fun SwitchRow(
     checked: Boolean,
     enabled: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    /** 是否影响应用商店（远程偏好无法实时生效时需重启商店）；决定提示条是否带「重启商店」按钮 */
+    affectsStore: Boolean = true,
 ) {
     val colors = MiuixTheme.colorScheme
+    val context = LocalContext.current
+    val snackbarHost = LocalSnackbarHost.current
+    val scope = rememberCoroutineScope()
     var isChecked by remember(checked) { mutableStateOf(checked) }
+
+    /** 切换后：先回写状态，再按需弹出 Snackbar 提示（含可选「重启商店」Action）。 */
+    fun toggle(next: Boolean) {
+        isChecked = next
+        onCheckedChange(next)
+        if (snackbarHost != null) {
+            scope.launch {
+                val hintOn = context.getSharedPreferences(Settings.PREFS_GROUP, Context.MODE_PRIVATE)
+                    .getBoolean(Settings.KEY_SWITCH_HINT, true)
+                if (!hintOn) return@launch
+                val msg = "$title：${if (next) "已开启" else "已关闭"}"
+                val needsRestart = affectsStore && !Settings.remotePrefsAvailable()
+                val result = snackbarHost.showSnackbar(
+                    message = msg,
+                    actionLabel = if (needsRestart) "重启商店" else null,
+                    duration = SnackbarDuration.Short,
+                )
+                if (result == SnackbarResult.ActionPerformed) MarketRestarter.restart(context)
+            }
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .clickable(enabled = enabled) { isChecked = !isChecked; onCheckedChange(isChecked) }
+            .clickable(enabled = enabled) { toggle(!isChecked) }
             .padding(horizontal = 20.dp, vertical = MiuiX.ROW_PAD_V.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -301,7 +340,7 @@ fun SwitchRow(
         }
         Switch(
             checked = isChecked,
-            onCheckedChange = { isChecked = it; onCheckedChange(it) },
+            onCheckedChange = { toggle(it) },
             enabled = enabled,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,       // 白色拇指：浅色轨道/深色轨道上都清晰
@@ -407,62 +446,24 @@ fun PrefSwitch(
     summary: String,
     default: Boolean = true,
     enabled: Boolean = true,
+    affectsStore: Boolean = true,
     onChanged: ((Boolean) -> Unit)? = null,
 ) {
     val tick by activity.refreshSignal
     var checked by remember(tick) { mutableStateOf(activity.readLocal(key, default)) }
-    SwitchRow(title, summary, checked, enabled) { on ->
+    SwitchRow(title, summary, checked, enabled, affectsStore = affectsStore) { on ->
         checked = on
         activity.writeRemote(key, on)
         onChanged?.invoke(on)
     }
 }
 
-// ==================== 偏好绑定：主题模式（三选一·单选） ====================
+// ==================== 偏好绑定：主题模式（MiuiX SpinnerPreference 下拉单选） ====================
 
-/** 单选行：与 SwitchRow / CheckboxRow 同风，右侧为 RadioButton，整行可点击。 */
-@Composable
-private fun RadioRow(
-    title: String,
-    summary: String,
-    selected: Boolean,
-    enabled: Boolean = true,
-    onSelect: () -> Unit,
-) {
-    val colors = MiuixTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(enabled = enabled) { onSelect() }
-            .padding(horizontal = MiuiX.ROW_PAD_H.dp, vertical = MiuiX.ROW_PAD_V.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1,
-                color = if (enabled) colors.onSurface else colors.outline,
-            )
-            Text(
-                text = summary,
-                style = MiuixTheme.textStyles.footnote1,
-                color = if (enabled) colors.onSurfaceVariantSummary else colors.outline,
-                modifier = Modifier.padding(top = 3.dp),
-            )
-        }
-        RadioButton(
-            selected = selected,
-            onClick = onSelect,
-            enabled = enabled,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = colors.primary,
-                unselectedColor = colors.outline,
-            ),
-        )
-    }
-}
-
+/**
+ * 主题模式：跟随系统 / 浅色 / 深色，使用 MiuiX 的 [WindowSpinnerPreference] 下拉单选控件。
+ * 选中项以内联文本展示，展开为下拉菜单（带勾选标记）；改动后即时重建本页生效。
+ */
 @Composable
 fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
     val tick by activity.refreshSignal
@@ -474,30 +475,64 @@ fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
             )
         )
     }
+    val items = listOf(
+        com.mars.mimarketpurify.THEME_FOLLOW to "跟随系统",
+        com.mars.mimarketpurify.THEME_LIGHT to "浅色",
+        com.mars.mimarketpurify.THEME_DARK to "深色",
+    ).map { (value, title) -> DropdownItem(text = title) }
     SettingsSection(topLabel = "主题模式") {
-        listOf(
-            com.mars.mimarketpurify.THEME_FOLLOW to ("跟随系统" to "跟随系统设置自动切换浅色 / 深色"),
-            com.mars.mimarketpurify.THEME_LIGHT to ("浅色" to "始终使用浅色主题"),
-            com.mars.mimarketpurify.THEME_DARK to ("深色" to "始终使用深色主题"),
-        ).forEach { (value, label) ->
-            val (title, summary) = label
-            // 三选一：单选，整行点击即选中，不存在「关闭」状态
-            RadioRow(
-                title = title,
-                summary = summary,
-                selected = mode == value,
-                enabled = true,
-            ) {
-                mode = value
+        WindowSpinnerPreference(
+            items = items,
+            selectedIndex = mode,
+            title = "外观深浅色",
+            summary = "选择浅色 / 深色，或跟随系统自动切换",
+            onSelectedIndexChange = { index ->
+                mode = index
                 // 主题模式只影响本插件 UI，存模块自身 SP（不经 XposedService），与 useDarkTheme 读取同源
-                activity.writeLocalInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, value)
+                activity.writeLocalInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, index)
                 onApplied()
-            }
-        }
+            },
+        )
     }
 }
 
-// ==================== 偏好绑定：数值滑杆 ====================
+// ==================== 偏好绑定：底部标签筛选（MiuiX Grouped SpinnerPreference 伪多选） ====================
+
+/**
+ * 底部标签筛选：使用 MiuiX 的 [WindowSpinnerPreference]（多选项 + [collapseOnSelection] = false）实现「伪多选」——
+ * 单组 Spinner 展开后逐项勾选，选中态以勾选标记展示，关闭筛选开关时整体隐藏。
+ * 与原本逐条 Checkbox 不同，这里把全部标签纳入一个下拉，交互更紧凑、与 MiuiX 设置语汇统一。
+ */
+@Composable
+fun PrefTabFilterSpinner(
+    activity: SettingsBaseActivity,
+    enabled: Boolean,
+) {
+    val tick by activity.refreshSignal
+    var kept by remember(tick) { mutableStateOf(Settings.getKeptTabs()) }
+    val keys = remember { Settings.TAB_ITEMS.keys.toList() }
+    val items = keys.map { key ->
+        val label = Settings.TAB_ITEMS[key] ?: key
+        DropdownItem(
+            text = label,
+            selected = key in kept,
+            onClick = {
+                kept = if (key in kept) kept - key else kept + key
+                activity.writeRemoteString(Settings.KEY_TAB_KEEP, kept.joinToString(","))
+            },
+        )
+    }
+    WindowSpinnerPreference(
+        entries = listOf(DropdownEntry(items = items)),
+        title = "保留的底部标签",
+        summary = if (enabled) "展开后逐项勾选需保留的标签（可多选）" else "已关闭筛选，恢复全部标签",
+        enabled = enabled,
+        showValue = false,
+        collapseOnSelection = false,
+    )
+}
+
+// ==================== 偏好绑定：数值滑杆（Adjust Volume 样式：可滑可改数值） ====================
 
 @Composable
 fun PrefSlider(
@@ -514,7 +549,15 @@ fun PrefSlider(
 ) {
     val tick by activity.refreshSignal
     var value by remember(tick) { mutableStateOf(activity.readLocalInt(key, default)) }
+    // 显示文本由 format(value) 派生；输入时解析其中的数字并回写，保持单位（dp/%/…）不变。
+    var textValue by remember(tick) { mutableStateOf(format(value)) }
     val colors = MiuixTheme.colorScheme
+
+    fun commit() {
+        activity.writeRemoteInt(key, value)
+        onChanged?.invoke(value)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -535,20 +578,36 @@ fun PrefSlider(
                     modifier = Modifier.padding(top = 3.dp),
                 )
             }
-            Text(
-                text = format(value),
-                style = MiuixTheme.textStyles.body2,
-                color = colors.primary,
-                fontWeight = FontWeight.Bold,
+            // 可编辑数值输入框：既能跟滑杆联动，也能直接键入数值后回车确认（Adjust Volume 样式）。
+            BasicTextField(
+                value = textValue,
+                onValueChange = { new ->
+                    textValue = new
+                    new.filter { it.isDigit() }.toIntOrNull()?.let { v ->
+                        val clamped = v.coerceIn(min, max)
+                        if (clamped != value) { value = clamped; textValue = format(value) }
+                    }
+                },
+                enabled = enabled,
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { commit() }),
+                textStyle = TextStyle(
+                    color = if (enabled) colors.primary else colors.outline,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.End,
+                ),
+                modifier = Modifier.widthIn(min = 40.dp, max = 72.dp),
             )
         }
         Slider(
             value = value.toFloat(),
-            onValueChange = { value = it.toInt() },
-            onValueChangeFinished = {
-                activity.writeRemoteInt(key, value)
-                onChanged?.invoke(value)
+            onValueChange = { v ->
+                value = v.roundToInt()
+                textValue = format(value)
             },
+            onValueChangeFinished = { commit() },
             valueRange = min.toFloat()..max.toFloat(),
             steps = (max - min - 1).coerceAtLeast(0),
             enabled = enabled,

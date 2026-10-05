@@ -58,7 +58,12 @@ private fun restartMarket(context: Context) {
 }
 
 @Composable
-fun MainScreen(activity: MainActivity) {
+fun MainScreen(
+    activity: MainActivity,
+    /** 插件悬浮底栏关闭时（需求4/7），底部切换栏隐藏，改由顶栏「关于」按钮进入关于页。 */
+    showAboutButton: Boolean = false,
+    onOpenAbout: () -> Unit = {},
+) {
     val colors = MiuixTheme.colorScheme
     val context = LocalContext.current
     val tick by activity.refreshSignal
@@ -143,7 +148,7 @@ fun MainScreen(activity: MainActivity) {
             Spacer(Modifier.height(12.dp))
         }
 
-        SettingsSection(topLabel = "界面设置") {
+            SettingsSection(topLabel = "界面设置") {
                 SettingItem(headlineText = "广告净化", supportingText = adSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_ADS) })
                 SettingItem(headlineText = "底栏自定义", supportingText = tabsSummary,
@@ -152,11 +157,14 @@ fun MainScreen(activity: MainActivity) {
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MINE) })
                 SettingItem(headlineText = "其他界面精简", supportingText = miscSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MISC) })
-                SettingItem(headlineText = "悬浮底栏（商店）", supportingText = "胶囊底栏、液态与单色图标",
-                    onClick = { activity.openPage(SubSettingsActivity.PAGE_TAB_BAR) })
             }
 
             SettingsSection(topLabel = "高级功能") {
+                // 「悬浮底栏（商店）」由「界面设置」移入「高级功能」（需求6 重排）：
+                // 它是针对应用商店的 Hook 增强，与下方下载超级岛 / 细节修正 / 升级提醒弹窗同类。
+                SettingItem(headlineText = "悬浮底栏（商店）", supportingText = "胶囊底栏、液态与单色图标",
+                    onClick = { activity.openPage(SubSettingsActivity.PAGE_TAB_BAR) })
+                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
                 SwitchRow(title = "下载超级岛", summary = "强制让下载进度进入小米超级岛",
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_ISLAND, true),
                     enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_ISLAND, it) }
@@ -171,25 +179,20 @@ fun MainScreen(activity: MainActivity) {
             }
 
             SettingsSection(topLabel = "模块功能") {
-                SwitchRow(title = "隐藏桌面图标", summary = "仅移除桌面抽屉中的图标",
-                    checked = activity.isLauncherIconHidden(), enabled = true) { activity.applyHideIcon(it) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = "随机推荐", summary = "主页显示3条随机功能推荐",
-                    checked = recommendEnabled, enabled = masterOn.value) {
-                    recommendEnabled = it
-                    activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RECOMMENDATIONS_ENABLED, it)
-                }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = "调试模式", summary = "开启后将统一日志输出",
-                    checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, false),
-                    enabled = true) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, it) }
-                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                // 主题与外观入口移入模块设置分组：深色模式 / 预测性返回 / 界面缩放 / 悬浮底栏
+                // 主题与外观入口调整到分组第一个位置（需求5）
                 SettingItem(
                     headlineText = "主题与外观",
                     supportingText = "深色模式、预测性返回、界面缩放、悬浮底栏",
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_THEME) },
                 )
+                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                SwitchRow(title = "隐藏桌面图标", summary = "仅移除桌面抽屉中的图标",
+                    checked = activity.isLauncherIconHidden(), enabled = true) { activity.applyHideIcon(it) }
+                Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
+                // 「随机推荐」开关已移入「主题与外观」（需求5）；此处不再重复。
+                SwitchRow(title = "调试模式", summary = "开启后将统一日志输出",
+                    checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, false),
+                    enabled = true) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, it) }
             }
 
             Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
@@ -203,6 +206,8 @@ fun MainScreen(activity: MainActivity) {
             activity = activity,
             backdrop = backdrop,
             onRestartMarket = { restartMarket(context) },
+            onOpenAbout = onOpenAbout,
+            showAboutButton = showAboutButton,
             onHeightChanged = { headerHeightPx = it },
         )
     }
@@ -215,6 +220,8 @@ private fun BlurHeader(
     activity: MainActivity,
     backdrop: LayerBackdrop?,
     onRestartMarket: () -> Unit,
+    onOpenAbout: () -> Unit = {},
+    showAboutButton: Boolean = false,
     onHeightChanged: (Int) -> Unit = {},
 ) {
     val colors = MiuixTheme.colorScheme
@@ -233,6 +240,19 @@ private fun BlurHeader(
                     fontWeight = FontWeight.Bold, color = colors.onSurface)
                 Text(text = "小米应用商店净化与增强", style = MiuixTheme.textStyles.body2,
                     color = colors.onSurfaceVariantSummary, modifier = Modifier.padding(top = 2.dp))
+            }
+            // 插件悬浮底栏关闭时（需求4/7）：底部切换栏隐藏，这里提供「关于」入口，避免无法进入关于页。
+            if (showAboutButton) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(colors.primary.copy(alpha = 0.12f))
+                        .clickable { onOpenAbout() }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Text(text = "关于", fontSize = 13.sp, color = colors.primary)
+                }
+                Spacer(Modifier.width(8.dp))
             }
             // 重启按钮：浅色底胶囊，点击直接重启（取消二次确认）
             Box(

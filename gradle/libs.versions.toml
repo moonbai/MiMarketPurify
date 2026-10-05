@@ -40,6 +40,10 @@ androidx-lifecycle-runtime-ktx   = { group = "androidx.lifecycle", name = "lifec
 # miuix-blur-android 提供 rememberLayerBackdrop / layerBackdrop（毛玻璃）
 miuix-ui-android               = { group = "top.yukonga.miuix.kmp", name = "miuix-ui-android", version.ref = "miuixKmp" }
 miuix-blur-android             = { group = "top.yukonga.miuix.kmp", name = "miuix-blur-android", version.ref = "miuixKmp" }
+# ── 新增：MiuiX 偏好组件（SpinnerPreference / SliderPreference / RadioButtonPreference 等）──
+# 与上方 miuix-ui-android 同源同版本（0.9.4），提供「下拉单选 / 多选 / Adjust Volume 滑杆」等原生 MiuiX 设置控件，
+# 用于主题模式 Spinner、筛选底栏 Grouped Spinner、可编辑滑杆等需求；依赖 miuix-ui（已随 miuix-ui-android 引入）。
+miuix-preference-android       = { group = "top.yukonga.miuix.kmp", name = "miuix-preference-android", version.ref = "miuixKmp" }
 # ── 新增：HyperModifier 实际依赖 io.github.kyant0:shapes（提供 Capsule 胶囊形状，用于悬浮底栏容器与指示器）──
 kyant-shapes                   = { group = "io.github.kyant0", name = "shapes", version.ref = "kyantShapes" }
 

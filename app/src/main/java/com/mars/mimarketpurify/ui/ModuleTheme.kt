@@ -30,7 +30,9 @@ fun ModuleTheme(content: @Composable () -> Unit) {
         LocalDensity provides Density(base.density * scale, base.fontScale * scale),
     ) {
         MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
-            content()
+            // 统一安装 Snackbar 宿主：模块内任意页面经 LocalSnackbarHost 即可弹提示，
+            // 无需每页手动声明 SnackbarHost（见 LocalSnackbarHost.kt）。
+            ProvideSnackbarHost(content)
         }
     }
 }

@@ -74,6 +74,11 @@ class MainActivity : SettingsBaseActivity() {
         setContent {
             ModuleTheme {
                 var tab by remember { mutableStateOf(0) }
+                // 订阅刷新信号：从「主题与外观」页切换插件悬浮底栏开关返回后，底栏显隐即时响应。
+                val tick by this@MainActivity.refreshSignal
+                // 插件悬浮底栏独立开关（需求4）：关闭后主页/关于底部切换栏隐藏，仅保留主页。
+                val pluginBarOn = Settings.isPluginBarEnabled()
+                LaunchedEffect(tick) { if (!pluginBarOn) tab = 0 }
                 // 预测性返回统一由 Compose BackHandler 接管：
                 //  - 关于标签：回到主页标签（tab = 0）；
                 //  - 主页标签：关闭 Activity。
@@ -83,14 +88,24 @@ class MainActivity : SettingsBaseActivity() {
                 BackHandler(enabled = tab == 0) { finish() }
                 Box(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
                     when (tab) {
-                        0 -> MainScreen(activity = this@MainActivity)
+                        0 -> MainScreen(
+                            activity = this@MainActivity,
+                            showAboutButton = !pluginBarOn,
+                            onOpenAbout = { tab = 1 },
+                        )
                         else -> AboutContent(
                             activity = this@MainActivity,
                             onBack = { tab = 0 },
-                            floatingBarInset = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp,
+                            floatingBarInset = if (pluginBarOn) {
+                                FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp
+                            } else 0.dp,
                         )
                     }
-                    BottomNavBar(selected = tab, modifier = Modifier.align(Alignment.BottomCenter)) { tab = it }
+                    // 插件悬浮底栏开启时才显示底部主页/关于切换栏（需求4/7）；
+                    // 关闭后由主页顶栏的「关于」按钮兜底，避免无法进入关于页。
+                    if (pluginBarOn) {
+                        BottomNavBar(selected = tab, modifier = Modifier.align(Alignment.BottomCenter)) { tab = it }
+                    }
                 }
             }
         }
