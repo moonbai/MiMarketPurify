@@ -38,7 +38,7 @@ android {
         // （Mi Market 实际运行于 HyperOS / Android 14+，即 API 34+，无功能影响）。
         minSdk = 33
         targetSdk = 36
-        versionCode = 36
+        versionCode = 37
         versionName = "1.2.2"
         buildConfigField("String", "APP_NAME", "\"Mi Market Purify\"")
         // 只打包用到的语言资源，丢弃 Compose / Miuix 等库自带的其余 locale，进一步压缩体积
@@ -106,6 +106,9 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.activity.compose)
+    // NavigationEvent：MiuiX Window* 组件（下拉单选 / 多选等）展开窗时依赖
+    // LocalNavigationEventDispatcherOwner 处理返回手势；此处显式锁定与 MiuiX 同版本。
+    implementation(libs.androidx.navigationevent)
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     // ── Miuix KMP：悬浮底栏主题（MiuixTheme/Colors）与毛玻璃（rememberLayerBackdrop/layerBackdrop）──

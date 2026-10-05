@@ -17,6 +17,10 @@ miuixKmp       = "0.9.4"
 lifecycleRuntimeKtx = "2.8.7"
 # ── 新增：HyperModifier 悬浮底栏实际依赖 io.github.kyant0:shapes（提供 Capsule 胶囊形状）──
 kyantShapes    = "1.2.0"
+# ── 新增：AndroidX NavigationEvent（MiuiX Window* 组件的返回手势依赖）──
+# MiuiX（miuix-ui / miuix-preference 0.9.4）已传递依赖 navigationevent-compose 1.1.2；
+# 此处显式锁定同版本，供本模块直接提供 LocalNavigationEventDispatcherOwner（见 ModuleTheme）。
+androidxNavigationEvent = "1.1.2"
 
 [libraries]
 androidx-core-ktx        = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -46,6 +50,8 @@ miuix-blur-android             = { group = "top.yukonga.miuix.kmp", name = "miui
 miuix-preference-android       = { group = "top.yukonga.miuix.kmp", name = "miuix-preference-android", version.ref = "miuixKmp" }
 # ── 新增：HyperModifier 实际依赖 io.github.kyant0:shapes（提供 Capsule 胶囊形状，用于悬浮底栏容器与指示器）──
 kyant-shapes                   = { group = "io.github.kyant0", name = "shapes", version.ref = "kyantShapes" }
+# ── 新增：AndroidX NavigationEvent（MiuiX Window* 组件展开下拉窗时读取 LocalNavigationEventDispatcherOwner）──
+androidx-navigationevent       = { group = "androidx.navigationevent", name = "navigationevent-compose", version.ref = "androidxNavigationEvent" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

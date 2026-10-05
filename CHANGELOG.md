@@ -43,3 +43,42 @@
 
 - 本沙箱无 Android SDK，未执行 `assembleDebug` 实编译；已做导入、API 用法与解耦关系的逐项静态核对。请在 Android Studio / 本地 `./gradlew assembleDebug` 做最终编译验证。
 - 商店底栏三项新参数的「实时生效」依赖 LSPosed 远程偏好通道；不支持远程偏好的框架下需重启商店一次（与既有其它开关行为一致）。
+
+## 五、编译修复（CI 反馈）
+
+CI 的 `compileReleaseKotlin` 报了 `SwitchRow` 相关的 `NO_VALUE_FOR_PARAMETER` / `TOO_MANY_ARGUMENTS` 错误：所有调用点都用**尾随 lambda**（如 `SwitchRow(...) { on -> ... }`），而 Kotlin 的尾随 lambda 会绑定到**最后一个参数**。原签名中 `onCheckedChange` 排在 `affectsStore: Boolean` 之前，尾随 lambda 被误塞给 `affectsStore`，导致 `onCheckedChange` 缺失且类型不匹配。
+
+**修复**：将 `SwitchRow` 的参数顺序对调，使 `onCheckedChange` 成为最后一个参数：
+
+```kotlin
+fun SwitchRow(
+    title: String,
+    summary: String,
+    checked: Boolean,
+    enabled: Boolean,
+    /** 是否影响应用商店；决定提示条是否带「重启商店」按钮 */
+    affectsStore: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit,   // 末位：承接尾随 lambda
+)
+```
+
+该调整对全部 7 处调用点（含 `PrefSwitch` 内部调用）均向后兼容：具名 `affectsStore` 与尾随 lambda 写法全部继续生效，无需改动调用点。
+
+## 六、运行时崩溃修复（单选 / 多选点击闪退）
+
+用户反馈（Android 17 / API 37，AppErrorsTracking 捕获）：点击「外观深浅色」下拉单选、「筛选底栏」下拉多选等 MiuiX `WindowSpinnerPreference` 时崩溃，异常为：
+
+```
+java.lang.IllegalStateException: No NavigationEventDispatcher was provided via LocalNavigationEventDispatcherOwner
+```
+
+**根因**：MiuiX 的 `Window*` 类（如下拉单选 / 多选组件）在展开独立下拉窗时，会通过 `WindowNavigationEventScope` 读取 `LocalNavigationEventDispatcherOwner.current` 并处理返回手势；当组合树根部未提供该 owner 时，非空 getter 直接抛异常。MiuiX 的示例 App 靠 `NavDisplay` 导航容器提供它；本模块不使用 `NavDisplay`，且各 Activity 直接以 `ModuleTheme` 为根壳，因此从未提供该 owner，导致点击展开即崩。
+
+**修复**：
+
+1. `ui/ModuleTheme.kt` — 在根部用 `rememberNavigationEventDispatcherOwner(parent = activityOwner)` 创建并经由 `CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides navOwner)` 提供。`activityOwner` 优先取宿主 `ComponentActivity` 自带的 dispatcher（视图树解析，保留系统返回手势），为空则退化为独立根 dispatcher，二者都能消除崩溃。
+2. `gradle/libs.versions.toml` + `app/build.gradle.kts` — 显式声明 `androidx.navigationevent:navigationevent-compose:1.1.2`（与 MiuiX 0.9.4 传递依赖的版本一致），供模块直接引用该 API。
+
+`ModuleTheme` 被全部 Activity（MainActivity / SubSettingsActivity / About / Privacy / Search）用作根壳，修复一处即覆盖所有页面。
+
+**注意**：本沙箱无 Android SDK 无法实编译，已确认所用 API（`LocalNavigationEventDispatcherOwner`、`rememberNavigationEventDispatcherOwner`、`findViewTreeNavigationEventDispatcherOwner`）均为 navigationevent-compose 1.1.2 的标准导出 API。请重新触发 CI / 本地 `./gradlew assembleRelease` 验证，并在真机点开下拉确认不再闪退、且返回手势可正常收起下拉。
