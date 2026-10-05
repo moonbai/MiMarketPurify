@@ -128,15 +128,15 @@ object FeatureRegistry {
         SubSettingsActivity.PAGE_THEME to R.string.page_theme,
     )
 
-    /** 分类标题资源 ID（category 为稳定 key，见 allFeatures 中的 category 字段） */
+    /** 分类标题资源 ID（key 与 allFeatures 的 category 字段及 categoryColors 保持一致，带 cat_ 前缀） */
     val categoryTitles: Map<String, Int> = mapOf(
-        "ad" to R.string.cat_ad,
-        "mine" to R.string.cat_mine,
-        "tabs" to R.string.cat_tabs,
-        "misc" to R.string.cat_misc,
-        "floating" to R.string.cat_floating,
-        "enhance" to R.string.cat_enhance,
-        "theme" to R.string.cat_theme,
+        "cat_ad" to R.string.cat_ad,
+        "cat_mine" to R.string.cat_mine,
+        "cat_tabs" to R.string.cat_tabs,
+        "cat_misc" to R.string.cat_misc,
+        "cat_floating" to R.string.cat_floating,
+        "cat_enhance" to R.string.cat_enhance,
+        "cat_theme" to R.string.cat_theme,
     )
 
     /**
