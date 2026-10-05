@@ -79,8 +79,6 @@ class SubSettingsActivity : SettingsBaseActivity() {
 private fun HighlightSwitch(
     activity: SubSettingsActivity,
     key: String,
-    title: String,
-    summary: String,
     enabled: Boolean,
     hl: String,
     onChanged: ((Boolean) -> Unit)? = null,
@@ -101,8 +99,8 @@ private fun HighlightSwitch(
         PrefSwitch(
             activity = activity,
             key = key,
-            title = title,
-            summary = summary,
+            title = FeatureRegistry.titleOf(key),
+            summary = FeatureRegistry.summaryOf(key),
             default = true,
             enabled = enabled,
             onChanged = onChanged,
