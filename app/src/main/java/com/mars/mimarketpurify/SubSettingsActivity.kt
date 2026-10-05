@@ -276,9 +276,9 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
         }
         Spacer(Modifier.height(12.dp))
         SettingsSection {
-            PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部外边距", "悬浮底栏到屏幕底部的间距（dp）", 0, sliderMax, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, masterOn) { "${it}dp" }
-            PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, masterOn) { "${it}dp" }
-            PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, masterOn) { "${it}%" }
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_BOTTOM_MARGIN, "距底部外边距", "悬浮底栏到屏幕底部的间距（dp）", 0, sliderMax, Settings.FLOATING_BOTTOM_MARGIN_DEFAULT, masterOn, format = { "${it}dp" })
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角", 0, sliderMax, Settings.FLOATING_RADIUS_DEFAULT, masterOn, format = { "${it}dp" })
+            PrefSlider(activity, Settings.KEY_FLOATING_BAR_ALPHA, "背景透明度", "底栏整体背景透明度（%）", Settings.FLOATING_ALPHA_MIN, Settings.FLOATING_ALPHA_MAX, Settings.FLOATING_ALPHA_DEFAULT, masterOn, format = { "${it}%" })
         }
         Spacer(Modifier.height(12.dp))
         SettingsSection {
