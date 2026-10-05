@@ -141,33 +141,33 @@ fun MainScreen(
             }
 
             SettingsSection(topLabel = "界面设置") {
-                SettingItem(headlineText = "广告净化", supportingText = adSummary,
+                SettingItem(headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_ADS].orEmpty(), supportingText = adSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_ADS) })
-                SettingItem(headlineText = "底栏自定义", supportingText = tabsSummary,
+                SettingItem(headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_TABS].orEmpty(), supportingText = tabsSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_TABS) })
-                SettingItem(headlineText = "「我的」页精简", supportingText = mineSummary,
+                SettingItem(headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_MINE].orEmpty(), supportingText = mineSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MINE) })
-                SettingItem(headlineText = "其他界面精简", supportingText = miscSummary,
+                SettingItem(headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_MISC].orEmpty(), supportingText = miscSummary,
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_MISC) })
             }
 
             SettingsSection(topLabel = "高级功能") {
-                SwitchRow(title = "下载超级岛", summary = "强制让下载进度进入小米超级岛",
+                SwitchRow(title = FeatureRegistry.titleOf(com.mars.mimarketpurify.Settings.KEY_ISLAND), summary = FeatureRegistry.summaryOf(com.mars.mimarketpurify.Settings.KEY_ISLAND),
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_ISLAND, true),
                     enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_ISLAND, it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = "细节修正", summary = "显示非正版 APP、被隐藏更新等细节处理",
+                SwitchRow(title = FeatureRegistry.titleOf(com.mars.mimarketpurify.Settings.KEY_MISC), summary = FeatureRegistry.summaryOf(com.mars.mimarketpurify.Settings.KEY_MISC),
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_MISC, true),
                     enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_MISC, it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = "升级提醒弹窗", summary = "不再弹出应用商店的升级提醒对话框",
+                SwitchRow(title = FeatureRegistry.titleOf(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG), summary = FeatureRegistry.summaryOf(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG),
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG, true),
                     enabled = masterOn.value) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_UPDATE_DIALOG, it) }
             }
 
             SettingsSection(topLabel = "模块功能") {
                 SettingItem(
-                    headlineText = "主题与外观",
+                    headlineText = FeatureRegistry.pageTitles[SubSettingsActivity.PAGE_THEME].orEmpty(),
                     supportingText = "深色模式、预测性返回、界面缩放、悬浮底栏",
                     onClick = { activity.openPage(SubSettingsActivity.PAGE_THEME) },
                 )
@@ -175,7 +175,7 @@ fun MainScreen(
                 SwitchRow(title = "隐藏桌面图标", summary = "仅移除桌面抽屉中的图标",
                     checked = activity.isLauncherIconHidden(), enabled = true) { activity.applyHideIcon(it) }
                 Spacer(Modifier.height(MiuiX.ROW_GAP.dp))
-                SwitchRow(title = "调试模式", summary = "开启后将统一日志输出",
+                SwitchRow(title = FeatureRegistry.titleOf(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG), summary = FeatureRegistry.summaryOf(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG),
                     checked = activity.readLocal(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, false),
                     enabled = true) { activity.writeRemote(com.mars.mimarketpurify.Settings.KEY_RANK_DEBUG, it) }
             }

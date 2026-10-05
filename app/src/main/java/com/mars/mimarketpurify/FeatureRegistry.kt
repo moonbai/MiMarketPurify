@@ -99,6 +99,37 @@ object FeatureRegistry {
             SubSettingsActivity.PAGE_TABS, listOf("3D", "液态", "阴影", "立体"), "悬浮底栏"),
         Feature(Settings.KEY_FLOATING_BAR_MONOCHROME, "单色图标", "图标抽成单色描边、随主题着色",
             SubSettingsActivity.PAGE_TABS, listOf("单色", "图标", "描边", "主题", "monochrome"), "悬浮底栏"),
+
+        // ═══════════════ 补全为单源（主页高级/模块功能、子界面专属开关） ═══════════════
+        Feature(Settings.KEY_TAB_DEEP_CLEAN, "顶栏标签深度清理", "清理首页/榜单等页面顶部的推广子标签",
+            SubSettingsActivity.PAGE_TABS, listOf("顶栏", "深度", "清理", "deep"), "标签栏"),
+        Feature(Settings.KEY_FLOAT_BAR_ENABLE, "启用插件悬浮底栏", "在主页 / 关于页底部显示居中胶囊导航",
+            SubSettingsActivity.PAGE_THEME, listOf("插件", "悬浮", "底栏"), "悬浮底栏"),
+        Feature(Settings.KEY_PREDICTIVE_BACK, "预测性返回", "启用系统返回手势的预测动画（Android 13+）",
+            SubSettingsActivity.PAGE_THEME, listOf("返回", "手势", "predictive"), "主题与外观"),
+        Feature(Settings.KEY_ISLAND, "下载超级岛", "强制让下载进度进入小米超级岛",
+            SubSettingsActivity.PAGE_MISC, listOf("超级岛", "下载", "island"), "功能增强"),
+        Feature(Settings.KEY_MISC, "细节修正", "显示非正版 APP、被隐藏更新等细节处理",
+            SubSettingsActivity.PAGE_MISC, listOf("细节", "修正", "misc"), "功能增强"),
+        Feature(Settings.KEY_UPDATE_DIALOG, "升级提醒弹窗", "不再弹出应用商店的升级提醒对话框",
+            SubSettingsActivity.PAGE_MISC, listOf("升级", "弹窗", "提醒"), "功能增强"),
+        Feature(Settings.KEY_RANK_DEBUG, "调试模式", "开启后将统一日志输出",
+            SubSettingsActivity.PAGE_MISC, listOf("调试", "日志", "debug"), "功能增强"),
+    )
+
+    /** 按 KEY 索引；主页 / 子界面 / 关于页统一从此处取名称与描述，避免多份定义漂移 */
+    private val byKey: Map<String, Feature> = allFeatures.associateBy { it.key }
+    fun feature(key: String): Feature? = byKey[key]
+    fun titleOf(key: String): String = byKey[key]?.title ?: key
+    fun summaryOf(key: String): String = byKey[key]?.summary ?: ""
+
+    /** 各子界面（PAGE）标题，主页与子界面共用，消除「底栏自定义 / 底部标签栏」这类不一致 */
+    val pageTitles: Map<String, String> = mapOf(
+        SubSettingsActivity.PAGE_ADS to "广告净化",
+        SubSettingsActivity.PAGE_MINE to "「我的」页精简",
+        SubSettingsActivity.PAGE_TABS to "底栏自定义",
+        SubSettingsActivity.PAGE_MISC to "其他界面精简",
+        SubSettingsActivity.PAGE_THEME to "主题与外观",
     )
 
     fun search(query: String): List<Feature> {
