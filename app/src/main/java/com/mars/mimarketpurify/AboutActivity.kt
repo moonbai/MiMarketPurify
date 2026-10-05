@@ -4,10 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.view.WindowCompat
+import com.mars.mimarketpurify.ui.ModuleTheme
 import com.mars.mimarketpurify.ui.components.AboutContent
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 /**
  * 关于页（整页 Compose）。内容复用 [com.mars.mimarketpurify.ui.components.AboutContent]，
@@ -24,7 +22,7 @@ class AboutActivity : ComponentActivity() {
             ?.isAppearanceLightStatusBars = !dark
 
         setContent {
-            MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
+            ModuleTheme {
                 AboutContent(activity = this@AboutActivity, onBack = { finish() })
             }
         }

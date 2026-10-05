@@ -19,18 +19,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.ui.MainScreen
+import com.mars.mimarketpurify.ui.ModuleTheme
 import com.mars.mimarketpurify.ui.components.AboutContent
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.mars.mimarketpurify.util.FloatingTabBar
 import com.mars.mimarketpurify.util.FloatingTabItem
 import com.mars.mimarketpurify.util.FloatingTabLayout
 import com.mars.mimarketpurify.util.NavIcons
 import com.mars.mimarketpurify.util.UpdateCheckResult
 import com.mars.mimarketpurify.util.UpdateChecker
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
 import android.view.Choreographer
 import android.view.View
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -70,13 +68,11 @@ class MainActivity : SettingsBaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         EntryGuardReceiver.ensureEntryEnabled(this)
-        val dark = useDarkTheme()
-        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(MiuiX.bg(dark)))
-        WindowCompat.getInsetsController(window, window.decorView)
-            ?.isAppearanceLightStatusBars = !dark
+        applyWindowTheme()
+        setupPredictiveBack { finish() }
 
         setContent {
-            MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
+            ModuleTheme {
                 var tab by remember { mutableStateOf(0) }
                 Box(modifier = Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
                     when (tab) {
@@ -92,11 +88,6 @@ class MainActivity : SettingsBaseActivity() {
             }
         }
         maybeCheckUpdateDaily()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        refreshAll()
     }
 
     /**

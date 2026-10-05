@@ -23,11 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.Settings
+import com.mars.mimarketpurify.ui.ModuleTheme
 import com.mars.mimarketpurify.ui.components.*
 import com.mars.mimarketpurify.util.FloatingTabBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 class SubSettingsActivity : SettingsBaseActivity() {
 
@@ -39,6 +38,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
         const val PAGE_TABS = "tabs"
         const val PAGE_MISC = "misc"
         const val PAGE_TAB_BAR = "tab_bar_config"
+        const val PAGE_THEME = "theme"
 
         fun intent(ctx: Context, page: String, highlight: String? = null): Intent =
             Intent(ctx, SubSettingsActivity::class.java)
@@ -57,12 +57,13 @@ class SubSettingsActivity : SettingsBaseActivity() {
             PAGE_TABS -> "底部标签栏"
             PAGE_MISC -> "其他界面精简"
             PAGE_TAB_BAR -> "悬浮底栏配置"
+            PAGE_THEME -> "主题与外观"
             else -> page
         }
-        val dark = useDarkTheme()
-        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(MiuiX.bg(dark)))
+        applyWindowTheme()
+        setupPredictiveBack { finish() }
         setContent {
-            MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
+            ModuleTheme {
                 val tick by refreshSignal
                 val masterOn = remember(tick) { mutableStateOf(readLocal(Settings.KEY_MASTER, true)) }
                 val hl = intent?.getStringExtra(EXTRA_HIGHLIGHT).orEmpty()
@@ -74,6 +75,7 @@ class SubSettingsActivity : SettingsBaseActivity() {
                         PAGE_TABS -> TabsScreen(activity = this@SubSettingsActivity, masterOn = masterOn.value)
                         PAGE_MISC -> MiscScreen(activity = this@SubSettingsActivity, masterOn = masterOn.value, hl)
                         PAGE_TAB_BAR -> TabBarConfigScreen(activity = this@SubSettingsActivity, masterOn = masterOn.value)
+                        PAGE_THEME -> ThemeScreen(activity = this@SubSettingsActivity)
                     }
                 }
             }
@@ -289,5 +291,52 @@ private fun TabBarConfigScreen(activity: SubSettingsActivity, masterOn: Boolean)
             PrefColorRow(activity, "文字选中色", Settings.KEY_FLOAT_TEXT_SELECT_COLOR, 0xFF000000.toInt())
         }
         Footer("悬浮底栏替代原生贴底栏，实现 iOS 风格胶囊导航")
+    }
+}
+
+// ═══════════════ 主题与外观（二级界面） ═══════════════
+
+@Composable
+private fun ThemeScreen(activity: SubSettingsActivity) {
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
+            .padding(horizontal = MiuiX.PAGE_H.dp, vertical = 8.dp)
+            .padding(bottom = FloatingTabBarDefaults.Height + Settings.floatingBarBottomMarginDp().dp),
+    ) {
+        // 主题模式：三选一（跟随系统 / 浅色 / 深色）
+        PrefThemeMode(activity = activity, onApplied = { activity.recreate() })
+
+        Spacer(Modifier.height(12.dp))
+        SettingsSection(topLabel = "手势与显示") {
+            PrefSwitch(
+                activity = activity,
+                key = Settings.KEY_PREDICTIVE_BACK,
+                title = "预测性返回",
+                summary = "启用系统返回手势的预测动画（Android 13+）；关闭则回退默认返回处理",
+                default = true,
+                enabled = true,
+                onChanged = { on ->
+                    activity.writeLocalBool(Settings.KEY_PREDICTIVE_BACK, on)
+                    activity.recreate()
+                },
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+        SettingsSection(topLabel = "界面缩放") {
+            PrefSlider(
+                activity = activity,
+                key = Settings.KEY_UI_SCALE,
+                title = "界面缩放",
+                summary = "整体放大 / 缩小本插件界面（仅作用于本插件，不影响应用商店）",
+                min = 80, max = 125, default = 100, enabled = true,
+                format = { "${it}%" },
+                onChanged = { v ->
+                    activity.writeLocalInt(Settings.KEY_UI_SCALE, v)
+                    activity.recreate()
+                },
+            )
+        }
+        Footer("主题模式与界面缩放改动后立即重建本页生效；预测性返回需 Android 13 及以上系统支持。")
     }
 }

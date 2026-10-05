@@ -2,13 +2,17 @@ package com.mars.mimarketpurify
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
+import android.graphics.drawable.ColorDrawable
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.view.WindowCompat
 import com.mars.mimarketpurify.App.ServiceStateListener
+import com.mars.mimarketpurify.MiuiX
 import com.mars.mimarketpurify.Settings.PREFS_GROUP
+import com.mars.mimarketpurify.useDarkTheme
 import io.github.libxposed.service.XposedService
 
 /**
@@ -32,6 +36,12 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
     private val pendingIntWrites = mutableMapOf<String, Int>()
 
     /**
+     * 当前 Activity 在 [applyWindowTheme] 中实际套用的明暗状态。
+     * 用于 [onResume] 检测主题模式改动后是否需要重建以重新着色（[setContent] 仅执行一次）。
+     */
+    protected var appliedDarkTheme = false
+
+    /**
      * Compose 页面观察此信号以重新读取偏好。
      * [onServiceStateChanged] 在补写完待写入项后自增，触发依赖它的 [androidx.compose.runtime.remember] 重新取数。
      */
@@ -51,6 +61,30 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
     override fun onStop() {
         App.removeServiceStateListener(this)
         super.onStop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 主题模式改动后，返回本页需重建以重新着色（MiuixTheme 在 setContent 仅解析一次）。
+        // 注意：子页（SubSettingsActivity）自身在改动外观后会主动 recreate，此处主要兜住
+        // 「从主题二级页返回主页」这一路径。重建后 appliedDarkTheme 与当前一致，不会循环。
+        if (useDarkTheme() != appliedDarkTheme) {
+            recreate()
+            return
+        }
+        refreshAll()
+    }
+
+    /**
+     * 套用窗口底色与状态栏前景色，并记录 [appliedDarkTheme]。
+     * 各设置页在 onCreate 的 setContent 之前调用一次；Compose 内容由 [ModuleTheme] 负责。
+     */
+    protected fun applyWindowTheme() {
+        val dark = useDarkTheme()
+        appliedDarkTheme = dark
+        window.setBackgroundDrawable(ColorDrawable(MiuiX.bg(dark)))
+        WindowCompat.getInsetsController(window, window.decorView)
+            ?.isAppearanceLightStatusBars = !dark
     }
 
     override fun onServiceStateChanged(service: XposedService?) {
@@ -127,6 +161,33 @@ abstract class SettingsBaseActivity : ComponentActivity(), ServiceStateListener 
         if (prefs == null) return
         runCatching {
             prefs.edit()?.putString(key, value)?.apply()
+        }.onFailure {
+            Toast.makeText(this, "保存失败：${it.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ==================== 模块自身（本地 SP，不经 XposedService） ====================
+    // 主题模式 / 界面缩放 / 预测性返回 等「外观类」设置只影响本插件 UI，存于模块自身 SP。
+    // 直接读写 getSharedPreferences(PREFS_GROUP)，不依赖 XposedService 是否连接，
+    // 也避免与远程偏好通道混用导致「写入与读取不在同一视图」。
+
+    internal fun readLocalIntDirect(key: String, def: Int): Int =
+        getSharedPreferences(PREFS_GROUP, MODE_PRIVATE).getInt(key, def)
+
+    internal fun writeLocalInt(key: String, value: Int) {
+        runCatching {
+            getSharedPreferences(PREFS_GROUP, MODE_PRIVATE).edit().putInt(key, value).apply()
+        }.onFailure {
+            Toast.makeText(this, "保存失败：${it.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    internal fun readLocalBoolDirect(key: String, def: Boolean): Boolean =
+        getSharedPreferences(PREFS_GROUP, MODE_PRIVATE).getBoolean(key, def)
+
+    internal fun writeLocalBool(key: String, value: Boolean) {
+        runCatching {
+            getSharedPreferences(PREFS_GROUP, MODE_PRIVATE).edit().putBoolean(key, value).apply()
         }.onFailure {
             Toast.makeText(this, "保存失败：${it.message}", Toast.LENGTH_SHORT).show()
         }

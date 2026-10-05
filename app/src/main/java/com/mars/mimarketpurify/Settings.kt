@@ -125,6 +125,12 @@ object Settings {
     /** 主题模式：0=跟随系统，1=浅色，2=深色（模块自身 SP，不经目标 App） */
     const val KEY_THEME_MODE = "theme_mode"
 
+    // ═══════════════ 外观（模块自身 UI）══════════════
+    /** 预测性返回：针对本插件自身 Activity，默认开启 */
+    const val KEY_PREDICTIVE_BACK = "predictive_back"
+    /** 界面缩放：百分比整数（80~125），100=原始大小（模块自身 UI，不经目标 App） */
+    const val KEY_UI_SCALE = "ui_scale"
+
     // ═══════════════ 读取缓存 ═══════════════
     private const val CACHE_TTL_MS = 500L
 

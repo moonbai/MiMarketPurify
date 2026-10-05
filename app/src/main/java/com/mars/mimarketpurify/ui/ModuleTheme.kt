@@ -1,0 +1,34 @@
+package com.mars.mimarketpurify.ui
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import com.mars.mimarketpurify.uiScaleValue
+import com.mars.mimarketpurify.useDarkTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.darkColorScheme
+import top.yukonga.miuix.kmp.theme.lightColorScheme
+
+/**
+ * 模块统一主题壳：在 [MiuixTheme] 之外，按 [uiScaleValue] 用 [LocalDensity] 缩放整页 Compose UI。
+ *
+ * - 明暗由 [useDarkTheme]（主题模式 + 系统）决定；
+ * - 缩放只作用于本插件 Compose 页面（不触及目标 App），改动后 Activity 重建即生效。
+ *
+ * 各设置页用 [ModuleTheme] 取代原 `MiuixTheme(colors = if (dark) ...)`，
+ * 以集中管理「主题 + 缩放」，避免散落重复。
+ */
+@Composable
+fun ModuleTheme(content: @Composable () -> Unit) {
+    val dark = useDarkTheme()
+    val scale = uiScaleValue()
+    val base = LocalDensity.current
+    CompositionLocalProvider(
+        LocalDensity provides Density(base.density * scale, base.fontScale * scale),
+    ) {
+        MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
+            content()
+        }
+    }
+}

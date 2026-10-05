@@ -421,11 +421,11 @@ fun PrefSwitch(
 // ==================== 偏好绑定：主题模式（三选一） ====================
 
 @Composable
-fun PrefThemeMode(activity: SettingsBaseActivity) {
+fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
     val tick by activity.refreshSignal
     var mode by remember(tick) {
         mutableStateOf(
-            activity.readLocalInt(
+            activity.readLocalIntDirect(
                 com.mars.mimarketpurify.Settings.KEY_THEME_MODE,
                 com.mars.mimarketpurify.THEME_FOLLOW,
             )
@@ -446,7 +446,9 @@ fun PrefThemeMode(activity: SettingsBaseActivity) {
             ) { on ->
                 if (on) {
                     mode = value
-                    activity.writeRemoteInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, value)
+                    // 主题模式只影响本插件 UI，存模块自身 SP（不经 XposedService），与 useDarkTheme 读取同源
+                    activity.writeLocalInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, value)
+                    onApplied()
                 }
             }
         }
@@ -466,6 +468,7 @@ fun PrefSlider(
     default: Int,
     enabled: Boolean = true,
     format: (Int) -> String,
+    onChanged: ((Int) -> Unit)? = null,
 ) {
     val tick by activity.refreshSignal
     var value by remember(tick) { mutableStateOf(activity.readLocalInt(key, default)) }
@@ -500,7 +503,10 @@ fun PrefSlider(
         Slider(
             value = value.toFloat(),
             onValueChange = { value = it.toInt() },
-            onValueChangeFinished = { activity.writeRemoteInt(key, value) },
+            onValueChangeFinished = {
+                activity.writeRemoteInt(key, value)
+                onChanged?.invoke(value)
+            },
             valueRange = min.toFloat()..max.toFloat(),
             steps = (max - min - 1).coerceAtLeast(0),
             enabled = enabled,
@@ -636,6 +642,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
         //  - heroBottomGap：检查更新按钮距下方「功能」区块的留白（随屏幕高度缩放）
         //  - 三者配合让 Hero 居上、检查更新按钮内联其下方，滚动后整体自然上移露出后续区块
         val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+        // 取屏幕高度的28％和10％
         val heroTopGap = screenHeight * 0.28f
         val heroBottomGap = screenHeight * 0.10f
         Column(
@@ -650,7 +657,7 @@ fun AboutContent(activity: ComponentActivity, onBack: () -> Unit, floatingBarIns
             // 顶部 Hero：图标/版本/描述（无背景卡片、无背景模糊、无文字阴影）
             AboutHeroHeader(activity = activity)
             // Hero 与「检查更新」按钮之间的间距；本轮在上一版(20dp)基础上再下移一些
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(heroBottomGap))
             // 检查更新：长条圆角矩形毛玻璃按钮，内联在 Hero 正下方
             AboutUpdateBar(
                 activity = activity,

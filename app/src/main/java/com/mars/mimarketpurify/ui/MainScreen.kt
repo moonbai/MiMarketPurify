@@ -42,7 +42,6 @@ import com.mars.mimarketpurify.ui.components.SettingsSection
 import com.mars.mimarketpurify.ui.components.SettingItem
 import com.mars.mimarketpurify.ui.components.SwitchRow
 import com.mars.mimarketpurify.ui.components.AboutGlassCard
-import com.mars.mimarketpurify.ui.components.PrefThemeMode
 import com.mars.mimarketpurify.util.MarketRestarter
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -159,7 +158,11 @@ fun MainScreen(activity: MainActivity) {
             }
 
             Spacer(Modifier.height(12.dp))
-            PrefThemeMode(activity = activity)
+            SettingItem(
+                headlineText = "主题与外观",
+                supportingText = "深色模式、预测性返回、界面缩放",
+                onClick = { activity.openPage(SubSettingsActivity.PAGE_THEME) },
+            )
 
             SettingsSection(topLabel = "高级功能") {
                 SwitchRow(title = "下载超级岛", summary = "强制让下载进度进入小米超级岛",

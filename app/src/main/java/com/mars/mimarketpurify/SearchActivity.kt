@@ -25,9 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import com.mars.mimarketpurify.ui.ModuleTheme
 import kotlinx.coroutines.delay
 
 class SearchActivity : ComponentActivity() {
@@ -42,9 +40,10 @@ class SearchActivity : ComponentActivity() {
         window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(MiuiX.bg(dark)))
         WindowCompat.getInsetsController(window, window.decorView)
             ?.isAppearanceLightStatusBars = !dark
+        setupPredictiveBack { finish() }
 
         setContent {
-            MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
+            ModuleTheme {
                 SearchScreen(activity = this@SearchActivity)
             }
         }

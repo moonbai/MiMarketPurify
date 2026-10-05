@@ -3,6 +3,10 @@ package com.mars.mimarketpurify
 import android.app.UiModeManager
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Build
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
+import androidx.activity.ComponentActivity
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 
@@ -163,5 +167,38 @@ fun Context.useDarkTheme(): Boolean {
         THEME_DARK -> true
         THEME_LIGHT -> false
         else -> isNight()
+    }
+}
+
+/**
+ * 界面缩放（模块自身 SP，单位：百分比整数 → Float）。
+ * 供 [ModuleTheme] 统一缩放本插件所有 Compose 页面；不作用于目标 App。
+ * 取值 clamp 到 80%~125%，缺省 100%（原始大小）。
+ */
+fun Context.uiScaleValue(): Float {
+    val percent = getSharedPreferences(Settings.PREFS_GROUP, Context.MODE_PRIVATE)
+        .getInt(Settings.KEY_UI_SCALE, 100)
+        .coerceIn(80, 125)
+    return percent / 100f
+}
+
+/**
+ * 预测性返回（Predictive Back，Android 13+）：为本插件自身 Activity 注册
+ * [OnBackInvokedCallback]，使系统返回手势带预测动画并正确回调 [onBack]。
+ *
+ * 全局能力由 manifest 的 `android:enableOnBackInvokedCallback="true"` 开启；
+ * 此函数按 [Settings.KEY_PREDICTIVE_BACK]（默认开启）决定是否注册——
+ * 关闭则不注册，回退到系统默认返回处理。低于 API 33 直接忽略（无预测返回 API）。
+ */
+fun ComponentActivity.setupPredictiveBack(onBack: () -> Unit) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+    val dispatcher = onBackInvokedDispatcher ?: return
+    val enabled = getSharedPreferences(Settings.PREFS_GROUP, Context.MODE_PRIVATE)
+        .getBoolean(Settings.KEY_PREDICTIVE_BACK, true)
+    if (enabled) {
+        dispatcher.registerOnBackInvokedCallback(
+            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+            OnBackInvokedCallback { onBack() },
+        )
     }
 }

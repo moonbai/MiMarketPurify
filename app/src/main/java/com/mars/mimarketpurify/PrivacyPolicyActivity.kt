@@ -22,10 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
+import com.mars.mimarketpurify.ui.ModuleTheme
 import com.mars.mimarketpurify.useDarkTheme
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 /**
  * 隐私政策页：通过 WebView 加载本地 HTML 文件。
@@ -39,9 +37,10 @@ class PrivacyPolicyActivity : ComponentActivity() {
         window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(MiuiX.bg(dark)))
         WindowCompat.getInsetsController(window, window.decorView)
             ?.isAppearanceLightStatusBars = !dark
+        setupPredictiveBack { finish() }
 
         setContent {
-            MiuixTheme(colors = if (dark) darkColorScheme() else lightColorScheme()) {
+            ModuleTheme {
                 PrivacyPolicyScreen(onBack = { finish() })
             }
         }
