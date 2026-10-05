@@ -294,7 +294,7 @@ object TabFilter : BaseHook() {
                 debugLog("fromJSON: kept=$kept")
                 if (kept.isEmpty()) return@hooked proceed()
                 val result = proceed()
-                val list = (result as List<*>).toMutableList()
+                val list = (result as? List<*>)?.toMutableList() ?: return@hooked result
                 val beforeCount = list.size
                 list.removeAll { item ->
                     if (item == null) return@removeAll true

@@ -38,6 +38,7 @@ import com.mars.mimarketpurify.hooks.market.UpdateFloatCardBlocker
 import com.mars.mimarketpurify.hooks.market.TabDeepClean
 import com.mars.mimarketpurify.hooks.market.LongPressJumpToPlugin
 import com.mars.mimarketpurify.hooks.market.InstallRecommendBlocker
+import com.mars.mimarketpurify.hooks.market.PredictiveBackHook
 import com.mars.mimarketpurify.init.AppPackage
 import com.mars.mimarketpurify.init.AppRegister
 import io.github.libxposed.api.XposedModuleInterface
@@ -88,6 +89,7 @@ object Market : AppRegister() {
             TabDeepClean,
             LongPressJumpToPlugin,
             InstallRecommendBlocker,
+            PredictiveBackHook,
         )
     }
 }

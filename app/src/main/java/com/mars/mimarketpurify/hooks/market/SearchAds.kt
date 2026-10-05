@@ -224,19 +224,18 @@ object SearchAds : BaseHook() {
                     root.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
                         private var lastScan = 0L
                         private var scanCount = 0
-                        private var everHit = false
                         override fun onGlobalLayout() {
                             val now = SystemClock.uptimeMillis()
                             if (now - lastScan < GLOBAL_SCAN_INTERVAL_MS) return
                             lastScan = now
-                            if (!everHit && scanCount >= GLOBAL_SCAN_MAX_COUNT) {
+                            // 命中即移除：命中后无需继续每 400ms 全树 DFS，避免长期空转浪费；
+                            // 之后动态插入的卡片由 attachScrollWatcher 的 OnChildAttachStateChangeListener 兜底。
+                            // 即便始终未命中，也必须在达到扫描上限后移除，否则监听会随页面存活全程泄漏。
+                            if (scanAndHide(root) || scanCount >= GLOBAL_SCAN_MAX_COUNT) {
                                 root.viewTreeObserver.removeOnGlobalLayoutListener(this)
                                 return
                             }
                             scanCount++
-                            if (scanAndHide(root)) {
-                                everHit = true
-                            }
                         }
                     })
 
