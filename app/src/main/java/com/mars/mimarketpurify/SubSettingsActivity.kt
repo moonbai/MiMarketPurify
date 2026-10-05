@@ -219,8 +219,9 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
         }
 
         Spacer(Modifier.height(12.dp))
-        // ═══ 悬浮底栏（商店）配置 —— 原 PAGE_TAB_BAR 内容，合并至此 ═══
+        // ═══ 悬浮底栏（商店）配置 ═══
         SettingsSection(topLabel = "悬浮底栏") {
+            // Fix: onChanged 触发 refreshSignal，关闭后子项立即隐藏
             PrefSwitch(
                 activity = activity,
                 key = Settings.KEY_FLOATING_BAR,
@@ -228,6 +229,7 @@ private fun TabsScreen(activity: SubSettingsActivity, masterOn: Boolean) {
                 summary = "替换商店原生贴底栏为居中胶囊导航",
                 default = false,
                 enabled = masterOn,
+                onChanged = { activity.refreshSignal.value++ },
             )
             if (floatingOn) {
                 PrefSlider(activity, Settings.KEY_FLOAT_CORNER_RADIUS, "圆角半径", "胶囊圆角半径（dp），0=直角",

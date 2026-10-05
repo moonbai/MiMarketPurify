@@ -477,15 +477,19 @@ fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
     ).map { (value, title) -> DropdownItem(text = title) }
     SettingsSection(topLabel = "主题模式") {
         WindowSpinnerPreference(
+            modifier = Modifier
+                .padding(start = MiuiX.PREF_ITEM_START.dp) // 和PrefSwitch左侧边距对齐
+                .padding(vertical = 4.dp), // 补齐上下垂直内边距，统一条目高度
             items = items,
             selectedIndex = mode,
             title = "外观深浅色",
-            summary = "选择浅色 / 深色，或跟随系统自动切换",
+            summary = "选择浅色、深色或跟随系统自动切换",
             onSelectedIndexChange = { index ->
                 mode = index
                 activity.writeLocalInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, index)
                 onApplied()
             },
+            titleStyle = TextStyle(fontWeight = FontWeight.Normal) // 取消标题加粗，和开关条目字重一致
         )
     }
 }
@@ -511,14 +515,33 @@ fun PrefTabFilterSpinner(
             },
         )
     }
-    WindowSpinnerPreference(
-        entries = listOf(DropdownEntry(items = items)),
-        title = "保留的底部标签",
-        summary = if (enabled) "展开后逐项勾选需保留的标签（可多选）" else "已关闭筛选，恢复全部标签",
+
+    val keptLabels = kept.mapNotNull { key -> Settings.TAB_ITEMS[key] }
+    val dynamicSummary = when {
+        !enabled -> "已关闭筛选，恢复全部标签"
+        keptLabels.isEmpty() -> "未选择任何标签"
+        keptLabels.size <= 3 -> "已选：${keptLabels.joinToString("、")}"
+        else -> "已选 ${keptLabels.size} 项：${keptLabels.take(3).joinToString("、")}…"
+    }
+
+    var showPopup by remember { mutableStateOf(false) }
+
+    SettingItem(
+        headlineText = "底部标签显示",
+        supportingText = dynamicSummary,
         enabled = enabled,
-        showValue = false,
-        collapseOnSelection = false,
+        onClick = { showPopup = true },
+        trailingContent = {
+            Icon(Icons.Default.ExpandMore, contentDescription = null)
+        }
     )
+
+    if (showPopup) {
+        MultiSelectPopup(
+            items = items,
+            onDismiss = { showPopup = false }
+        )
+    }
 }
 
 // ==================== 偏好绑定：数值滑杆 ====================
