@@ -58,7 +58,7 @@
     <string name="slider_plugin_bottom_margin">Bottom Margin</string>
     <string name="slider_plugin_bottom_margin_sum">Gap between floating bar and screen bottom (dp)</string>
     <string name="slider_ui_scale">UI Scale</string>
-    <string name="slider_ui_scale_sum">Scale this module's UI only (does not affect the GetApps)</string>
+    <string name="slider_ui_scale_sum">Scale this module\'s UI only (does not affect the GetApps)</string>
     <string name="color_floating_bg">Bar Background</string>
     <string name="color_floating_select_bg">Selected Background</string>
     <string name="color_floating_text_normal">Normal Text</string>
@@ -99,9 +99,9 @@
     <string name="sec_references">References</string>
     <string name="sec_other">Other</string>
     <string name="about_author_name">Mars</string>
-    <string name="about_author_summary">Tap to visit the author's profile</string>
+    <string name="about_author_summary">Tap to visit the author\'s profile</string>
     <string name="about_privacy_title">Privacy Policy</string>
-    <string name="about_privacy_summary">View this module's privacy policy and data notes</string>
+    <string name="about_privacy_summary">View this module\'s privacy policy and data notes</string>
     <string name="about_footer">A clean app store is a good app store @Mars</string>
     <string name="about_check_update">Check for Updates</string>
     <string name="about_update_title">Module Update</string>
@@ -174,7 +174,7 @@
     <string name="feat_tab_filter">Filter Bottom Tabs</string>
     <string name="feat_tab_filter_summary">Choose which bottom tabs to show</string>
     <string name="feat_update_tab">Bottom Update Entry</string>
-    <string name="feat_update_tab_summary">Inject an &quot;Update&quot; entry into the GetApps' native bar</string>
+    <string name="feat_update_tab_summary">Inject an &quot;Update&quot; entry into the GetApps\' native bar</string>
     <string name="feat_detail_featured">Detail "Featured"</string>
     <string name="feat_detail_featured_summary">Matched by text; applies only on detail pages</string>
     <string name="feat_update_history">Update History Recommendations</string>
@@ -212,11 +212,11 @@
     <string name="feat_predictive_back">Predictive Back</string>
     <string name="feat_predictive_back_summary">Enable the system predictive-back animation (Android 13+)</string>
     <string name="feat_island">Download Super Island</string>
-    <string name="feat_island_summary">Force download progress into Xiaomi's Super Island</string>
+    <string name="feat_island_summary">Force download progress into Xiaomi\'s Super Island</string>
     <string name="feat_misc">Detail Fixes</string>
     <string name="feat_misc_summary">Show unofficial apps, hidden updates and other details</string>
     <string name="feat_update_dialog">Update Reminder Dialog</string>
-    <string name="feat_update_dialog_summary">Stop the GetApps' upgrade-reminder dialog</string>
+    <string name="feat_update_dialog_summary">Stop the GetApps\' upgrade-reminder dialog</string>
     <string name="feat_rank_debug">Debug Mode</string>
     <string name="feat_rank_debug_summary">Unifies log output when enabled</string>
     <string name="sec_misc">UI Cleanup</string>
