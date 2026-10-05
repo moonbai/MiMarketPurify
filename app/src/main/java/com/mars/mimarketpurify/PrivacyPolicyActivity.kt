@@ -43,14 +43,14 @@ class PrivacyPolicyActivity : ComponentActivity() {
 
         setContent {
             ModuleTheme {
-                PrivacyPolicyScreen(onBack = { finish() })
+                PrivacyPolicyScreen(dark = dark, onBack = { finish() })
             }
         }
     }
 }
 
 @Composable
-private fun PrivacyPolicyScreen(onBack: () -> Unit) {
+private fun PrivacyPolicyScreen(dark: Boolean, onBack: () -> Unit) {
     val colors = MiuixTheme.colorScheme
 
     Column(
