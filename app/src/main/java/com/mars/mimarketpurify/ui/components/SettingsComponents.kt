@@ -418,7 +418,50 @@ fun PrefSwitch(
     }
 }
 
-// ==================== 偏好绑定：主题模式（三选一） ====================
+// ==================== 偏好绑定：主题模式（三选一·单选） ====================
+
+/** 单选行：与 SwitchRow / CheckboxRow 同风，右侧为 RadioButton，整行可点击。 */
+@Composable
+private fun RadioRow(
+    title: String,
+    summary: String,
+    selected: Boolean,
+    enabled: Boolean = true,
+    onSelect: () -> Unit,
+) {
+    val colors = MiuixTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(enabled = enabled) { onSelect() }
+            .padding(horizontal = MiuiX.ROW_PAD_H.dp, vertical = MiuiX.ROW_PAD_V.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.body1,
+                color = if (enabled) colors.onSurface else colors.outline,
+            )
+            Text(
+                text = summary,
+                style = MiuixTheme.textStyles.footnote1,
+                color = if (enabled) colors.onSurfaceVariantSummary else colors.outline,
+                modifier = Modifier.padding(top = 3.dp),
+            )
+        }
+        RadioButton(
+            selected = selected,
+            onClick = onSelect,
+            enabled = enabled,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = colors.primary,
+                unselectedColor = colors.outline,
+            ),
+        )
+    }
+}
 
 @Composable
 fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
@@ -438,18 +481,17 @@ fun PrefThemeMode(activity: SettingsBaseActivity, onApplied: () -> Unit = {}) {
             com.mars.mimarketpurify.THEME_DARK to ("深色" to "始终使用深色主题"),
         ).forEach { (value, label) ->
             val (title, summary) = label
-            SwitchRow(
+            // 三选一：单选，整行点击即选中，不存在「关闭」状态
+            RadioRow(
                 title = title,
                 summary = summary,
-                checked = mode == value,
+                selected = mode == value,
                 enabled = true,
-            ) { on ->
-                if (on) {
-                    mode = value
-                    // 主题模式只影响本插件 UI，存模块自身 SP（不经 XposedService），与 useDarkTheme 读取同源
-                    activity.writeLocalInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, value)
-                    onApplied()
-                }
+            ) {
+                mode = value
+                // 主题模式只影响本插件 UI，存模块自身 SP（不经 XposedService），与 useDarkTheme 读取同源
+                activity.writeLocalInt(com.mars.mimarketpurify.Settings.KEY_THEME_MODE, value)
+                onApplied()
             }
         }
     }

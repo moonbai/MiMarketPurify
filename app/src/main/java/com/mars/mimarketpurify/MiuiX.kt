@@ -2,6 +2,7 @@ package com.mars.mimarketpurify
 
 import android.app.UiModeManager
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.os.Build
 import android.window.OnBackInvokedCallback
@@ -200,5 +201,29 @@ fun ComponentActivity.setupPredictiveBack(onBack: () -> Unit) {
             OnBackInvokedDispatcher.PRIORITY_DEFAULT,
             OnBackInvokedCallback { onBack() },
         )
+    }
+}
+
+/**
+ * 动态控制 **App 级**预测性返回开关（Android 14 / API 34 及以上）。
+ *
+ * 仅 `manifest` 的 `android:enableOnBackInvokedCallback="true"` 是**静态**默认开启，
+ * 无法随用户「预测性返回」开关动态切换。Android 14 起系统改用
+ * [ApplicationInfo.setEnableOnBackInvokedCallback] 这一 App 级开关来门控系统预测手势，
+ * 因此这里在运行时按用户偏好反射设置它，使「预测性返回」开关真正生效
+ * （参考附件 AppMarket 项目的 `MarketApplication` / `PredictiveBack.android` 实现）。
+ *
+ * 低于 API 34 由 manifest 属性兜底，无需处理；反射用 [runCatching] 包裹，
+ * 方法不可达时静默忽略，不影响其它逻辑。
+ */
+fun setPredictiveBackEnabled(context: Context, enabled: Boolean) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
+    runCatching {
+        val method = ApplicationInfo::class.java.getDeclaredMethod(
+            "setEnableOnBackInvokedCallback",
+            Boolean::class.javaPrimitiveType,
+        )
+        method.isAccessible = true
+        method.invoke(context.applicationInfo, enabled)
     }
 }

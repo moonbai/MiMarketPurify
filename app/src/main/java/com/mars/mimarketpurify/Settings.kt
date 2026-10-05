@@ -42,6 +42,13 @@ object Settings {
     const val KEY_FLOAT_SELECT_BG_COLOR = "float_bar_select_bg_color"
     const val KEY_FLOAT_TEXT_NORMAL_COLOR = "float_bar_text_normal_color"
     const val KEY_FLOAT_TEXT_SELECT_COLOR = "float_bar_text_select_color"
+
+    // ===== 商店悬浮底栏（Hook）专属配色：与「插件本体底栏」配色相互独立、互不影响 =====
+    // 商店 Hook（ComposeFloatingBarHost）改读这组 key；插件本体底栏继续读上面的 KEY_FLOAT_*_COLOR。
+    const val KEY_STORE_FLOAT_BG_COLOR = "store_float_bar_bg_color"
+    const val KEY_STORE_FLOAT_SELECT_BG_COLOR = "store_float_bar_select_bg_color"
+    const val KEY_STORE_FLOAT_TEXT_NORMAL_COLOR = "store_float_bar_text_normal_color"
+    const val KEY_STORE_FLOAT_TEXT_SELECT_COLOR = "store_float_bar_text_select_color"
     const val KEY_FLOAT_BAR_ALPHA = "float_bar_bg_alpha"
     const val KEY_FLOAT_SELECT_ALPHA = "float_bar_select_alpha"
     const val KEY_FLOAT_BAR_HEIGHT = "float_bar_height"

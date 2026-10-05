@@ -1,6 +1,7 @@
 package com.mars.mimarketpurify
 
 import android.app.Application
+import android.content.Context
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import java.util.concurrent.CopyOnWriteArraySet
@@ -45,6 +46,15 @@ class App : Application(), XposedServiceHelper.OnServiceListener {
     override fun onCreate() {
         super.onCreate()
         XposedServiceHelper.registerListener(this)
+        // 运行时按用户偏好动态设置 App 级「预测性返回」开关（Android 14+）；
+        // 低于 API 34 由 manifest 的 enableOnBackInvokedCallback="true" 兜底。
+        // 参考附件 AppMarket 项目：仅 manifest 静态开启无法随开关切换，
+        // 需用 ApplicationInfo.setEnableOnBackInvokedCallback 反射控制。
+        setPredictiveBackEnabled(
+            this,
+            getSharedPreferences(Settings.PREFS_GROUP, Context.MODE_PRIVATE)
+                .getBoolean(Settings.KEY_PREDICTIVE_BACK, true),
+        )
     }
 
     override fun onServiceBind(service: XposedService) {

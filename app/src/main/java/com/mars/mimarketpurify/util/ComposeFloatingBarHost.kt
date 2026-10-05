@@ -283,10 +283,13 @@ class ComposeFloatingBarHost private constructor(
         val showLabel = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LABEL, true)
         val radiusDp = Settings.floatingBarRadiusDp()
         val bottomMarginDp = Settings.floatingBarBottomMarginDp()
-        val barColorArgb = Settings.getInt(Settings.KEY_FLOAT_BG_COLOR, -1)
-        val indicatorColorArgb = Settings.getInt(Settings.KEY_FLOAT_SELECT_BG_COLOR, -1)
-        val textSelectedArgb = Settings.getInt(Settings.KEY_FLOAT_TEXT_SELECT_COLOR, -1)
-        val textNormalArgb = Settings.getInt(Settings.KEY_FLOAT_TEXT_NORMAL_COLOR, -1)
+        // 商店悬浮底栏使用「专属」配色 key（KEY_STORE_FLOAT_*_COLOR），与插件本体底栏
+        // （KEY_FLOAT_*_COLOR）相互独立；前者在「界面设置 → 悬浮底栏（商店）」配置，
+        // 后者在「主题与外观」配置，互不干扰。
+        val barColorArgb = Settings.getInt(Settings.KEY_STORE_FLOAT_BG_COLOR, -1)
+        val indicatorColorArgb = Settings.getInt(Settings.KEY_STORE_FLOAT_SELECT_BG_COLOR, -1)
+        val textSelectedArgb = Settings.getInt(Settings.KEY_STORE_FLOAT_TEXT_SELECT_COLOR, -1)
+        val textNormalArgb = Settings.getInt(Settings.KEY_STORE_FLOAT_TEXT_NORMAL_COLOR, -1)
         // 液态高亮开关：选中胶囊改用毛玻璃液态效果（与设置页「液态选中高亮动画 / 3D液态效果」对应）。
         val liquid = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LIQUID, false)
         val liquid3d = Settings.isEnabled(Settings.KEY_FLOATING_BAR_LIQUID_3D, false)

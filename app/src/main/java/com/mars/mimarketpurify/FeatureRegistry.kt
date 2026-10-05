@@ -88,15 +88,17 @@ object FeatureRegistry {
         Feature(Settings.KEY_LONG_PRESS_JUMP, "长按跳转插件", "长按下载按钮跳转到插件主页",
             SubSettingsActivity.PAGE_MISC, listOf("长按", "跳转", "插件", "主页", "longpress"), "界面精简"),
 
-        // ═══════════════ 悬浮底栏（4项，已并入「主题与外观」） ═══════════════
-        Feature(Settings.KEY_FLOATING_BAR, "启用悬浮底栏", "在商店底部渲染胶囊风格Tab导航栏",
-            SubSettingsActivity.PAGE_THEME, listOf("悬浮", "底栏", "胶囊", "导航栏", "floating_bar"), "悬浮底栏"),
+        // ═══════════════ 悬浮底栏（针对商店底栏的 Hook，置于「界面设置」分组） ═══════════════
+        Feature(Settings.KEY_FLOATING_BAR, "启用悬浮底栏", "替换商店原生贴底栏为居中胶囊导航",
+            SubSettingsActivity.PAGE_TAB_BAR, listOf("悬浮", "底栏", "胶囊", "导航栏", "floating_bar"), "悬浮底栏"),
         Feature(Settings.KEY_FLOATING_BAR_LABEL, "显示标签文字", "关闭后悬浮底栏只保留图标",
-            SubSettingsActivity.PAGE_THEME, listOf("标签", "文字", "图标", "label"), "悬浮底栏"),
+            SubSettingsActivity.PAGE_TAB_BAR, listOf("标签", "文字", "图标", "label"), "悬浮底栏"),
         Feature(Settings.KEY_FLOATING_BAR_LIQUID, "液态选中高亮动画", "选中项显示跟随移动的液态胶囊",
-            SubSettingsActivity.PAGE_THEME, listOf("液态", "动画", "高亮", "liquid"), "悬浮底栏"),
+            SubSettingsActivity.PAGE_TAB_BAR, listOf("液态", "动画", "高亮", "liquid"), "悬浮底栏"),
+        Feature(Settings.KEY_FLOATING_BAR_LIQUID_3D, "3D 液态高亮", "在液态基础上叠加阴影，增强立体感",
+            SubSettingsActivity.PAGE_TAB_BAR, listOf("3D", "液态", "阴影", "立体"), "悬浮底栏"),
         Feature(Settings.KEY_FLOATING_BAR_MONOCHROME, "单色图标", "图标抽成单色描边、随主题着色",
-            SubSettingsActivity.PAGE_THEME, listOf("单色", "图标", "描边", "主题", "monochrome"), "悬浮底栏"),
+            SubSettingsActivity.PAGE_TAB_BAR, listOf("单色", "图标", "描边", "主题", "monochrome"), "悬浮底栏"),
     )
 
     fun search(query: String): List<Feature> {
