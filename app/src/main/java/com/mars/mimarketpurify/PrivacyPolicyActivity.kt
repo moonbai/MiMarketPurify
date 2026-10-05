@@ -43,16 +43,19 @@ class PrivacyPolicyActivity : ComponentActivity() {
             ?.isAppearanceLightStatusBars = !dark
         setupPredictiveBack { finish() }
 
+        // 跟随系统语言加载对应语种的隐私政策正文
+        val isEnglish = resources.configuration.locales[0].language == "en"
+
         setContent {
             ModuleTheme {
-                PrivacyPolicyScreen(dark = dark, onBack = { finish() })
+                PrivacyPolicyScreen(dark = dark, isEnglish = isEnglish, onBack = { finish() })
             }
         }
     }
 }
 
 @Composable
-private fun PrivacyPolicyScreen(dark: Boolean, onBack: () -> Unit) {
+private fun PrivacyPolicyScreen(dark: Boolean, isEnglish: Boolean, onBack: () -> Unit) {
     val colors = MiuixTheme.colorScheme
 
     Column(
@@ -117,7 +120,8 @@ private fun PrivacyPolicyScreen(dark: Boolean, onBack: () -> Unit) {
                         settings.forceDark = if (dark) WebSettings.FORCE_DARK_ON else WebSettings.FORCE_DARK_OFF
                     }
 
-                    loadUrl("file:///android_asset/privacy_policy.html")
+                    val asset = if (isEnglish) "privacy_policy_en.html" else "privacy_policy.html"
+                    loadUrl("file:///android_asset/$asset")
                 }
             },
             modifier = Modifier

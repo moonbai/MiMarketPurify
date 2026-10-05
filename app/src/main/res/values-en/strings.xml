@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Mi Market Purify</string>
-    <string name="xposed_desc">Purify &amp; enhance the Xiaomi App Store</string>
+    <string name="app_name">Mi GetApps Purify</string>
+    <string name="xposed_desc">Purify &amp; enhance the Xiaomi GetApps</string>
     <string name="about_title">About</string>
     <string name="page_ads">Ad Blocking</string>
-    <string name="page_mine">"My" Page Cleanup</string>
+    <string name="page_mine">"Account" Page Cleanup</string>
     <string name="page_tabs">Bottom Bar Customization</string>
     <string name="page_misc">Other UI Cleanup</string>
     <string name="page_theme">Theme &amp; Appearance</string>
     <string name="cat_ad">Ad Blocking</string>
-    <string name="cat_mine">"My" Page Cleanup</string>
+    <string name="cat_mine">"Account" Page Cleanup</string>
     <string name="cat_tabs">Tab Bar</string>
     <string name="cat_misc">UI Cleanup</string>
     <string name="cat_floating">Floating Bar</string>
@@ -28,13 +28,13 @@
     <string name="ui_about">About</string>
     <string name="ui_restart_market">Restart Store</string>
     <string name="ui_search_hint">Search features…</string>
-    <string name="ui_app_subtitle">Purify &amp; enhance the Xiaomi App Store</string>
+    <string name="ui_app_subtitle">Purify &amp; enhance the Xiaomi GetApps</string>
     <string name="ui_module_inactive">Module not activated</string>
-    <string name="ui_module_inactive_body">Enable this module in LSPosed and tick "App Store" in its scope, then restart the store.</string>
+    <string name="ui_module_inactive_body">Enable this module in LSPosed and tick "GetApps" in its scope, then restart the store.</string>
     <string name="ui_activated">Activated · %1$s %2$s</string>
     <string name="ui_remote_supported">Remote preferences supported: changes apply live, no restart needed.</string>
     <string name="ui_remote_unsupported">Remote preferences not supported by current framework; a restart may be needed.</string>
-    <string name="ui_debug_version">Debugging targets App Store version 4.126.xx</string>
+    <string name="ui_debug_version">Debugging targets GetApps version 4.126.xx</string>
     <string name="ui_search_no_result">No matching feature</string>
     <string name="ui_feature_recommend">Feature Picks</string>
     <string name="sec_upgrade_card">Update Card</string>
@@ -73,7 +73,7 @@
     <string name="switch_op_hint">Toggle Hints</string>
     <string name="switch_op_hint_sum">Show a Snackbar after toggling; if a restart is needed, a "Restart Store" button is included</string>
     <string name="footer_ads">Blocks splash, home feed, search, update/download, detail, ranking ads, plus the fruit and activity entries</string>
-    <string name="footer_mine">Hides recommendations, cleanup, security checks and personal info on the "My" page</string>
+    <string name="footer_mine">Hides recommendations, cleanup, security checks and personal info on the "Account" page</string>
     <string name="footer_tabs">Pick which bottom tabs to show; unchecked tabs will be hidden.</string>
     <string name="footer_misc">Cleans detail-page picks, update history, "also viewing" and top-bar promotions</string>
     <string name="footer_theme">Theme and scaling apply after the page rebuilds; predictive back needs Android 13+.</string>
