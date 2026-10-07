@@ -44,6 +44,7 @@ import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import androidx.compose.ui.res.stringResource
 import com.mars.mimarketpurify.R
+import com.mars.mimarketpurify.Settings
 
 class MainActivity : SettingsBaseActivity() {
 
@@ -72,6 +73,9 @@ class MainActivity : SettingsBaseActivity() {
         super.onCreate(savedInstanceState)
         EntryGuardReceiver.ensureEntryEnabled(this)
         applyWindowTheme()
+        // 与子页 setupPredictiveBack 一致：显式打开当前 Window 的预测性返回总闸，
+        // 否则在 Android 17 等较新系统上 Compose BackHandler 也完全无预测动画。
+        setPredictiveBackGate(readLocalBoolDirect(Settings.KEY_PREDICTIVE_BACK, true))
 
         setContent {
             ModuleTheme {

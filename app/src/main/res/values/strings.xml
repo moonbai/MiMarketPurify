@@ -195,7 +195,7 @@
     <string name="feat_block_bg_download_summary">禁止商店在后台自动下载应用更新</string>
     <string name="feat_long_press_jump">长按跳转插件</string>
     <string name="feat_long_press_jump_summary">长按下载按钮跳转到插件主页</string>
-    <string name="feat_floating_bar">启用悬浮底栏</string>
+    <string name="feat_floating_bar">悬浮底栏</string>
     <string name="feat_floating_bar_summary">替换商店原生贴底栏为居中胶囊导航</string>
     <string name="feat_floating_bar_label">显示标签文字</string>
     <string name="feat_floating_bar_label_summary">关闭后悬浮底栏只保留图标</string>
@@ -207,7 +207,7 @@
     <string name="feat_floating_bar_monochrome_summary">图标抽成单色描边、随主题着色</string>
     <string name="feat_tab_deep_clean">顶栏标签深度清理</string>
     <string name="feat_tab_deep_clean_summary">清理首页/榜单等页面顶部的推广子标签</string>
-    <string name="feat_float_bar_enable">启用插件悬浮底栏</string>
+    <string name="feat_float_bar_enable">插件悬浮底栏</string>
     <string name="feat_float_bar_enable_summary">在主页 / 关于页底部显示居中胶囊导航</string>
     <string name="feat_predictive_back">预测性返回</string>
     <string name="feat_predictive_back_summary">启用系统返回手势的预测动画（Android 13+）</string>

@@ -196,11 +196,34 @@ fun ComponentActivity.setupPredictiveBack(onBack: () -> Unit) {
     val dispatcher = onBackInvokedDispatcher ?: return
     val enabled = getSharedPreferences(Settings.PREFS_GROUP, Context.MODE_PRIVATE)
         .getBoolean(Settings.KEY_PREDICTIVE_BACK, true)
+    // 直接在 Activity 自身 Window 上同步预测性返回总闸，确保各 Android 版本（含 Android 17）
+    // 都能稳定开启/关闭预测手势。仅依赖 setPredictiveBackEnabled 反射 ApplicationInfo 在
+    // 新版系统上无法命中框架实际读取的闸口，会导致完全无预测动画。
+    setPredictiveBackGate(enabled)
     if (enabled) {
         dispatcher.registerOnBackInvokedCallback(
             OnBackInvokedDispatcher.PRIORITY_DEFAULT,
             OnBackInvokedCallback { onBack() },
         )
+    }
+}
+
+/**
+ * 在当前 Activity 的 [android.view.Window] 上显式开启/关闭预测性返回总闸。
+ *
+ * 系统是否在返回手势中派发预测动画，取决于 Activity 自身 Window 的
+ * `enableOnBackInvokedCallback` 闸口；而 [setPredictiveBackEnabled] 通过反射
+ * [android.content.pm.ApplicationInfo] 设置的值在不同 Android 版本 / ROM 下
+ * 未必能命中框架实际读取的那一份（尤其 Android 17 等较新系统上 manifest 属性已不足以
+ * 开启）。这里直接作用于 Window，保证「预测性返回」开关值稳定落到当前 Activity。
+ */
+fun ComponentActivity.setPredictiveBackGate(enabled: Boolean) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+    runCatching {
+        android.view.Window::class.java
+            .getDeclaredMethod("setEnableOnBackInvokedCallback", Boolean::class.javaPrimitiveType)
+            .apply { isAccessible = true }
+            .invoke(window, enabled)
     }
 }
 
