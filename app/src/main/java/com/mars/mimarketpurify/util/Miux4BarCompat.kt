@@ -86,14 +86,36 @@ object Miux4BarCompat {
      * 任一环节缺失返回 null，不影响旧逻辑结果。
      */
     fun tagOf(tabView: View): String? {
-        val index = indexByItem[tabView] ?: return null
+        // 1) 已登记映射（悬浮底栏挂载时由 collectTabs 建立）
+        indexByItem[tabView]?.let { index ->
+            var p: View? = tabView.parent as? View
+            var d = 0
+            while (p != null && d < MAX_PARENT_DEPTH) {
+                if (isMiux4Container(p)) {
+                    val info = (invoke(p, "getTabInfoList") as? List<*>)?.getOrNull(index) ?: return null
+                    return runCatching { invoke(info, "getTag")?.toString() }.getOrNull()?.takeIf { it.isNotEmpty() }
+                }
+                p = p.parent as? View
+                d++
+            }
+        }
+        // 2) 自足解析：悬浮底栏未开启时，沿父链找 Miux4 容器，逐下标比对
+        //    getTabController(i).getItemView() 身份，保证原生「更新」tab 点击拦截可用
         var current: View? = tabView.parent as? View
         var depth = 0
         while (current != null && depth < MAX_PARENT_DEPTH) {
             if (isMiux4Container(current)) {
-                val info = (invoke(current, "getTabInfoList") as? List<*>)?.getOrNull(index) ?: return null
-                return runCatching { invoke(info, "getTag")?.toString() }.getOrNull()
-                    ?.takeIf { it.isNotEmpty() }
+                val infos = invoke(current, "getTabInfoList") as? List<*> ?: return null
+                for (index in infos.indices) {
+                    val controller = invoke(current, "getTabController", index) ?: continue
+                    val item = invoke(controller, "getItemView") as? View ?: continue
+                    if (item === tabView) {
+                        indexByItem[tabView] = index
+                        val info = infos.getOrNull(index) ?: return null
+                        return runCatching { invoke(info, "getTag")?.toString() }.getOrNull()?.takeIf { it.isNotEmpty() }
+                    }
+                }
+                return null
             }
             current = current.parent as? View
             depth++

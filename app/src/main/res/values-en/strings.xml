@@ -21,7 +21,7 @@
     <string name="ui_interface_settings">Interface</string>
     <string name="ui_advanced">Advanced</string>
     <string name="ui_module">Module</string>
-    <string name="ui_theme_group_summary">Dark mode, predictive back, UI scaling, floating bar</string>
+    <string name="ui_theme_group_summary">Dark mode, predictive back, UI scaling, plugin floating bar</string>
     <string name="ui_hide_icon">Hide App Icon</string>
     <string name="ui_hide_icon_summary">Only removes the icon from the app drawer</string>
     <string name="ui_tips">Tips: changes apply live, but restarting the GetApps is still recommended</string>
@@ -34,13 +34,13 @@
     <string name="ui_activated">Activated · %1$s %2$s</string>
     <string name="ui_remote_supported">Remote preferences supported: changes apply live, no restart needed.</string>
     <string name="ui_remote_unsupported">Remote preferences not supported by current framework; a restart may be needed.</string>
-    <string name="ui_debug_version">Debugging targets GetApps version 4.126.xx</string>
+    <string name="ui_debug_version">Debugging targets GetApps version 4.126~4.128</string>
     <string name="ui_search_no_result">No matching feature</string>
     <string name="ui_feature_recommend">Feature Picks</string>
     <string name="sec_upgrade_card">Update Card</string>
     <string name="sec_bottom_tabs">Bottom Tabs</string>
     <string name="sec_enhance">Enhancements</string>
-    <string name="sec_floating_bar">Floating Bar</string>
+    <string name="sec_floating_bar">Custom Floating Bar</string>
     <string name="sec_gesture_display">Gestures &amp; Display</string>
     <string name="sec_ui_scale">UI Scaling</string>
     <string name="sec_home_recommend">Home Recommendations</string>
@@ -52,11 +52,11 @@
     <string name="slider_floating_alpha">Background Opacity</string>
     <string name="slider_floating_alpha_sum">Overall background opacity of the bar (%)</string>
     <string name="slider_floating_bottom_margin">Distance to Bar</string>
-    <string name="slider_floating_bottom_margin_sum">Gap between floating bar and screen bottom (dp)</string>
+    <string name="slider_floating_bottom_margin_sum">Gap between Custom Floating Bar and screen bottom (dp)</string>
     <string name="slider_plugin_radius">Corner Radius</string>
     <string name="slider_plugin_alpha">Background Opacity</string>
     <string name="slider_plugin_bottom_margin">Bottom Margin</string>
-    <string name="slider_plugin_bottom_margin_sum">Gap between floating bar and screen bottom (dp)</string>
+    <string name="slider_plugin_bottom_margin_sum">Gap between Custom Floating Bar and screen bottom (dp)</string>
     <string name="slider_ui_scale">UI Scale</string>
     <string name="slider_ui_scale_sum">Scale this module\'s UI only (does not affect the GetApps)</string>
     <string name="color_floating_bg">Bar Background</string>
@@ -198,7 +198,7 @@
     <string name="feat_floating_bar">Enable Floating Bar</string>
     <string name="feat_floating_bar_summary">Replace the native bottom bar with a centered capsule nav</string>
     <string name="feat_floating_bar_label">Show Labels</string>
-    <string name="feat_floating_bar_label_summary">When off, the floating bar keeps icons only</string>
+    <string name="feat_floating_bar_label_summary">When off, the plugin floating bar keeps icons only</string>
     <string name="feat_floating_bar_liquid">Liquid Selection Animation</string>
     <string name="feat_floating_bar_liquid_summary">Animated liquid capsule that follows the selection</string>
     <string name="feat_floating_bar_liquid_3d">3D Liquid Highlight</string>
