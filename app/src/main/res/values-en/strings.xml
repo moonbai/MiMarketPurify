@@ -34,7 +34,7 @@
     <string name="ui_activated">Activated · %1$s %2$s</string>
     <string name="ui_remote_supported">Remote preferences supported: changes apply live, no restart needed.</string>
     <string name="ui_remote_unsupported">Remote preferences not supported by current framework; a restart may be needed.</string>
-    <string name="ui_debug_version">Debugging targets GetApps version 4.126~4.128</string>
+    <string name="ui_debug_version">Debugging targets GetApps version 4.128.11</string>
     <string name="ui_search_no_result">No matching feature</string>
     <string name="ui_feature_recommend">Feature Picks</string>
     <string name="sec_upgrade_card">Update Card</string>

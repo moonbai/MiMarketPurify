@@ -34,7 +34,7 @@
     <string name="ui_activated">已激活 · %1$s %2$s</string>
     <string name="ui_remote_supported">支持远程偏好：开关改动实时生效，一般无需重启应用商店。</string>
     <string name="ui_remote_unsupported">当前框架不支持远程偏好，开关可能不会立即生效，建议重启一次应用商店。</string>
-    <string name="ui_debug_version">插件调试基于应用商店版本：4.126~4.128</string>
+    <string name="ui_debug_version">插件调试基于应用商店版本：4.128.11</string>
     <string name="ui_search_no_result">未找到相关功能</string>
     <string name="ui_feature_recommend">功能推荐</string>
     <string name="sec_upgrade_card">升级卡片</string>
