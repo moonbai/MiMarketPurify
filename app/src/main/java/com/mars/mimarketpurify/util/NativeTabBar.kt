@@ -300,6 +300,8 @@ object NativeTabBar {
             ?.filterIsInstance<View>()
             ?.takeIf { it.isNotEmpty() }
             ?.let { return it }
+        // 4.128.11 Miux4 底栏(BottomTabLayoutMiux4)无 getTabViews → 走兼容层；旧逻辑全保留
+        Miux4BarCompat.collectTabs(container)?.let { return it }
         return collectLeafTabs(container)
     }
 
@@ -342,8 +344,7 @@ object NativeTabBar {
     // ═══════════════ TabView 状态读取（反射，带缓存） ═══════════════
 
     /** 读取 TabView 的 tag（native_market_home / purify_update 等），失败返回 null。 */
-    fun tagOf(tabView: View): String? = invoke(tabView, "getTabViewTag")?.toString()
-
+    fun tagOf(tabView: View): String? = invoke(tabView, "getTabViewTag")?.toString() ?: Miux4BarCompat.tagOf(tabView)
     /**
      * 读取 TabView 标题文本。
      * 优先反射 `getTitleView()`（未改名版本）；失败则扫描子树里的可见 TextView
