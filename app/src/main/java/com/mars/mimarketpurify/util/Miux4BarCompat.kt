@@ -5,10 +5,13 @@ import java.lang.reflect.Method
 import java.util.WeakHashMap
 
 /**
- * 应用商店 4.128.11 Miux4 风格底栏（BottomTabLayoutMiux4 + miuix BottomNavigator）兼容层 v3。
+ * 应用商店 4.128.11 Miux4 风格底栏（BottomTabLayoutMiux4 + miuix BottomNavigator）兼容层 v3.1。
+ *
+ * v3.1 修正：tagOf 路径 2 中 items 的类型由 ArrayList<View> 修正为 ArrayList<Pair<Int, View>>
+ * （v3 因类型不符导致 `+=` 被解析为 val 重赋值，CI 编译失败：VAL_REASSIGNMENT / Unresolved 'first'）。
  *
  * 相比 v2 的修正：原生「更新」tab 点击时，performClick 的 this 往往是 item 的**子 View**（标题/图标），
- * v2 用 item === tabView 严格相等会漏判。v3 在定位到 Miux4 容器后，沿父链逐层比对
+ * v2 用 item === tabView 严格相等会漏判。v3 起在定位到 Miux4 容器后，沿父链逐层比对
  * getTabController(i).getItemView()，命中自身或任一祖先即取到下标。
  *
  * 设计约束：旧版本逻辑一律不删——本类只作为 NativeTabBar 旧反射链之后的追加分支；
@@ -31,7 +34,7 @@ object Miux4BarCompat {
         val key = name to paramCount
         val perClass = synchronized(methodCache) { methodCache.getOrPut(cls.name) { HashMap() } }
         synchronized(perClass) {
-            perClass[key]?.let { return it }
+            if (perClass.containsKey(key)) return perClass[key]
             val m = runCatching {
                 cls.methods.firstOrNull { it.name == name && it.parameterTypes.size == paramCount }
                     ?: cls.declaredMethods.firstOrNull { it.name == name && it.parameterTypes.size == paramCount }
@@ -63,12 +66,12 @@ object Miux4BarCompat {
             val controller = invoke(container, "getTabController", index) ?: continue
             val item = invoke(controller, "getItemView") as? View ?: continue
             indexByItem[item] = index
-            items += item
+            items.add(item)
         }
         return items.takeIf { it.isNotEmpty() }
     }
 
-    /** 沿父链找 Miux4 容器（至多 [MAX_PARENT_DEPTH] 层）。 */
+    /** 沿父链找 Miux4 容器（含自身，至多 [MAX_PARENT_DEPTH] 层）。 */
     private fun findContainer(start: View): View? {
         var current: View? = start
         var depth = 0
@@ -85,11 +88,11 @@ object Miux4BarCompat {
      * 1) 已登记映射：悬浮底栏挂载时由 collectTabs 建立；
      * 2) 父链比对：找到 Miux4 容器后，沿 click view 向上逐层（含自身）与
      *    getTabController(i).getItemView() 比对——覆盖「点击落在 item 子 View」的场景；
-     * 3) 兜底：仅凭容器 + 已缓存映射再试一次。
+     * 3) 兜底：上溯过程中先碰到已登记 item 的情况。
      * 保证悬浮底栏未开启时，原生「更新」tab 点击拦截依然可用。
      */
     fun tagOf(tabView: View): String? {
-        // 路径 1：已登记映射（含从子 View 上溯到已登记 item）
+        // 路径 1：已登记映射
         indexByItem[tabView]?.let { index ->
             findContainer(tabView)?.let { return tagAt(it, index) }
         }
@@ -97,19 +100,18 @@ object Miux4BarCompat {
         val container = findContainer(tabView)
         if (container != null) {
             val size = (invoke(container, "getTabInfoList") as? List<*>)?.size ?: return null
-            // 预取所有 item，避免每层重复反射
-            val items = ArrayList<View>(size)
+            val items = ArrayList<Pair<Int, View>>(size)
             for (index in 0 until size) {
                 val controller = invoke(container, "getTabController", index) ?: continue
-                (invoke(controller, "getItemView") as? View)?.let { items += index to it }
-                    ?: continue
+                val item = invoke(controller, "getItemView") as? View ?: continue
+                items.add(index to item)
             }
             var probe: View? = tabView
             var depth = 0
             while (probe != null && depth < MAX_PARENT_DEPTH) {
                 val hit = items.firstOrNull { it.second === probe }
                 if (hit != null) {
-                    indexByItem[probe] = hit.first
+                    indexByItem[probe!!] = hit.first
                     return tagAt(container, hit.first)
                 }
                 if (probe === container) break
