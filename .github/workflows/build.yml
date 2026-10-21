@@ -158,8 +158,8 @@ jobs:
         if: always()
         run: |
           git config core.fileMode false
-          git config user.name "ci-bot"
-          git config user.email "ci-bot@users.noreply.github.com"
+          git config user.name "moonbai"
+          git config user.email "moonbai@users.noreply.github.com"
           mkdir -p ci-status
           {
             echo "run: ${{ github.run_id }} attempt ${{ github.run_attempt }}"
@@ -180,8 +180,8 @@ jobs:
         if: always() && steps.build.outcome == 'failure'
         run: |
           git config core.fileMode false
-          git config user.name "ci-bot"
-          git config user.email "ci-bot@users.noreply.github.com"
+          git config user.name "moonbai"
+          git config user.email "moonbai@users.noreply.github.com"
           mkdir -p diag
           cp ci-report.log "diag/run-${{ github.run_id }}.txt"
           git add -f diag
