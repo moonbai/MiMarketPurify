@@ -3,7 +3,6 @@ package com.mars.mimarketpurify.util
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathFillType
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
 
@@ -67,26 +66,27 @@ object NavIcons {
      * 供「移花接木」注入的原生更新 tab / 悬浮底栏独立更新按钮使用；
      * 官方底栏兜底图标（Miux4UpdateEntry.buildUpdateIcon）使用同一路径，两个底栏保持一致。
      *
-     * 圆环用「外圆 + 内圆」两条子路径配合 EvenOdd 填充规则挖空，环宽 1.8；
-     * 箭头是闭合多边形（三角头 + 矩形杆），整体单色填充，可直接 tint。
+     * 圆环用「外圆 + 内圆」两条子路径挖空（环宽 1.8）：外圆 arc sweep=0、内圆 sweep=1，
+     * 两圆缠绕方向相反，走默认 NonZero 填充规则即可挖空——视觉与 EvenOdd 完全一致，
+     * 且不依赖 PathFillType 符号（CI 上该引用在当前 Compose 版本解析不到）。
+     * 箭头是闭合多边形（三角头 + 矩形杆），位于内圆挖空区内，
+     * NonZero 覆盖数 +1-1±1 = ±1 ≠ 0，仍会被填充。
+     * ⚠️ 调整路径时保持：内圆 sweep 与外圆相反、箭头完整落在内圆（r=8.1）之内。
      */
     val Update: ImageVector by lazy {
-        vector(UPDATE_PATH, PathFillType.EvenOdd)
+        vector(UPDATE_PATH)
     }
 
     /**
      * 圆环（外圆 r=9.9，内圆 r=8.1）+ 上箭头（头 12,6.8 → 16.4,11.2 / 7.6,11.2，杆宽 2.8）。
-     * 多子路径 + EvenOdd，环内区域被挖空。
+     * 多子路径 + 反向缠绕，环内区域被挖空。
      */
     private const val UPDATE_PATH =
         "M12 2.1a9.9 9.9 0 1 0 0 19.8a9.9 9.9 0 1 0 0-19.8" + // 外圆
-            "M12 3.9a8.1 8.1 0 1 1 0 16.2a8.1 8.1 0 1 1 0-16.2" + // 内圆（挖空）
+            "M12 3.9a8.1 8.1 0 1 1 0 16.2a8.1 8.1 0 1 1 0-16.2" + // 内圆（挖空，sweep=1 与外圆反向）
             "M12 6.8l4.4 4.4h-3v5h-2.8v-5h-3z" // 上箭头
 
-    private fun vector(
-        path: String,
-        fillType: PathFillType = PathFillType.NonZero,
-    ): ImageVector {
+    private fun vector(path: String): ImageVector {
         val parser = PathParser()
         parser.parsePathString(path)
         return ImageVector.Builder(
@@ -96,7 +96,6 @@ object NavIcons {
             viewportHeight = 24f,
         ).addPath(
             pathData = parser.toNodes(),
-            pathFillType = fillType,
             fill = SolidColor(Color.Black),
         ).build()
     }
