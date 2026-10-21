@@ -29,7 +29,7 @@ import java.lang.reflect.Modifier
  *
  * 与 TabFilter 既有注入按 tag 判重幂等共存。开关共用 [Settings.KEY_UPDATE_TAB]。
  */
-object PurifyTabInjector2 : BaseHook() {
+object PurifyTabInjector : BaseHook() {
 
     override val prefKey: String = Settings.KEY_UPDATE_TAB
     override val name: String get() = "移花接木注入v2"
