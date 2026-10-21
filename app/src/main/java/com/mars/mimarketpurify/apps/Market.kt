@@ -40,6 +40,8 @@ import com.mars.mimarketpurify.hooks.market.LongPressJumpToPlugin
 import com.mars.mimarketpurify.hooks.market.InstallRecommendBlocker
 import com.mars.mimarketpurify.hooks.market.PredictiveBackHook
 import com.mars.mimarketpurify.hooks.market.Miux4UpdateEntry
+// import 区：
+import com.mars.mimarketpurify.hooks.market.PurifyTabInjector
 
 import com.mars.mimarketpurify.init.AppPackage
 import com.mars.mimarketpurify.init.AppRegister
@@ -65,6 +67,8 @@ object Market : AppRegister() {
             HideFruitEntry,
             TabFilter,
             Miux4UpdateEntry,
+// autoInitHooks 列表（Miux4UpdateEntry 后面）：
+            PurifyTabInjector,
             FloatingBottomBar,
             SubTabFilter,
             RankAds,
