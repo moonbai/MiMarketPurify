@@ -1,4 +1,5 @@
-run: 39571103500 attempt 1
-sha: 6936950675b9bfb4f660b9cf45b4b9022337bd6a
-outcome: failure
+run: 39571729319 attempt 1
+sha: 765953718044a22a4be207efe10e3ebc3183373e
+outcome: success
 apk:
+  app/build/outputs/apk/release/app-release.apk 2662656 bytes
