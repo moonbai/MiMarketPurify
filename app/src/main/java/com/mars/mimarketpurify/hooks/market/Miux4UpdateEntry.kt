@@ -11,15 +11,18 @@ import com.mars.mimarketpurify.util.invokeAs
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 /**
- * Miux4 底栏「更新」入口兜底 v3 = v2(点击拉起) + 渲染验证日志(新增)。
+ * Miux4 底栏「更新」入口兜底 v3.1 = v3(渲染+提交双验证日志) + 点击拉起。
  *
- * v3 新增：hook `BottomTabLayoutMiux4.addFragmentTab(TabInfo, FragmentInfo)`，
- * 用【无条件 base.log】打印每次实际进入原生渲染的 tab tag —— 不走 debugLog，
- * 避免 10-21 16:54 那次「调试开关未开 + 配置未还原」导致日志缺失、无法判定的问题。
- * 该日志直接回答：purify_update 是否真的进入原生渲染循环（i=2 的 addFragmentTab 是否执行）。
+ * v3.1 新增：hook `commitNavigationItems()` 打 pendingItems.size / tabInfoList.size ——
+ * 与 addFragmentTab 日志联合可一次判定断点：
+ *   A) [Miux4渲染] addFragmentTab tag=purify_update 出现 + commit pendingItems=3
+ *      → 渲染提交全执行，断点在 miuix navigator.H()/U(i) UI 呈现层
+ *   B) addFragmentTab tag=purify_update 出现 + commit pendingItems=2
+ *      → addFragmentTab 内 createNavigationItem(purify) 抛异常（pendingItems 未加进第3项）
+ *   C) addFragmentTab 只有 tag=native_market_home/mine 两次
+ *      → 循环未把 purify 送进 addFragmentTab（与既有 getFragmentInfo(2) 日志矛盾，需另查）
  *
- * v2 保留：hook `onTabSelected(I)` 纯点击信号拉起更新页（800ms 防抖）。
- *
+ * 所有验证日志用无条件 base.log，不吃调试开关(KEY_RANK_DEBUG)与配置还原时序的亏。
  * 替换项目内 hooks/market/Miux4UpdateEntry.kt 后构建，Market.kt 注册行无需改动。
  */
 object Miux4UpdateEntry : BaseHook() {
@@ -40,7 +43,14 @@ object Miux4UpdateEntry : BaseHook() {
             return
         }
 
-        // ① 渲染验证（无条件日志，不依赖调试开关）
+        val pendingField = runCatching {
+            clz.getDeclaredField("pendingItems").apply { isAccessible = true }
+        }.getOrNull()
+        val tabInfoListField = runCatching {
+            clz.getDeclaredField("tabInfoList").apply { isAccessible = true }
+        }.getOrNull()
+
+        // ① 渲染入口验证（每次实际进入原生 addFragmentTab 的 tag）
         val addTab = clz.declaredMethods.firstOrNull {
             it.name == "addFragmentTab" && it.parameterTypes.size == 2
         }
@@ -57,7 +67,27 @@ object Miux4UpdateEntry : BaseHook() {
             HookEnv.base.log(Log.WARN, TAG, "[Miux4渲染] addFragmentTab 未找到！")
         }
 
-        // ② 点击拉起更新页（v2 保留）
+        // ② 提交层数量验证（pendingItems=真正交给 navigator 的项数）
+        val commit = clz.declaredMethods.firstOrNull {
+            it.name == "commitNavigationItems" && it.parameterTypes.isEmpty()
+        }
+        if (commit != null) {
+            commit.hooked {
+                val pending = runCatching {
+                    (pendingField?.get(thisObject) as? List<*>)?.size
+                }.getOrNull()
+                val tabs = runCatching {
+                    (tabInfoListField?.get(thisObject) as? List<*>)?.size
+                }.getOrNull()
+                HookEnv.base.log(Log.DEBUG, TAG, "[Miux4渲染] commit pendingItems=$pending tabInfoList=$tabs")
+                return@hooked proceed()
+            }
+            HookEnv.base.log(Log.DEBUG, TAG, "[Miux4渲染] hooked commitNavigationItems")
+        } else {
+            HookEnv.base.log(Log.WARN, TAG, "[Miux4渲染] commitNavigationItems 未找到！")
+        }
+
+        // ③ 点击拉起更新页（v2 保留）
         val onSelect = clz.declaredMethods.firstOrNull {
             it.name == "onTabSelected" &&
                 it.parameterTypes.size == 1 &&
