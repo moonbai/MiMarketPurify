@@ -2,6 +2,8 @@ package com.mars.mimarketpurify.util
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
@@ -61,14 +63,44 @@ object NavIcons {
         vector("M3 5h2v2H3zm0 4h2v2H3zm0 4h2v2H3zm4-8h14v2H7zm0 4h14v2H7zm0 4h14v2H7z")
     }
 
-    /** 更新（环形箭头），供「移花接木」注入的原生更新 tab / 悬浮底栏独立更新按钮使用。 */
+    /**
+     * 更新（圆环 + 上箭头，描边风格）。
+     * 供「移花接木」注入的原生更新 tab / 悬浮底栏独立更新按钮使用；
+     * 官方底栏兜底图标（Miux4UpdateEntry.buildUpdateIcon）使用同一路径，两个底栏保持一致。
+     */
     val Update: ImageVector by lazy {
-        vector(
-            "M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8" +
-                "c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6" +
-                "s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z",
-        )
+        ImageVector.Builder(
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            // 圆环（stroke，无填充）
+            addPath(
+                pathData = PathParser().parsePathString(UPDATE_CIRCLE_PATH).toNodes(),
+                fill = null,
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 1.8f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            )
+            // 上箭头（stroke，无填充）
+            addPath(
+                pathData = PathParser().parsePathString(UPDATE_ARROW_PATH).toNodes(),
+                fill = null,
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 1.8f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            )
+        }.build()
     }
+
+    /** 圆环：圆心 (12,12)，半径 9，24 viewport。 */
+    private const val UPDATE_CIRCLE_PATH = "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18"
+
+    /** 上箭头：头 (8.8,10.7)→(12,7.5)→(15.2,10.7)，杆 (12,7.5)→(12,15.5)。 */
+    private const val UPDATE_ARROW_PATH = "M8.8 10.7L12 7.5l3.2 3.2M12 7.5v8"
 
     private fun vector(path: String): ImageVector {
         val parser = PathParser()

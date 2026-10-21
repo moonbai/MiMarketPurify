@@ -1,5 +1,6 @@
 package com.mars.mimarketpurify.hooks.market
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -8,6 +9,7 @@ import android.graphics.Path
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.Log
+import android.util.Xml
 import android.view.View
 import com.mars.mimarketpurify.HookEnv
 import com.mars.mimarketpurify.Settings
@@ -16,20 +18,17 @@ import com.mars.mimarketpurify.init.BaseHook
 import com.mars.mimarketpurify.util.MarketUpdateLauncher
 import com.mars.mimarketpurify.util.invokeAs
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
+import java.io.StringReader
 
 /**
- * v4.3 = v4.2 诊断全保留 + 修复 tag receiver（唯一改动一处）。
+ * v4.5 = v4.4(图标统一方案) + 图标样式统一为「圆环 + 上箭头」描边风格。
  *
- * v4.2 日志终审(17:37)：
- *   getOs4LocalIconDrawable tag=null resultNull=true   ← 图标确实 null，但隐式 receiver 读 tag 得 null
- *   createItem tag=purify_update item="更新" b=null      ← ba.b.b(字段名 b, drawable) 为空
- *   navigator.H 收到 3 项                                ← 3 项全到渲染层
- *   R0: 首页=true 我的=true 更新=false(b=null)           ← 闸门裁决：图标 null 被丢弃
+ * 用户要求两个底栏的"更新"图标统一为参考图样式：黑色圆环内一个向上箭头（描边、单色）。
+ * - 悬浮底栏侧：NavIcons.Update 改为同款双 stroke path（见 NavIcons_v2.kt）。
+ * - 官方底栏侧（本文件）：兜底 vector XML 用同一组 path（圆环 stroke + 箭头 stroke，
+ *   1.8 宽、round 端点），解析资源取商店 Resources；失败时 bitmap fallback 也画同款图形。
  *
- * 根因：hookIconFallback 里 invokeAs 使用了隐式 this（非 TabInfo 实例），tag 恒 null，
- * 导致 "tag == purify_update" 永不成立、兜底注入从未执行。
- * 修复：改用 (thisObject as? Any)?.invokeAs<String>("getTag") 显式 receiver
- *       （与 addFragmentTab/createItem hook 同款写法，日志已证明该写法可读到真 tag）。
+ * v4.3 修复点保留：tag 必须用 thisObject 显式 receiver。
  */
 object Miux4UpdateEntry : BaseHook() {
 
@@ -41,6 +40,12 @@ object Miux4UpdateEntry : BaseHook() {
     private const val PURIFY_UPDATE = "purify_update"
     @Volatile
     private var cachedPurifyIcon: Drawable? = null
+
+    /** 圆环：圆心 (12,12)，半径 9 —— 与 NavIcons.Update.UPDATE_CIRCLE_PATH 同款。 */
+    private const val UPDATE_CIRCLE_PATH = "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18"
+
+    /** 上箭头：头 (8.8,10.7)→(12,7.5)→(15.2,10.7)，杆 (12,7.5)→(12,15.5) —— 同款。 */
+    private const val UPDATE_ARROW_PATH = "M8.8 10.7L12 7.5l3.2 3.2M12 7.5v8"
 
     override fun init() {
         val clz = runCatching {
@@ -119,7 +124,7 @@ object Miux4UpdateEntry : BaseHook() {
             HookEnv.base.log(Log.WARN, TAG, "[Miux4更新入口] onTabSelected 未找到！")
         }
 
-        // ④⑤ 图标兜底 + 入口全量诊断（v4.3 修复 receiver）
+        // ④⑤ 图标兜底 + 入口全量诊断
         hookIconFallback()
 
         // ⑥ createNavigationItem 出参诊断
@@ -148,7 +153,7 @@ object Miux4UpdateEntry : BaseHook() {
 
     /**
      * ④⑤：purify 图标注入 + getOs4LocalIconDrawable 入口全量日志。
-     * v4.3 唯一改动：tag 用 thisObject 显式 receiver（旧写法隐式 this 恒读出 null）。
+     * tag 用 thisObject 显式 receiver（v4.3 修复点，隐式 this 恒读出 null）。
      */
     private fun hookIconFallback() {
         val tabInfoClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.TabInfo") }.getOrNull()
@@ -172,7 +177,8 @@ object Miux4UpdateEntry : BaseHook() {
             )
             if (result == null && tag == PURIFY_UPDATE) {
                 val icon = cachedPurifyIcon ?: buildUpdateIcon().also { cachedPurifyIcon = it }
-                HookEnv.base.log(Log.DEBUG, TAG, "[Miux4图标] purify 图标缺失→注入兜底")
+                val kind = if (icon is android.graphics.drawable.VectorDrawable) "vector" else "bitmap"
+                HookEnv.base.log(Log.DEBUG, TAG, "[Miux4图标] purify 图标缺失→注入兜底($kind)")
                 return@hooked icon
             }
             return@hooked result
@@ -241,30 +247,62 @@ object Miux4UpdateEntry : BaseHook() {
         }.getOrDefault("dump失败:" + item.javaClass.name)
     }
 
-    /** 更新箭头图标：下箭头 + 托盘，黑色描边位图；miuix 底栏统一 tint，深浅色均可见。 */
+    /**
+     * v4.5：官方底栏兜底图标 = 圆环 + 上箭头（描边，与参考图/悬浮底栏同款）。
+     * 解析硬编码 VectorDrawable XML，Resources 取商店的（dp→px 一致）；
+     * AppGlobals 不可用或解析失败时退回手绘同款位图，保证返回非 null。
+     */
     private fun buildUpdateIcon(): Drawable {
+        runCatching {
+            val appCtx = ClassUtil.loadClass("com.xiaomi.market.AppGlobals")
+                .getMethod("getContext").invoke(null) as? Context
+            if (appCtx != null) {
+                val xml = """
+                    <vector xmlns:android="http://schemas.android.com/apk/res/android"
+                        android:width="24dp" android:height="24dp"
+                        android:viewportWidth="24" android:viewportHeight="24">
+                        <path android:fillColor="#00000000"
+                            android:strokeColor="#FF000000" android:strokeWidth="1.8"
+                            android:strokeLineCap="round" android:strokeLineJoin="round"
+                            android:pathData="$UPDATE_CIRCLE_PATH" />
+                        <path android:fillColor="#00000000"
+                            android:strokeColor="#FF000000" android:strokeWidth="1.8"
+                            android:strokeLineCap="round" android:strokeLineJoin="round"
+                            android:pathData="$UPDATE_ARROW_PATH" />
+                    </vector>
+                """.trimIndent()
+                val parser = Xml.newPullParser()
+                parser.setInput(StringReader(xml))
+                val vector = Drawable.createFromXml(appCtx.resources, parser)
+                if (vector != null) return vector
+            }
+        }.onFailure {
+            HookEnv.base.log(Log.DEBUG, TAG, "[Miux4图标] vector 解析失败，退回手绘: ${it.message}")
+        }
+        return drawBitmapFallback()
+    }
+
+    /** 手绘同款位图（圆环 + 上箭头），仅作为 vector 解析失败时的兜底，保证非 null。 */
+    private fun drawBitmapFallback(): Drawable {
         val bmp = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
+        // viewport 24 → 96px，scale=4：圆心(48,48) r36、线宽 7.2
         val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 12f
+            strokeWidth = 7.2f
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
             color = Color.BLACK
         }
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-            color = Color.BLACK
+        canvas.drawCircle(48f, 48f, 36f, stroke)
+        val arrow = Path().apply {
+            moveTo(35.2f, 42.8f)   // 8.8,10.7
+            lineTo(48f, 30f)        // 12,7.5
+            lineTo(60.8f, 42.8f)    // 15.2,10.7
+            moveTo(48f, 30f)        // 12,7.5
+            lineTo(48f, 62f)        // 12,15.5
         }
-        canvas.drawLine(48f, 14f, 48f, 54f, stroke)
-        val head = Path().apply {
-            moveTo(25f, 50f)
-            lineTo(48f, 74f)
-            lineTo(71f, 50f)
-            close()
-        }
-        canvas.drawPath(head, fill)
-        canvas.drawLine(18f, 84f, 78f, 84f, stroke)
+        canvas.drawPath(arrow, stroke)
         return BitmapDrawable(bmp)
     }
 }
