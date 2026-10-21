@@ -18,19 +18,14 @@ import com.mars.mimarketpurify.util.invokeAs
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 /**
- * Miux4 底栏「更新」入口兜底 v4 = v3.1 全部日志/点击 + 图标根因修复。
+ * v4.2 = v4(图标兜底修复) + 全链路诊断日志。
  *
- * v4 根因（2026-10-21 17:20 日志 + APK 静态终审）：
- *   日志：addFragmentTab tag=purify_update ✓ → commit pendingItems=3 ✓，底栏仍只显示 2 项。
- *   静态：commitNavigationItems → bottomNavigator.H(list) 逐项过两道闸：
- *     - ba/c 适配器上限 d=5（非瓶颈）
- *     - R0(item)：要求 item.drawable != null（type 0/1/4 所有路径都依赖 drawable）
- *   drawable 来源：createNavigationItem → TabInfo.getOs4LocalIconDrawable()
- *     → DefaultTabResource.defaultOs4TabIcons[tag] 查表；表内只有原生 native_market_*，
- *       "purify_update" 必然查到 null → R0=false → 第 3 项被静默丢弃 → 底栏只剩 2 项。
- *
- * 修复：hook TabInfo.getOs4LocalIconDrawable()，purify_update 返回 null 时注入兜底
- * 更新图标（黑色箭头位图，miuix 底栏统一 tint，深浅色模式均可见）。①②③ 与 v3.1 一致。
+ * v4 现状(17:30 日志)：4 个 hook 全部安装成功，但 [Miux4图标] purify 注入分支从未触发 ——
+ * 与静态推演(createNavigationItem 无条件调 getOs4LocalIconDrawable → 查表必 null)矛盾。
+ * v4.2 在每个环节插桩，下次日志直接定位断点：
+ *   ⑤ getOs4LocalIconDrawable 入口全量日志（是否被调 / 是否 null）
+ *   ⑥ createNavigationItem 出参（ba/b 的 title/drawable/type 实际值）
+ *   ⑦ BottomNavigator.H 收到几项、R0 每项过闸结果（渲染层终审）
  */
 object Miux4UpdateEntry : BaseHook() {
 
@@ -48,7 +43,7 @@ object Miux4UpdateEntry : BaseHook() {
             ClassUtil.loadClass("com.xiaomi.market.widget.BottomTabLayoutMiux4")
         }.getOrNull()
         if (clz == null) {
-            debugLog("BottomTabLayoutMiux4 不存在（旧版商店），跳过")
+            HookEnv.base.log(Log.WARN, TAG, "[Miux4] BottomTabLayoutMiux4 不存在（旧版商店），跳过")
             return
         }
 
@@ -59,15 +54,13 @@ object Miux4UpdateEntry : BaseHook() {
             clz.getDeclaredField("tabInfoList").apply { isAccessible = true }
         }.getOrNull()
 
-        // ① 渲染入口验证（每次实际进入原生 addFragmentTab 的 tag）
+        // ① 渲染入口
         val addTab = clz.declaredMethods.firstOrNull {
             it.name == "addFragmentTab" && it.parameterTypes.size == 2
         }
         if (addTab != null) {
             addTab.hooked {
-                val tag = runCatching {
-                    (args[0] as? Any)?.invokeAs<String>("getTag")
-                }.getOrNull()
+                val tag = runCatching { (args[0] as? Any)?.invokeAs<String>("getTag") }.getOrNull()
                 HookEnv.base.log(Log.DEBUG, TAG, "[Miux4渲染] addFragmentTab tag=$tag")
                 return@hooked proceed()
             }
@@ -76,18 +69,14 @@ object Miux4UpdateEntry : BaseHook() {
             HookEnv.base.log(Log.WARN, TAG, "[Miux4渲染] addFragmentTab 未找到！")
         }
 
-        // ② 提交层验证（pendingItems=真正交给 navigator 的项数）
+        // ② 提交层
         val commit = clz.declaredMethods.firstOrNull {
             it.name == "commitNavigationItems" && it.parameterTypes.isEmpty()
         }
         if (commit != null) {
             commit.hooked {
-                val pending = runCatching {
-                    (pendingField?.get(thisObject) as? List<*>)?.size
-                }.getOrNull()
-                val tabs = runCatching {
-                    (tabInfoListField?.get(thisObject) as? List<*>)?.size
-                }.getOrNull()
+                val pending = runCatching { (pendingField?.get(thisObject) as? List<*>)?.size }.getOrNull()
+                val tabs = runCatching { (tabInfoListField?.get(thisObject) as? List<*>)?.size }.getOrNull()
                 HookEnv.base.log(Log.DEBUG, TAG, "[Miux4渲染] commit pendingItems=$pending tabInfoList=$tabs")
                 return@hooked proceed()
             }
@@ -98,20 +87,16 @@ object Miux4UpdateEntry : BaseHook() {
 
         // ③ 点击拉起更新页
         val onSelect = clz.declaredMethods.firstOrNull {
-            it.name == "onTabSelected" &&
-                it.parameterTypes.size == 1 &&
+            it.name == "onTabSelected" && it.parameterTypes.size == 1 &&
                 it.parameterTypes[0] == Int::class.javaPrimitiveType
         }
-        if (onSelect == null) {
-            debugLog("BottomTabLayoutMiux4.onTabSelected(I) 未找到，跳过")
-        } else {
+        if (onSelect != null) {
             onSelect.hooked {
                 val index = args[0] as? Int ?: return@hooked proceed()
                 val tag = runCatching {
                     val infos = thisObject?.invokeAs<List<*>>("getTabInfoList")
                     infos?.getOrNull(index)?.invokeAs<String>("getTag")
                 }.getOrNull()
-                debugLog("Miux4 onTabSelected($index) tag=$tag")
                 if (tag == PURIFY_UPDATE) {
                     val now = System.currentTimeMillis()
                     if (now - lastLaunchTs >= LAUNCH_DEBOUNCE_MS) {
@@ -125,48 +110,131 @@ object Miux4UpdateEntry : BaseHook() {
                 }
                 proceed()
             }
-            debugLog("hooked BottomTabLayoutMiux4.onTabSelected(I)")
+            HookEnv.base.log(Log.DEBUG, TAG, "[Miux4更新入口] hooked onTabSelected(I)")
+        } else {
+            HookEnv.base.log(Log.WARN, TAG, "[Miux4更新入口] onTabSelected 未找到！")
         }
 
-        // ④ v4 根因修复：purify_update 图标兜底
+        // ④ 图标兜底（v4 根因修复）+ ⑤ 入口全量诊断
         hookIconFallback()
+
+        // ⑥ createNavigationItem 出参诊断
+        val createItem = clz.declaredMethods.firstOrNull {
+            it.name == "createNavigationItem" && it.parameterTypes.size == 1
+        }
+        if (createItem != null) {
+            val fieldNames = runCatching {
+                createItem.returnType.declaredFields.filter { !it.isSynthetic }.joinToString(",") { it.name }
+            }.getOrDefault("?")
+            createItem.hooked {
+                val tab = args[0]
+                val item = proceed()
+                val tag = runCatching { (tab as? Any)?.invokeAs<String>("getTag") }.getOrNull()
+                HookEnv.base.log(
+                    Log.DEBUG, TAG,
+                    "[图标诊断] createItem tag=$tag item=${dumpItem(item)} (fields=$fieldNames)"
+                )
+                return@hooked item
+            }
+            HookEnv.base.log(Log.DEBUG, TAG, "[图标诊断] hooked createNavigationItem")
+        } else {
+            HookEnv.base.log(Log.WARN, TAG, "[图标诊断] createNavigationItem 未找到！")
+        }
+
+        // ⑦ navigator 渲染闸门诊断
+        hookNavigatorDiag()
     }
 
-    /** v4：TabInfo.getOs4LocalIconDrawable() 对 purify_update 必然 null → 注入兜底图标。 */
+    /** ④⑤：purify 图标注入 + getOs4LocalIconDrawable 入口全量日志。 */
     private fun hookIconFallback() {
-        val tabInfoClz = runCatching {
-            ClassUtil.loadClass("com.xiaomi.market.model.TabInfo")
-        }.getOrNull()
+        val tabInfoClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.TabInfo") }.getOrNull()
         if (tabInfoClz == null) {
-            HookEnv.base.log(Log.WARN, TAG, "[Miux4图标] TabInfo 不存在，跳过")
+            HookEnv.base.log(Log.WARN, TAG, "[图标诊断] TabInfo 不存在，跳过")
             return
         }
         val getIcon = tabInfoClz.declaredMethods.firstOrNull {
             it.name == "getOs4LocalIconDrawable" && it.parameterTypes.isEmpty()
         }
         if (getIcon == null) {
-            HookEnv.base.log(Log.WARN, TAG, "[Miux4图标] getOs4LocalIconDrawable 未找到！")
+            HookEnv.base.log(Log.WARN, TAG, "[图标诊断] getOs4LocalIconDrawable 未找到！")
             return
         }
         getIcon.hooked {
             val result = proceed()
-            if (result != null) return@hooked result
             val tag = runCatching { invokeAs<String>("getTag") }.getOrNull()
-            if (tag != PURIFY_UPDATE) return@hooked result
-            val icon = cachedPurifyIcon ?: buildUpdateIcon().also { cachedPurifyIcon = it }
-            val obj = thisObject ?: return@hooked result
-            val title = runCatching { obj.invokeAs<String>("getTitle") }.getOrNull()
-            val showTitle = runCatching {
-                val f = obj.javaClass.getDeclaredField("showTitle").apply { isAccessible = true }
-                f.getBoolean(obj)
-            }.getOrDefault(false)
             HookEnv.base.log(
                 Log.DEBUG, TAG,
-                "[Miux4图标] purify 图标缺失→注入兜底 title=$title showTitle=$showTitle"
+                "[图标诊断] getOs4LocalIconDrawable tag=$tag resultNull=${result == null}"
             )
-            return@hooked icon
+            if (result == null && tag == PURIFY_UPDATE) {
+                val icon = cachedPurifyIcon ?: buildUpdateIcon().also { cachedPurifyIcon = it }
+                HookEnv.base.log(Log.DEBUG, TAG, "[Miux4图标] purify 图标缺失→注入兜底")
+                return@hooked icon
+            }
+            return@hooked result
         }
-        HookEnv.base.log(Log.DEBUG, TAG, "[Miux4图标] hooked TabInfo.getOs4LocalIconDrawable")
+        HookEnv.base.log(Log.DEBUG, TAG, "[图标诊断] hooked TabInfo.getOs4LocalIconDrawable")
+    }
+
+    /** ⑦：BottomNavigator.H（收到几项）与 R0（每项过闸结果）。 */
+    private fun hookNavigatorDiag() {
+        val navClz = runCatching { ClassUtil.loadClass("miuix.bottomnavigation.BottomNavigator") }.getOrNull()
+        if (navClz == null) {
+            HookEnv.base.log(Log.WARN, TAG, "[图标诊断] BottomNavigator 不存在，跳过")
+            return
+        }
+        val h = navClz.declaredMethods.firstOrNull {
+            it.name == "H" && it.parameterTypes.size == 1 &&
+                List::class.java.isAssignableFrom(it.parameterTypes[0])
+        }
+        if (h != null) {
+            h.hooked {
+                val list = args[0] as? List<*>
+                HookEnv.base.log(
+                    Log.DEBUG, TAG,
+                    "[图标诊断] navigator.H 收到 ${list?.size} 项: " +
+                        (list?.joinToString("; ") { dumpItem(it) } ?: "null")
+                )
+                return@hooked proceed()
+            }
+            HookEnv.base.log(Log.DEBUG, TAG, "[图标诊断] hooked navigator.H")
+        } else {
+            HookEnv.base.log(Log.WARN, TAG, "[图标诊断] navigator.H 未找到！")
+        }
+        val r0 = navClz.declaredMethods.firstOrNull {
+            it.name == "R0" && it.parameterTypes.size == 1
+        }
+        if (r0 != null) {
+            r0.hooked {
+                val result = proceed()
+                HookEnv.base.log(
+                    Log.DEBUG, TAG,
+                    "[图标诊断] R0=$result item=${dumpItem(args[0])}"
+                )
+                return@hooked result
+            }
+            HookEnv.base.log(Log.DEBUG, TAG, "[图标诊断] hooked navigator.R0")
+        } else {
+            HookEnv.base.log(Log.WARN, TAG, "[图标诊断] navigator.R0 未找到！")
+        }
+    }
+
+    /** 反射 dump 对象全部非合成字段（title/type/drawable 等）。 */
+    private fun dumpItem(item: Any?): String {
+        if (item == null) return "null"
+        return runCatching {
+            item.javaClass.declaredFields.filter { !it.isSynthetic }.joinToString(", ") { f ->
+                f.isAccessible = true
+                val v = f.get(item)
+                val short = when {
+                    v == null -> "null"
+                    v is String -> "\"$v\""
+                    v is Drawable -> "Drawable#" + Integer.toHexString(System.identityHashCode(v))
+                    else -> v.toString().take(60)
+                }
+                "$f=$short".replace("class ", "").let { it.substringAfterLast(' ') }
+            }
+        }.getOrDefault("dump失败:" + item.javaClass.name)
     }
 
     /** 更新箭头图标：下箭头 + 托盘，黑色描边位图；miuix 底栏统一 tint，深浅色均可见。 */
