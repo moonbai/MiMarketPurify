@@ -11,26 +11,28 @@ import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
 /**
- * 移花接木注入点 v2：hook `PageConfig.updateTabs(Z)`。
+ * 「更新」注入兜底 v2 —— 三个注入点 + 全路径日志定位。
  *
- * 根因（4.128.11 实测反编译确认）：
- * 1. `initTabs(json)` 内 `tabs` 字段经 `updateTabs()` 由策略类重建（从 originTabs 过滤复制）；
- * 2. **`MarketTabActivity.onCreate` 会再次调用 `updateTabs(Z)`**，设置页切换模式也会调用
- *    —— 每次调用都用「策略过滤(originTabs)」的**新 list 整体替换 tabs 字段**；
- * 3. 原有注入点 `initTabs` hook（proceed 后 add）只覆盖第 1 步，onCreate 的重建会把注入冲掉；
- *    `fromJSON` hook 注入 originTabs 依赖 kept 非空且方法匹配，任一条件不满足即失效。
- * 结果：官方底栏渲染读 tabs 时已无 purify_update → 无入口；悬浮底栏不依赖 tabs → 有入口。
+ * 2026-10-21 日志分析结论：
+ * - TabFilter.initTabs hook 触发过（purify TabInfo 已创建日志出现）→ 注入发生过又被重建冲掉；
+ * - TabInfo.fromJSON hook 装了但运行时从未触发（无 "fromJSON: kept=" 日志）
+ *   → 4.128.11 initTabs 走 Robust 热修 patch，原方法体的 fromJSON 调用被绕过；
+ * - v1 的 updateTabs(Z) hook 无任何运行时日志 → updateTabs 未被调用或走进静默分支，无法区分。
  *
- * 修复：updateTabs 是 tabs 字段的唯一写入口，proceed 后幂等补注入，
- * 覆盖 initTabs 内 / onCreate / 设置页全部 3 个调用点，渲染前最后一次写入必经此处。
- * 与 TabFilter 既有注入（fromJSON/initTabs）通过 tag 判重幂等共存，不会重复注入。
+ * v2 策略：
+ * 1. updateTabs(Z)：hook 入口第一行无条件打日志 → 定位它是否被调用；
+ * 2. initTabs(JSONObject)：proceed 后注入（与 TabFilter 幂等共存）；
+ * 3. **getTabCount()（DoubleTabProxyActivityWrapper）**：渲染循环 addFragmentTabsMiux4(count)
+ *    的 count 来源 = tabs.size，是渲染**必经之路**，与解析/热修/重建路径完全无关。
+ *    在此确保 tabs 含 purify 并返回正确 count —— 只要官方底栏要渲染就必然注入成功。
+ * 每个分支（enabled/tabs null/hasPurify/注入结果）都打日志，一次构建即可定位。
  *
- * 开关与「底栏更新入口」共用 [Settings.KEY_UPDATE_TAB]。
+ * 与 TabFilter 既有注入按 tag 判重幂等共存。开关共用 [Settings.KEY_UPDATE_TAB]。
  */
-object PurifyTabInjector : BaseHook() {
+object PurifyTabInjector2 : BaseHook() {
 
     override val prefKey: String = Settings.KEY_UPDATE_TAB
-    override val name: String get() = "移花接木注入(updateTabs)"
+    override val name: String get() = "移花接木注入v2"
 
     private const val PURIFY_UPDATE = "purify_update"
 
@@ -43,36 +45,96 @@ object PurifyTabInjector : BaseHook() {
         tabsField = runCatching {
             pcClz.getDeclaredField("tabs").apply { isAccessible = true }
         }.getOrNull()
+        debugLog("tabsField=${tabsField?.name ?: "NULL"}")
 
         runCatching {
             ClassUtil.loadClass("com.xiaomi.market.model.TabInfo").fieldFinder()
                 .filterByName("tag").filterByType(String::class.java).firstOrNull()
         }.onSuccess { tabField = it }
 
-        val updateTabs = pcClz.declaredMethods.firstOrNull {
+        // ① updateTabs(Z)：入口无条件打日志，定位是否被调用
+        pcClz.declaredMethods.firstOrNull {
             it.name == "updateTabs" && it.parameterTypes.size == 1
-        }
-        if (updateTabs == null) {
-            HookEnv.base.log(Log.WARN, TAG, "[PurifyTabInjector] updateTabs 未找到，跳过")
-            return
-        }
-
-        updateTabs.hooked {
-            val result = proceed()
-            runCatching {
-                if (!Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)) return@runCatching
-                val tabs = tabsField?.get(thisObject) as? MutableList<Any?> ?: return@runCatching
-                val hasPurify = tabs.any { tagOf(it) == PURIFY_UPDATE }
-                if (hasPurify) return@runCatching
-                val purify = ensurePurifyTab(tabs) ?: return@runCatching
-                tabs.add(purify)
-                HookEnv.base.log(Log.DEBUG, TAG, "[PurifyTabInjector] 注入 purify_update, size=${tabs.size}")
-            }.onFailure {
-                HookEnv.base.log(Log.WARN, TAG, "[PurifyTabInjector] 注入失败: ${it.message}")
+        }?.let { m ->
+            m.hooked {
+                debugLog("→ updateTabs(${args[0]}) 被调用")
+                val result = proceed()
+                injectIfNeeded(thisObject, "updateTabs")
+                return@hooked result
             }
-            return@hooked result
+            debugLog("hooked PageConfig.updateTabs(Z)")
+        } ?: debugLog("updateTabs(Z) 未找到！")
+
+        // ② initTabs(JSONObject)：proceed 后注入
+        pcClz.declaredMethods.firstOrNull {
+            it.name == "initTabs" && it.parameterTypes.size == 1
+        }?.let { m ->
+            m.hooked {
+                val result = proceed()
+                injectIfNeeded(thisObject, "initTabs")
+                return@hooked result
+            }
+            debugLog("hooked PageConfig.initTabs(JSONObject)")
+        } ?: debugLog("initTabs(JSONObject) 未找到！")
+
+        // ③ 渲染必经：wrapper.getTabCount() → tabs.size
+        val wrapperClz = runCatching {
+            ClassUtil.loadClass("com.xiaomi.market.ui.DoubleTabProxyActivityWrapper")
+        }.getOrNull()
+        val getCount = wrapperClz?.declaredMethods?.firstOrNull {
+            it.name == "getTabCount" && it.parameterTypes.isEmpty()
         }
-        HookEnv.base.log(Log.DEBUG, TAG, "[PurifyTabInjector] hooked PageConfig.updateTabs(Z)")
+        if (getCount == null) {
+            debugLog("wrapper.getTabCount 未找到（旧版？）")
+        } else {
+            getCount.hooked {
+                val size = proceed() as? Int ?: return@hooked proceed()
+                val pc = runCatching { pcClz.getMethod("get").invoke(null) }.getOrNull()
+                val enabled = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
+                if (pc == null || !enabled) {
+                    debugLog("getTabCount size=$size (pc=$pc, enabled=$enabled)")
+                    return@hooked size
+                }
+                val tabs = tabsOf(pc)
+                if (tabs == null) {
+                    debugLog("getTabCount size=$size tabs=NULL")
+                    return@hooked size
+                }
+                val hasPurify = tabs.any { tagOf(it) == PURIFY_UPDATE }
+                if (hasPurify) {
+                    debugLog("getTabCount size=$size 已含 purify ✓")
+                    return@hooked size
+                }
+                val purify = ensurePurifyTab(tabs)
+                if (purify != null) {
+                    tabs.add(purify)
+                    debugLog("getTabCount 注入成功! size=$size → ${size + 1} (list=${tabs.size})")
+                    return@hooked size + 1
+                }
+                debugLog("getTabCount 注入失败(模板取不到) size=$size")
+                return@hooked size
+            }
+            debugLog("hooked DoubleTabProxyActivityWrapper.getTabCount()")
+        }
+    }
+
+    private fun tabsOf(pc: Any): MutableList<Any?>? =
+        runCatching { tabsField?.get(pc) as? MutableList<Any?> }.getOrNull()
+
+    private fun injectIfNeeded(pc: Any?, source: String) {
+        runCatching {
+            val enabled = Settings.isEnabled(Settings.KEY_UPDATE_TAB, true)
+            if (!enabled) { debugLog("[$source] enabled=false 跳过"); return }
+            if (pc == null) { debugLog("[$source] thisObject=null 跳过"); return }
+            val tabs = tabsOf(pc)
+            if (tabs == null) { debugLog("[$source] tabs=NULL 跳过"); return }
+            val hasPurify = tabs.any { tagOf(it) == PURIFY_UPDATE }
+            if (hasPurify) { debugLog("[$source] 已含 purify 跳过(size=${tabs.size})"); return }
+            val purify = ensurePurifyTab(tabs)
+            if (purify == null) { debugLog("[$source] 模板取不到,注入失败"); return }
+            tabs.add(purify)
+            debugLog("[$source] 注入成功! size=${tabs.size}")
+        }.onFailure { debugLog("[$source] 注入异常: ${it.message}") }
     }
 
     private fun tagOf(tab: Any?): String? {
@@ -83,10 +145,7 @@ object PurifyTabInjector : BaseHook() {
         }.getOrNull()
     }
 
-    /**
-     * 克隆真实原生 TabInfo 构造「更新」注入项（与 TabFilter.ensurePurifyTab 同源逻辑）。
-     * 模板取不到时返回 null 不缓存 —— 空对象字段不全会被商店跳过，宁可下次 updateTabs 重试。
-     */
+    /** 克隆真实原生 TabInfo；模板取不到返回 null 不缓存（空对象字段不全会被商店跳过）。 */
     private fun ensurePurifyTab(tabs: List<*>): Any? {
         purifyTabInfo?.let { return it }
         val tabInfoClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.TabInfo") }.getOrNull() ?: return null
@@ -112,7 +171,7 @@ object PurifyTabInjector : BaseHook() {
                 ?.set(tab, "market://update")
         }
         purifyTabInfo = tab
-        HookEnv.base.log(Log.DEBUG, TAG, "[PurifyTabInjector] purify TabInfo 已创建")
+        debugLog("purify TabInfo 已创建(克隆模板=true)")
         return tab
     }
 }
