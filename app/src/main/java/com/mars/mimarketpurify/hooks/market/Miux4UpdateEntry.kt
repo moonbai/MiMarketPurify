@@ -21,12 +21,13 @@ import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 import java.io.StringReader
 
 /**
- * v4.5 = v4.4(图标统一方案) + 图标样式统一为「圆环 + 上箭头」描边风格。
+ * v4.5 = v4.4(图标统一方案) + 图标样式统一为「圆环 + 上箭头」实心填充风格。
  *
- * 用户要求两个底栏的"更新"图标统一为参考图样式：黑色圆环内一个向上箭头（描边、单色）。
- * - 悬浮底栏侧：NavIcons.Update 改为同款双 stroke path（见 NavIcons_v2.kt）。
- * - 官方底栏侧（本文件）：兜底 vector XML 用同一组 path（圆环 stroke + 箭头 stroke，
- *   1.8 宽、round 端点），解析资源取商店 Resources；失败时 bitmap fallback 也画同款图形。
+ * 用户要求两个底栏的"更新"图标统一为参考图样式：黑色圆环内一个向上箭头（单色填充）。
+ * - 悬浮底栏侧：NavIcons.Update 使用「外圆+内圆 EvenOdd 挖空 + 箭头多边形」单条 fill path
+ *   （见 NavIcons.kt）。
+ * - 官方底栏侧（本文件）：兜底 vector XML 使用同一组 path（EvenOdd 挖空 + fill），
+ *   解析资源取商店 Resources；失败时 bitmap fallback 也用同款 Path 一次性填充。
  *
  * v4.3 修复点保留：tag 必须用 thisObject 显式 receiver。
  */
@@ -41,11 +42,17 @@ object Miux4UpdateEntry : BaseHook() {
     @Volatile
     private var cachedPurifyIcon: Drawable? = null
 
-    /** 圆环：圆心 (12,12)，半径 9 —— 与 NavIcons.Update.UPDATE_CIRCLE_PATH 同款。 */
-    private const val UPDATE_CIRCLE_PATH = "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18"
-
-    /** 上箭头：头 (8.8,10.7)→(12,7.5)→(15.2,10.7)，杆 (12,7.5)→(12,15.5) —— 同款。 */
-    private const val UPDATE_ARROW_PATH = "M8.8 10.7L12 7.5l3.2 3.2M12 7.5v8"
+    /**
+     * 与 NavIcons.UPDATE_PATH 完全一致：
+     * - 外圆 r=9.9；
+     * - 内圆 r=8.1（EvenOdd 下挖空成环，环宽 1.8）；
+     * - 上箭头闭合多边形（头 12,6.8 → 16.4,11.2 / 7.6,11.2；杆 10.6~13.4 × 11.2~16.2）。
+     * 箭头位于内圆挖空区域，覆盖层数 3（奇数），仍会被填充。
+     */
+    private const val UPDATE_PATH =
+        "M12 2.1a9.9 9.9 0 1 0 0 19.8a9.9 9.9 0 1 0 0-19.8" +
+            "M12 3.9a8.1 8.1 0 1 1 0 16.2a8.1 8.1 0 1 1 0-16.2" +
+            "M12 6.8l4.4 4.4h-3v5h-2.8v-5h-3z"
 
     override fun init() {
         val clz = runCatching {
@@ -248,9 +255,12 @@ object Miux4UpdateEntry : BaseHook() {
     }
 
     /**
-     * v4.5：官方底栏兜底图标 = 圆环 + 上箭头（描边，与参考图/悬浮底栏同款）。
+     * v4.5：官方底栏兜底图标 = 圆环 + 上箭头（实心填充，与参考图/悬浮底栏同款）。
      * 解析硬编码 VectorDrawable XML，Resources 取商店的（dp→px 一致）；
      * AppGlobals 不可用或解析失败时退回手绘同款位图，保证返回非 null。
+     *
+     * XML 使用 `android:fillType="evenOdd"` 让内圆挖空成环；箭头在同一 path 内，
+     * 落在挖空区（覆盖 3 层，奇数），仍会被填充。
      */
     private fun buildUpdateIcon(): Drawable {
         runCatching {
@@ -261,14 +271,8 @@ object Miux4UpdateEntry : BaseHook() {
                     <vector xmlns:android="http://schemas.android.com/apk/res/android"
                         android:width="24dp" android:height="24dp"
                         android:viewportWidth="24" android:viewportHeight="24">
-                        <path android:fillColor="#00000000"
-                            android:strokeColor="#FF000000" android:strokeWidth="1.8"
-                            android:strokeLineCap="round" android:strokeLineJoin="round"
-                            android:pathData="$UPDATE_CIRCLE_PATH" />
-                        <path android:fillColor="#00000000"
-                            android:strokeColor="#FF000000" android:strokeWidth="1.8"
-                            android:strokeLineCap="round" android:strokeLineJoin="round"
-                            android:pathData="$UPDATE_ARROW_PATH" />
+                        <path android:fillColor="#FF000000" android:fillType="evenOdd"
+                            android:pathData="$UPDATE_PATH" />
                     </vector>
                 """.trimIndent()
                 val parser = Xml.newPullParser()
@@ -282,27 +286,30 @@ object Miux4UpdateEntry : BaseHook() {
         return drawBitmapFallback()
     }
 
-    /** 手绘同款位图（圆环 + 上箭头），仅作为 vector 解析失败时的兜底，保证非 null。 */
+    /** 手绘同款位图（圆环 + 上箭头，实心填充），仅作为 vector 解析失败时的兜底，保证非 null。 */
     private fun drawBitmapFallback(): Drawable {
         val bmp = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
-        // viewport 24 → 96px，scale=4：圆心(48,48) r36、线宽 7.2
-        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 7.2f
-            strokeCap = Paint.Cap.ROUND
-            strokeJoin = Paint.Join.ROUND
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
             color = Color.BLACK
         }
-        canvas.drawCircle(48f, 48f, 36f, stroke)
-        val arrow = Path().apply {
-            moveTo(35.2f, 42.8f)   // 8.8,10.7
-            lineTo(48f, 30f)        // 12,7.5
-            lineTo(60.8f, 42.8f)    // 15.2,10.7
-            moveTo(48f, 30f)        // 12,7.5
-            lineTo(48f, 62f)        // 12,15.5
+        // viewport 24 → 96px，scale=4
+        val path = Path().apply {
+            fillType = Path.FillType.EVEN_ODD
+            addCircle(48f, 48f, 39.6f, Path.Direction.CW) // 外圆 r=9.9
+            addCircle(48f, 48f, 32.4f, Path.Direction.CW) // 内圆 r=8.1（EvenOdd 挖空）
+            // 箭头多边形（(12,6.8)→(16.4,11.2)→(13.4,11.2)→(13.4,16.2)→(10.6,16.2)→(10.6,11.2)→(7.6,11.2)）
+            moveTo(48f, 27.2f)
+            lineTo(65.6f, 44.8f)
+            lineTo(53.6f, 44.8f)
+            lineTo(53.6f, 64.8f)
+            lineTo(42.4f, 64.8f)
+            lineTo(42.4f, 44.8f)
+            lineTo(30.4f, 44.8f)
+            close()
         }
-        canvas.drawPath(arrow, stroke)
+        canvas.drawPath(path, fill)
         return BitmapDrawable(bmp)
     }
 }

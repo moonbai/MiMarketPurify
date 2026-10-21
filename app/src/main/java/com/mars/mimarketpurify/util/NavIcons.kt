@@ -2,9 +2,8 @@ package com.mars.mimarketpurify.util
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathFillType
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
 
@@ -64,45 +63,30 @@ object NavIcons {
     }
 
     /**
-     * 更新（圆环 + 上箭头，描边风格）。
+     * 更新（圆环 + 上箭头，实心填充风格，与其他图标一致）。
      * 供「移花接木」注入的原生更新 tab / 悬浮底栏独立更新按钮使用；
      * 官方底栏兜底图标（Miux4UpdateEntry.buildUpdateIcon）使用同一路径，两个底栏保持一致。
+     *
+     * 圆环用「外圆 + 内圆」两条子路径配合 EvenOdd 填充规则挖空，环宽 1.8；
+     * 箭头是闭合多边形（三角头 + 矩形杆），整体单色填充，可直接 tint。
      */
     val Update: ImageVector by lazy {
-        ImageVector.Builder(
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
-        ).apply {
-            // 圆环（stroke，无填充）
-            addPath(
-                pathData = PathParser().parsePathString(UPDATE_CIRCLE_PATH).toNodes(),
-                fill = null,
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 1.8f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            )
-            // 上箭头（stroke，无填充）
-            addPath(
-                pathData = PathParser().parsePathString(UPDATE_ARROW_PATH).toNodes(),
-                fill = null,
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 1.8f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            )
-        }.build()
+        vector(UPDATE_PATH, PathFillType.EvenOdd)
     }
 
-    /** 圆环：圆心 (12,12)，半径 9，24 viewport。 */
-    private const val UPDATE_CIRCLE_PATH = "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18"
+    /**
+     * 圆环（外圆 r=9.9，内圆 r=8.1）+ 上箭头（头 12,6.8 → 16.4,11.2 / 7.6,11.2，杆宽 2.8）。
+     * 多子路径 + EvenOdd，环内区域被挖空。
+     */
+    private const val UPDATE_PATH =
+        "M12 2.1a9.9 9.9 0 1 0 0 19.8a9.9 9.9 0 1 0 0-19.8" + // 外圆
+            "M12 3.9a8.1 8.1 0 1 1 0 16.2a8.1 8.1 0 1 1 0-16.2" + // 内圆（挖空）
+            "M12 6.8l4.4 4.4h-3v5h-2.8v-5h-3z" // 上箭头
 
-    /** 上箭头：头 (8.8,10.7)→(12,7.5)→(15.2,10.7)，杆 (12,7.5)→(12,15.5)。 */
-    private const val UPDATE_ARROW_PATH = "M8.8 10.7L12 7.5l3.2 3.2M12 7.5v8"
-
-    private fun vector(path: String): ImageVector {
+    private fun vector(
+        path: String,
+        fillType: PathFillType = PathFillType.NonZero,
+    ): ImageVector {
         val parser = PathParser()
         parser.parsePathString(path)
         return ImageVector.Builder(
@@ -112,6 +96,7 @@ object NavIcons {
             viewportHeight = 24f,
         ).addPath(
             pathData = parser.toNodes(),
+            pathFillType = fillType,
             fill = SolidColor(Color.Black),
         ).build()
     }
