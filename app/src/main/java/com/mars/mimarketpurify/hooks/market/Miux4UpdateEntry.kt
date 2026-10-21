@@ -18,14 +18,18 @@ import com.mars.mimarketpurify.util.invokeAs
 import io.github.kyuubiran.ezxhelper.core.util.ClassUtil
 
 /**
- * v4.2 = v4(图标兜底修复) + 全链路诊断日志。
+ * v4.3 = v4.2 诊断全保留 + 修复 tag receiver（唯一改动一处）。
  *
- * v4 现状(17:30 日志)：4 个 hook 全部安装成功，但 [Miux4图标] purify 注入分支从未触发 ——
- * 与静态推演(createNavigationItem 无条件调 getOs4LocalIconDrawable → 查表必 null)矛盾。
- * v4.2 在每个环节插桩，下次日志直接定位断点：
- *   ⑤ getOs4LocalIconDrawable 入口全量日志（是否被调 / 是否 null）
- *   ⑥ createNavigationItem 出参（ba/b 的 title/drawable/type 实际值）
- *   ⑦ BottomNavigator.H 收到几项、R0 每项过闸结果（渲染层终审）
+ * v4.2 日志终审(17:37)：
+ *   getOs4LocalIconDrawable tag=null resultNull=true   ← 图标确实 null，但隐式 receiver 读 tag 得 null
+ *   createItem tag=purify_update item="更新" b=null      ← ba.b.b(字段名 b, drawable) 为空
+ *   navigator.H 收到 3 项                                ← 3 项全到渲染层
+ *   R0: 首页=true 我的=true 更新=false(b=null)           ← 闸门裁决：图标 null 被丢弃
+ *
+ * 根因：hookIconFallback 里 invokeAs 使用了隐式 this（非 TabInfo 实例），tag 恒 null，
+ * 导致 "tag == purify_update" 永不成立、兜底注入从未执行。
+ * 修复：改用 (thisObject as? Any)?.invokeAs<String>("getTag") 显式 receiver
+ *       （与 addFragmentTab/createItem hook 同款写法，日志已证明该写法可读到真 tag）。
  */
 object Miux4UpdateEntry : BaseHook() {
 
@@ -115,7 +119,7 @@ object Miux4UpdateEntry : BaseHook() {
             HookEnv.base.log(Log.WARN, TAG, "[Miux4更新入口] onTabSelected 未找到！")
         }
 
-        // ④ 图标兜底（v4 根因修复）+ ⑤ 入口全量诊断
+        // ④⑤ 图标兜底 + 入口全量诊断（v4.3 修复 receiver）
         hookIconFallback()
 
         // ⑥ createNavigationItem 出参诊断
@@ -123,16 +127,13 @@ object Miux4UpdateEntry : BaseHook() {
             it.name == "createNavigationItem" && it.parameterTypes.size == 1
         }
         if (createItem != null) {
-            val fieldNames = runCatching {
-                createItem.returnType.declaredFields.filter { !it.isSynthetic }.joinToString(",") { it.name }
-            }.getOrDefault("?")
             createItem.hooked {
                 val tab = args[0]
                 val item = proceed()
                 val tag = runCatching { (tab as? Any)?.invokeAs<String>("getTag") }.getOrNull()
                 HookEnv.base.log(
                     Log.DEBUG, TAG,
-                    "[图标诊断] createItem tag=$tag item=${dumpItem(item)} (fields=$fieldNames)"
+                    "[图标诊断] createItem tag=$tag item=${dumpItem(item)}"
                 )
                 return@hooked item
             }
@@ -145,7 +146,10 @@ object Miux4UpdateEntry : BaseHook() {
         hookNavigatorDiag()
     }
 
-    /** ④⑤：purify 图标注入 + getOs4LocalIconDrawable 入口全量日志。 */
+    /**
+     * ④⑤：purify 图标注入 + getOs4LocalIconDrawable 入口全量日志。
+     * v4.3 唯一改动：tag 用 thisObject 显式 receiver（旧写法隐式 this 恒读出 null）。
+     */
     private fun hookIconFallback() {
         val tabInfoClz = runCatching { ClassUtil.loadClass("com.xiaomi.market.model.TabInfo") }.getOrNull()
         if (tabInfoClz == null) {
@@ -161,7 +165,7 @@ object Miux4UpdateEntry : BaseHook() {
         }
         getIcon.hooked {
             val result = proceed()
-            val tag = runCatching { invokeAs<String>("getTag") }.getOrNull()
+            val tag = runCatching { (thisObject as? Any)?.invokeAs<String>("getTag") }.getOrNull()
             HookEnv.base.log(
                 Log.DEBUG, TAG,
                 "[图标诊断] getOs4LocalIconDrawable tag=$tag resultNull=${result == null}"
